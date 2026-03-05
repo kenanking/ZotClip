@@ -144,9 +144,9 @@ function uniqueNonEmptyPaths(files: ResolvedPDF[]): string[] {
 }
 
 function pathToFileURI(path: string): string {
-  const file = getXPCOMClasses()[
-    "@mozilla.org/file/local;1"
-  ].createInstance(Components.interfaces.nsIFile);
+  const file = getXPCOMClasses()["@mozilla.org/file/local;1"].createInstance(
+    Components.interfaces.nsIFile,
+  );
   file.initWithPath(path);
   return Services.io.newFileURI(file).spec;
 }

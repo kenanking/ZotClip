@@ -7,8 +7,9 @@
 declare namespace _ZoteroTypes {
   interface Prefs {
     PluginPrefsMap: {
-      "enable": boolean;
-      "input": string;
+      "multiPdfMode": string;
+      "readerCtrlCMode": string;
+      "allowPathFallback": boolean;
     };
   }
 }

@@ -17,7 +17,8 @@ const DEFAULT_DEPS: ReaderHookDeps = {
   },
   hasTextSelection: (event) => {
     const ownerDocument = (event.target as Node | null)?.ownerDocument;
-    const selection = ownerDocument?.getSelection?.() || event.view?.getSelection?.();
+    const selection =
+      ownerDocument?.getSelection?.() || event.view?.getSelection?.();
     return !!selection && selection.toString().trim().length > 0;
   },
   triggerCopyFromReader: async () => {
@@ -28,9 +29,14 @@ const DEFAULT_DEPS: ReaderHookDeps = {
 export async function handleReaderCopyShortcut(
   event: KeyboardEvent,
   mode: ReaderCtrlCMode,
-  deps: ReaderHookDeps = DEFAULT_DEPS,
+  deps: Partial<ReaderHookDeps> = {},
 ): Promise<boolean> {
-  if (!deps.isReaderContext(event)) {
+  const finalDeps: ReaderHookDeps = {
+    ...DEFAULT_DEPS,
+    ...deps,
+  };
+
+  if (!finalDeps.isReaderContext(event)) {
     return false;
   }
 
@@ -51,7 +57,7 @@ export async function handleReaderCopyShortcut(
       return false;
     }
 
-    if (mode === "smart" && deps.hasTextSelection(event)) {
+    if (mode === "smart" && finalDeps.hasTextSelection(event)) {
       return false;
     }
   } else if (!isFallbackCombo) {
@@ -59,14 +65,14 @@ export async function handleReaderCopyShortcut(
   }
 
   event.preventDefault();
-  await deps.triggerCopyFromReader();
+  await finalDeps.triggerCopyFromReader();
   return true;
 }
 
 export function registerReaderShortcutHandler(
   win: Window,
   modeProvider: () => ReaderCtrlCMode,
-  deps: ReaderHookDeps = DEFAULT_DEPS,
+  deps: Partial<ReaderHookDeps> = {},
 ): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     void handleReaderCopyShortcut(event, modeProvider(), deps);

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { copyFromReader, copyFromSelection } from "../../src/modules/copy/copyCommands";
+import {
+  copyFromReader,
+  copyFromSelection,
+} from "../../src/modules/copy/copyCommands";
 
 const sampleFiles = [
   {

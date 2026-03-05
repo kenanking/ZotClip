@@ -1,4 +1,6 @@
 import { config } from "../../package.json";
+import type { MultiPDFMode } from "../modules/copy/types";
+import type { ReaderCtrlCMode } from "../modules/copy/readerHook";
 
 type PluginPrefsMap = _ZoteroTypes.Prefs["PluginPrefsMap"];
 
@@ -33,4 +35,21 @@ export function setPref<K extends keyof PluginPrefsMap>(
  */
 export function clearPref(key: string) {
   return Zotero.Prefs.clear(`${PREFS_PREFIX}.${key}`, true);
+}
+
+export function getMultiPDFMode(): MultiPDFMode {
+  const value = getPref("multiPdfMode");
+  return value === "primary" ? "primary" : "all";
+}
+
+export function getReaderCtrlCMode(): ReaderCtrlCMode {
+  const value = getPref("readerCtrlCMode");
+  if (value === "always" || value === "never") {
+    return value;
+  }
+  return "smart";
+}
+
+export function getAllowPathFallback(): boolean {
+  return getPref("allowPathFallback") !== false;
 }

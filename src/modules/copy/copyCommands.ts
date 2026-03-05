@@ -3,11 +3,7 @@ import {
   resolvePDFsFromItems,
 } from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
-import type {
-  ClipboardResult,
-  MultiPDFMode,
-  ResolvedPDF,
-} from "./types";
+import type { ClipboardResult, MultiPDFMode, ResolvedPDF } from "./types";
 
 export interface CopyCommandDeps {
   getSelectedItems(): Zotero.Item[];

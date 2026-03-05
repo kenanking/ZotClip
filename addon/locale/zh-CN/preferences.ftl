@@ -1,5 +1,11 @@
-pref-title = 插件模板设置示例
-pref-enable =
-    .label = 开启
-pref-input = 输入
+pref-title = ZotClip Settings
+pref-multi-pdf-mode = Multi-PDF Strategy
+pref-multi-pdf-mode-all = Copy all PDF attachments
+pref-multi-pdf-mode-primary = Copy only the primary PDF attachment
+pref-reader-ctrl-c-mode = Reader Ctrl+C Behavior
+pref-reader-ctrl-c-mode-smart = Smart (copy text when selected)
+pref-reader-ctrl-c-mode-never = Never intercept Ctrl+C
+pref-reader-ctrl-c-mode-always = Always copy current PDF file
+pref-allow-path-fallback = Allow path-text fallback when file clipboard fails
+pref-compatibility-note = File paste support depends on the destination app.
 pref-help = { $name } Build { $version } { $time }
