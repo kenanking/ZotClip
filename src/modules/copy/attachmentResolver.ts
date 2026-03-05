@@ -2,10 +2,12 @@ import type { MultiPDFMode, ResolvedPDF } from "./types";
 
 export interface AttachmentResolverDeps {
   getItemsByIDs(ids: number[]): Zotero.Item[];
+  getItemByID?(id: number): Zotero.Item | false | undefined;
 }
 
 const DEFAULT_DEPS: AttachmentResolverDeps = {
   getItemsByIDs: (ids) => Zotero.Items.get(ids),
+  getItemByID: (id) => Zotero.Items.get(id),
 };
 
 export async function resolvePDFsFromItems(
@@ -36,6 +38,29 @@ export async function resolvePDFsFromItems(
   }
 
   return dedupeByPath(results);
+}
+
+export async function resolvePDFFromReader(
+  itemID: number,
+  deps: AttachmentResolverDeps = DEFAULT_DEPS,
+): Promise<ResolvedPDF[]> {
+  const item = deps.getItemByID?.(itemID);
+  if (!item || !item.isAttachment() || !item.isPDFAttachment()) {
+    return [];
+  }
+
+  const path = await item.getFilePathAsync();
+  if (!path || typeof path !== "string") {
+    return [];
+  }
+
+  return [
+    {
+      itemID: item.parentID || item.id,
+      attachmentID: item.id,
+      path,
+    },
+  ];
 }
 
 async function resolveCandidateAttachments(
