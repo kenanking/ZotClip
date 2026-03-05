@@ -28,7 +28,7 @@
     "release": "zotero-plugin release",
     "test": "zotero-plugin test",
     "update-deps": "npm update --save",
-    "test:unit": "tsx --test test/unit/**/*.test.ts"
+    "test:unit": "tsx --test spec/unit/**/*.test.ts"
   },
   "dependencies": {
     "zotero-plugin-toolkit": "^5.1.0-beta.13"
