@@ -1,6 +1,9 @@
 import { getString, initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
+import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
+
+const readerHookDisposers = new WeakMap<Window, () => void>();
 
 async function onStartup() {
   await Promise.all([
@@ -33,9 +36,14 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   win.MozXULElement.insertFTLIfNeeded(
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
+
+  const disposeReaderHook = registerReaderShortcutHandler(win, () => "smart");
+  readerHookDisposers.set(win, disposeReaderHook);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
+  readerHookDisposers.get(win)?.();
+  readerHookDisposers.delete(win);
   ztoolkit.unregisterAll();
 }
 
