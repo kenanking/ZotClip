@@ -13,6 +13,7 @@
 ### Task 1: Initialize ZotClip from template baseline
 
 **Files:**
+
 - Create: `package.json`, `tsconfig.json`, `zotero-plugin.config.ts`, `src/index.ts`, `src/hooks.ts`, `addon/manifest.json`, `test/startup.test.ts`
 - Modify: `docs/plans/2026-03-05-zotclip-design.md` (no content change, reference-only)
 - Test: `test/startup.test.ts`
@@ -65,6 +66,7 @@ Skill refs: `@using-git-worktrees`, `@verification-before-completion`
 ### Task 2: Define shared copy domain types and result contracts
 
 **Files:**
+
 - Create: `src/modules/copy/types.ts`
 - Create: `test/unit/copy-types.test.ts`
 - Modify: `src/index.ts`
@@ -75,7 +77,10 @@ Skill refs: `@using-git-worktrees`, `@verification-before-completion`
 ```ts
 // test/unit/copy-types.test.ts
 import { expect } from "chai";
-import { CLIPBOARD_FORMATS, RESOLVE_ERRORS } from "../../src/modules/copy/types";
+import {
+  CLIPBOARD_FORMATS,
+  RESOLVE_ERRORS,
+} from "../../src/modules/copy/types";
 
 describe("copy types", () => {
   it("exposes stable clipboard formats and resolve errors", () => {
@@ -150,6 +155,7 @@ Skill refs: `@test-driven-development`
 ### Task 3: Implement AttachmentResolver with all/primary strategy
 
 **Files:**
+
 - Create: `src/modules/copy/attachmentResolver.ts`
 - Create: `test/unit/attachment-resolver.test.ts`
 - Modify: `src/modules/copy/types.ts`
@@ -178,7 +184,10 @@ describe("AttachmentResolver", () => {
   });
 
   it("accepts selected PDF attachment directly", async () => {
-    const resolved = await resolvePDFsFromItems([makePDFAttachmentItem()], "all");
+    const resolved = await resolvePDFsFromItems(
+      [makePDFAttachmentItem()],
+      "all",
+    );
     expect(resolved).to.have.length(1);
   });
 });
@@ -256,6 +265,7 @@ Skill refs: `@test-driven-development`
 ### Task 4: Implement reader-item resolver path
 
 **Files:**
+
 - Modify: `src/modules/copy/attachmentResolver.ts`
 - Create: `test/unit/reader-resolver.test.ts`
 - Test: `test/unit/reader-resolver.test.ts`
@@ -285,7 +295,9 @@ Expected: FAIL with missing export `resolvePDFFromReader`.
 
 ```ts
 // in src/modules/copy/attachmentResolver.ts
-export async function resolvePDFFromReader(itemID: number): Promise<ResolvedPDF[]> {
+export async function resolvePDFFromReader(
+  itemID: number,
+): Promise<ResolvedPDF[]> {
   const item = Zotero.Items.get(itemID);
   if (!item || !item.isAttachment() || !item.isPDFAttachment()) {
     return [];
@@ -313,6 +325,7 @@ Skill refs: `@test-driven-development`
 ### Task 5: Implement ClipboardWriter with fallback chain
 
 **Files:**
+
 - Create: `src/modules/copy/clipboardWriter.ts`
 - Create: `test/unit/clipboard-writer.test.ts`
 - Modify: `src/modules/copy/types.ts`
@@ -327,14 +340,20 @@ import { writeClipboard } from "../../src/modules/copy/clipboardWriter";
 
 describe("ClipboardWriter", () => {
   it("returns file-object when native write succeeds", async () => {
-    const result = await writeClipboard([{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }], true);
+    const result = await writeClipboard(
+      [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
+      true,
+    );
     expect(result.ok).to.equal(true);
     expect(result.format).to.equal("file-object");
   });
 
   it("falls back to path-text when native write fails", async () => {
     forceNativeWriteFailure();
-    const result = await writeClipboard([{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }], true);
+    const result = await writeClipboard(
+      [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
+      true,
+    );
     expect(result.ok).to.equal(true);
     expect(result.format).to.equal("path-text");
   });
@@ -356,7 +375,8 @@ export async function writeClipboard(
   files: ResolvedPDF[],
   allowPathFallback: boolean,
 ): Promise<ClipboardResult> {
-  if (!files.length) return { ok: false, format: "none", count: 0, message: "No files" };
+  if (!files.length)
+    return { ok: false, format: "none", count: 0, message: "No files" };
 
   if (await tryWriteFileObject(files)) {
     return { ok: true, format: "file-object", count: files.length };
@@ -410,6 +430,7 @@ Skill refs: `@test-driven-development`, `@systematic-debugging`
 ### Task 6: Implement command layer for selection and reader copy actions
 
 **Files:**
+
 - Create: `src/modules/copy/copyCommands.ts`
 - Create: `test/unit/copy-commands.test.ts`
 - Modify: `src/hooks.ts`
@@ -420,7 +441,10 @@ Skill refs: `@test-driven-development`, `@systematic-debugging`
 ```ts
 // test/unit/copy-commands.test.ts
 import { expect } from "chai";
-import { copyFromSelection, copyFromReader } from "../../src/modules/copy/copyCommands";
+import {
+  copyFromSelection,
+  copyFromReader,
+} from "../../src/modules/copy/copyCommands";
 
 describe("copy commands", () => {
   it("copies from current Zotero pane selection", async () => {
@@ -444,7 +468,10 @@ Expected: FAIL with missing commands module.
 
 ```ts
 // src/modules/copy/copyCommands.ts
-import { resolvePDFsFromItems, resolvePDFFromReader } from "./attachmentResolver";
+import {
+  resolvePDFsFromItems,
+  resolvePDFFromReader,
+} from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
 import type { ClipboardResult, MultiPDFMode } from "./types";
 
@@ -487,6 +514,7 @@ Skill refs: `@test-driven-development`
 ### Task 7: Implement ReaderHook smart Ctrl+C and fallback shortcut
 
 **Files:**
+
 - Create: `src/modules/copy/readerHook.ts`
 - Create: `test/unit/reader-hook.test.ts`
 - Modify: `src/hooks.ts`
@@ -501,12 +529,18 @@ import { handleReaderCopyShortcut } from "../../src/modules/copy/readerHook";
 
 describe("reader hook", () => {
   it("does not intercept Ctrl+C when selection exists in smart mode", async () => {
-    const intercepted = await handleReaderCopyShortcut(mockEvent(true), "smart");
+    const intercepted = await handleReaderCopyShortcut(
+      mockEvent(true),
+      "smart",
+    );
     expect(intercepted).to.equal(false);
   });
 
   it("intercepts Ctrl+C when selection is empty in smart mode", async () => {
-    const intercepted = await handleReaderCopyShortcut(mockEvent(false), "smart");
+    const intercepted = await handleReaderCopyShortcut(
+      mockEvent(false),
+      "smart",
+    );
     expect(intercepted).to.equal(true);
   });
 });
@@ -529,7 +563,10 @@ export async function handleReaderCopyShortcut(
   event: KeyboardEvent,
   mode: ReaderCtrlCMode,
 ): Promise<boolean> {
-  const isCopy = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "c";
+  const isCopy =
+    (event.ctrlKey || event.metaKey) &&
+    !event.shiftKey &&
+    event.key.toLowerCase() === "c";
   if (!isCopy || mode === "never") return false;
 
   const hasSelection = hasReaderTextSelection(event.view);
@@ -563,6 +600,7 @@ Skill refs: `@test-driven-development`
 ### Task 8: Add preferences UI, localization, and notifications
 
 **Files:**
+
 - Modify: `src/modules/preferenceScript.ts`
 - Modify: `src/utils/prefs.ts`
 - Modify: `addon/content/preferences.xhtml`
@@ -582,7 +620,9 @@ import { formatCopyMessage } from "../../src/modules/copy/notifier";
 describe("notifier", () => {
   it("formats fallback message with count", () => {
     const msg = formatCopyMessage({ ok: true, format: "path-text", count: 2 });
-    expect(msg).to.equal("File clipboard unavailable. Copied 2 file path(s) instead.");
+    expect(msg).to.equal(
+      "File clipboard unavailable. Copied 2 file path(s) instead.",
+    );
   });
 });
 ```
@@ -599,7 +639,8 @@ Expected: FAIL with missing notifier module.
 import type { ClipboardResult } from "./types";
 
 export function formatCopyMessage(result: ClipboardResult): string {
-  if (!result.ok) return "Copy failed. Please check file availability and clipboard support in target app.";
+  if (!result.ok)
+    return "Copy failed. Please check file availability and clipboard support in target app.";
   if (result.format === "path-text") {
     return `File clipboard unavailable. Copied ${result.count} file path(s) instead.`;
   }
@@ -628,6 +669,7 @@ Skill refs: `@verification-before-completion`
 ### Task 9: Final manual verification and release notes
 
 **Files:**
+
 - Create: `docs/testing/2026-03-05-zotclip-v1-manual-checklist.md`
 - Modify: `README.md`
 - Test: `docs/testing/2026-03-05-zotclip-v1-manual-checklist.md`
@@ -680,4 +722,3 @@ Skill refs: `@verification-before-completion`, `@requesting-code-review`
 2. Use dependency injection in tests to avoid hard-coupling to Zotero globals.
 3. Prefer removing unused template code instead of preserving backward-compat branches.
 4. Use English-only comments/messages in new code and docs.
-
