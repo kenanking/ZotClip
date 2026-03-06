@@ -7,7 +7,7 @@ import { getString, initLocale } from "./utils/locale";
 import {
   getAllowPathFallback,
   getAllowedAttachmentTypes,
-  getMultiPDFMode,
+  getMultiAttachmentMode,
   getReaderCtrlCMode,
 } from "./utils/prefs";
 import { createZToolkit } from "./utils/ztoolkit";
@@ -129,7 +129,7 @@ function registerCopyMenuCommands() {
 
 async function executeCopyFromSelection(): Promise<void> {
   const result = await copyFromSelection(
-    getMultiPDFMode(),
+    getMultiAttachmentMode(),
     getAllowedAttachmentTypes(),
     getAllowPathFallback(),
   );

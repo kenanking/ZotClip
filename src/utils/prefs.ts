@@ -38,8 +38,8 @@ export function clearPref(key: string) {
   return Zotero.Prefs.clear(`${PREFS_PREFIX}.${key}`, true);
 }
 
-export function getMultiPDFMode(): MultiAttachmentMode {
-  const value = getPref("multiPdfMode");
+export function getMultiAttachmentMode(): MultiAttachmentMode {
+  const value = getPref("multiAttachmentMode");
   return value === "primary" ? "primary" : "all";
 }
 

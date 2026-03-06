@@ -1,0 +1,155 @@
+.zotclip-pref-root {
+  --zotclip-pref-bg: linear-gradient(180deg, #ffffff 0%, #f4f6f8 100%);
+  --zotclip-pref-border: rgba(15, 23, 42, 0.12);
+  --zotclip-pref-shadow: rgba(15, 23, 42, 0.08);
+  --zotclip-pref-text: #1f2933;
+  --zotclip-pref-muted: #5b6672;
+  --zotclip-pref-accent: #1f8f7a;
+  --zotclip-pref-accent-soft: rgba(31, 143, 122, 0.12);
+  --zotclip-pref-error: #b42318;
+  padding: 18px 20px 12px;
+}
+
+.zotclip-pref-stack {
+  max-width: 720px;
+}
+
+.zotclip-pref-header {
+  margin-bottom: 16px;
+}
+
+.zotclip-pref-title {
+  margin: 0;
+  color: var(--zotclip-pref-text);
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.zotclip-pref-card {
+  margin: 0 0 14px;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--zotclip-pref-border);
+  border-radius: 18px;
+  background: var(--zotclip-pref-bg);
+  box-shadow: 0 10px 28px -18px var(--zotclip-pref-shadow);
+}
+
+.zotclip-pref-card[data-invalid="true"] {
+  border-color: rgba(180, 35, 24, 0.35);
+  box-shadow: 0 12px 26px -18px rgba(180, 35, 24, 0.3);
+}
+
+.zotclip-pref-section-title {
+  margin: 0 0 14px;
+  color: var(--zotclip-pref-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.zotclip-pref-row {
+  align-items: center;
+  gap: 18px;
+}
+
+.zotclip-pref-row + .zotclip-pref-row {
+  margin-top: 12px;
+}
+
+.zotclip-pref-label {
+  min-width: 210px;
+  color: var(--zotclip-pref-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zotclip-pref-label-block {
+  display: block;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.zotclip-pref-menulist {
+  min-width: 320px;
+}
+
+.zotclip-pref-subtitle {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--zotclip-pref-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zotclip-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.zotclip-type-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--zotclip-pref-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--zotclip-pref-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zotclip-type-chip input {
+  accent-color: var(--zotclip-pref-accent);
+}
+
+.zotclip-pref-field {
+  margin-top: 16px;
+}
+
+.zotclip-pref-textinput {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--zotclip-pref-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--zotclip-pref-text);
+  font: inherit;
+}
+
+.zotclip-pref-textinput:focus {
+  outline: none;
+  border-color: var(--zotclip-pref-accent);
+  box-shadow: 0 0 0 4px var(--zotclip-pref-accent-soft);
+}
+
+.zotclip-pref-textinput[data-invalid="true"] {
+  border-color: rgba(180, 35, 24, 0.35);
+}
+
+.zotclip-pref-help {
+  margin: 8px 0 0;
+  color: var(--zotclip-pref-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.zotclip-pref-inline-checkbox {
+  margin-top: 14px;
+}
+
+.zotclip-pref-error {
+  margin: 8px 0 0;
+  color: var(--zotclip-pref-error);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.zotclip-pref-build {
+  margin: 14px 2px 0;
+  color: var(--zotclip-pref-muted);
+  font-size: 12px;
+}

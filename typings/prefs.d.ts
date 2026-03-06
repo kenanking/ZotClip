@@ -7,7 +7,7 @@
 declare namespace _ZoteroTypes {
   interface Prefs {
     PluginPrefsMap: {
-      "multiPdfMode": string;
+      "multiAttachmentMode": string;
       "readerCtrlCMode": string;
       "allowPathFallback": boolean;
       "enabledAttachmentTypes": string;
