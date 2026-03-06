@@ -13,6 +13,7 @@
 ### Task 1: Tighten the custom input height and increase preset spacing
 
 **Files:**
+
 - Modify: `addon/content/preferences.css`
 
 **Step 1: Write the failing test surrogate**
@@ -66,6 +67,7 @@ git commit -m "style: refine settings input spacing"
 ### Task 2: Verify build and formatting
 
 **Files:**
+
 - Verify only
 
 **Step 1: Run the build**

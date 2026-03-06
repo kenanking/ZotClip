@@ -34,7 +34,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px 14px;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 
 .zotclip-pref-type-option {
@@ -46,6 +46,8 @@
 .zotclip-pref-textinput {
   box-sizing: border-box;
   min-width: 24rem;
+  min-height: 28px;
+  padding: 2px 6px;
   width: 100%;
 }
 
