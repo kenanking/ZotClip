@@ -31,6 +31,10 @@ export async function handleReaderCopyShortcut(
   mode: ReaderCtrlCMode,
   deps: Partial<ReaderHookDeps> = {},
 ): Promise<boolean> {
+  if (event.defaultPrevented) {
+    return false;
+  }
+
   const finalDeps: ReaderHookDeps = {
     ...DEFAULT_DEPS,
     ...deps,

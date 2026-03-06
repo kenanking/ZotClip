@@ -1,7 +1,9 @@
 import type { ClipboardResult, ResolvedPDF } from "./types";
+import { writeWindowsFileDrop } from "./windowsFileClipboard";
 
 export interface ClipboardWriterDeps {
   isWindows?(): boolean;
+  writeWindowsFileDrop?(paths: string[]): Promise<boolean>;
   writeFileObject(paths: string[]): Promise<boolean>;
   writeURIList(paths: string[]): Promise<boolean>;
   writePathText(paths: string[]): boolean;
@@ -9,13 +11,14 @@ export interface ClipboardWriterDeps {
 
 const DEFAULT_DEPS: ClipboardWriterDeps = {
   isWindows: () => Zotero.isWin,
+  writeWindowsFileDrop: async (paths) => writeWindowsFileDrop(paths),
   writeFileObject: async (paths) => {
     if (!paths.length) {
       return false;
     }
 
     // ztoolkit ClipboardHelper stores only one x-moz-file payload.
-    // For multi-file copy we fall through to URI list fallback.
+    // Multi-file callers must try another clipboard format.
     if (paths.length > 1) {
       return false;
     }
@@ -95,9 +98,15 @@ export async function writeClipboard(
     };
   }
 
-  // Zotero does not expose a reliable Windows file clipboard write here,
-  // so prefer deterministic path fallback over a silent no-op.
   if (deps.isWindows?.()) {
+    if (await deps.writeWindowsFileDrop?.(paths)) {
+      return {
+        ok: true,
+        format: "file-object",
+        count: paths.length,
+      };
+    }
+
     if (allowPathFallback && deps.writePathText(paths)) {
       return {
         ok: true,
@@ -111,8 +120,7 @@ export async function writeClipboard(
       ok: false,
       format: "none",
       count: paths.length,
-      message:
-        "Windows file clipboard is unavailable in Zotero; enable path fallback to copy file paths instead.",
+      message: "Clipboard write failed.",
     };
   }
 

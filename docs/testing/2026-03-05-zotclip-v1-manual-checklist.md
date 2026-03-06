@@ -11,15 +11,19 @@
 - [ ] Select one PDF attachment item in library view.
 - [ ] Press `Ctrl+C`.
 - [ ] Confirm the success notification appears.
-- [ ] Paste into a text field and confirm the absolute file path is copied.
+- [ ] Paste into Explorer or another file-aware target and confirm the file is
+      pasted as a file object.
 - [ ] Trigger `Copy PDF File(s)` from the item context menu.
-- [ ] Paste into a text field and confirm the absolute file path is copied.
+- [ ] Paste into Explorer or another file-aware target and confirm the file is
+      pasted as a file object.
 
 ## Multi-PDF Strategy
 
 - [ ] Set `Multi-PDF Strategy` to `Copy all PDF attachments`.
 - [ ] Select a parent item with multiple PDF attachments.
 - [ ] Trigger copy and confirm multiple files are copied.
+- [ ] Paste into Explorer or another file-aware target and confirm all files
+      appear as pasted files, not as text.
 - [ ] Switch to `Copy only the primary PDF attachment`.
 - [ ] Trigger copy again and confirm only one file is copied.
 
@@ -27,8 +31,9 @@
 
 - [ ] Open a PDF in Zotero reader.
 - [ ] Select some text and press `Ctrl+C`; confirm text copy behavior is unchanged.
-- [ ] Clear text selection and press `Ctrl+C`; confirm current PDF file path is copied.
-- [ ] Press `Ctrl+Shift+C`; confirm current PDF file path is copied as fallback.
+- [ ] Clear text selection and press `Ctrl+C`; confirm the current PDF is copied
+      as a file object.
+- [ ] Press `Ctrl+Shift+C`; confirm the current PDF is copied as a file object.
 
 ## Clipboard Fallback
 

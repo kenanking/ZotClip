@@ -13,20 +13,24 @@ ZotClip is a Zotero 8 plugin that copies PDF attachments to the clipboard.
   - copy all PDF attachments
   - copy only the primary PDF attachment
 - Clipboard behavior:
-  - Windows: copies absolute file path text
-  - other platforms: tries file object, then URI list, then path text
+  - Windows: writes native `CF_HDROP` file clipboard data for single and
+    multiple files
+  - non-Windows: tries file object first, then URI list
+  - all platforms: fall back to absolute file path text only when file clipboard
+    write fails and fallback is enabled
 
 ## Requirements
 
 - Zotero 8
-- Windows is the primary target platform for v1 path-copy workflow
+- Windows support depends on whether the target app accepts standard Windows
+  file paste; path-text fallback remains available when it does not
 
 ## Usage
 
 ### Library
 
 1. Select one or more items/attachments in library view.
-2. Press `Ctrl+C` to copy absolute file path text on Windows.
+2. Press `Ctrl+C` to copy the resolved PDF file to the clipboard.
 3. Or open item context menu and click `Copy PDF File(s)`.
 
 ### Reader
@@ -34,8 +38,8 @@ ZotClip is a Zotero 8 plugin that copies PDF attachments to the clipboard.
 1. Open a PDF in reader.
 2. Press `Ctrl+C`:
    - with text selection: native text copy
-   - without text selection: copy current PDF file path text on Windows
-3. Press `Ctrl+Shift+C` to force copy of current reader PDF file path text on Windows.
+   - without text selection: copy current PDF file to the clipboard
+3. Press `Ctrl+Shift+C` to force copy of the current reader PDF file.
 
 ### Preferences
 
@@ -47,10 +51,10 @@ Open `Edit -> Preferences -> ZotClip` and configure:
 
 ## Windows Note
 
-Zotero does not currently expose a reliable native Windows file clipboard API
-for plugins. ZotClip therefore uses absolute path text on Windows so copy
-actions remain deterministic instead of reporting a successful copy that
-external apps cannot paste.
+Windows targets expect native file clipboard data rather than `text/uri-list`
+when pasting real files. ZotClip now writes `CF_HDROP` directly on Windows so
+multi-file copy can paste as actual files into Explorer and other file-aware
+targets, with path-text only as fallback.
 
 ## Development
 

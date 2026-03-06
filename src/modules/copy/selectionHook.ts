@@ -28,6 +28,10 @@ export async function handleSelectionCopyShortcut(
   event: KeyboardEvent,
   deps: Partial<SelectionHookDeps> = {},
 ): Promise<boolean> {
+  if (event.defaultPrevented) {
+    return false;
+  }
+
   const finalDeps: SelectionHookDeps = {
     ...DEFAULT_DEPS,
     ...deps,
