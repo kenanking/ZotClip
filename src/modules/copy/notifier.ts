@@ -1,3 +1,4 @@
+import { config } from "../../../package.json";
 import type { ClipboardResult } from "./types";
 
 export function formatCopyMessage(result: ClipboardResult): string {
@@ -25,14 +26,19 @@ export function getCopyResultNotificationType(
   return "fail";
 }
 
+function getCopyResultNotificationIcon(_result: ClipboardResult): string {
+  return `chrome://${config.addonRef}/content/icons/favicon.svg`;
+}
+
 export function notifyCopyResult(result: ClipboardResult): void {
   const message = formatCopyMessage(result);
+  const icon = getCopyResultNotificationIcon(result);
   new ztoolkit.ProgressWindow(addon.data.config.addonName, {
     closeTime: 5000,
   })
     .createLine({
       text: message,
-      type: getCopyResultNotificationType(result),
+      icon,
       progress: 100,
     })
     .show();

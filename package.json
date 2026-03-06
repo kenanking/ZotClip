@@ -2,7 +2,7 @@
   "name": "zotclip",
   "type": "module",
   "version": "0.0.1",
-  "description": "Copy Zotero PDF attachments to clipboard with fallback strategies.",
+  "description": "Copy Zotero attachments to clipboard.",
   "config": {
     "addonName": "ZotClip",
     "addonID": "zotclip@cvrsg.dev",

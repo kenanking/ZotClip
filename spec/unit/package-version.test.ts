@@ -6,3 +6,7 @@ import pkg from "../../package.json";
 test("package version is the in-development baseline", () => {
   assert.equal(pkg.version, "0.0.1");
 });
+
+test("package description matches current attachment-focused scope", () => {
+  assert.equal(pkg.description, "Copy Zotero attachments to clipboard.");
+});

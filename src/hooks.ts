@@ -10,9 +10,11 @@ import {
   getReaderCtrlCMode,
 } from "./utils/prefs";
 import { createZToolkit } from "./utils/ztoolkit";
+import { config } from "../package.json";
 
 const readerHookDisposers = new WeakMap<Window, () => void>();
 const selectionHookDisposers = new WeakMap<Window, () => void>();
+const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
 
 async function onStartup() {
   await Promise.all([
@@ -26,7 +28,7 @@ async function onStartup() {
     pluginID: addon.data.config.addonID,
     src: `${rootURI}content/preferences.xhtml`,
     label: getString("prefs-title"),
-    image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.png`,
+    image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.svg`,
   });
 
   await Promise.all(
@@ -111,6 +113,7 @@ function registerCopyMenuCommands() {
     tag: "menuitem",
     id: `zotero-itemmenu-${addon.data.config.addonRef}-copy-selected`,
     label: getString("menu-copy-selected"),
+    icon: menuIcon,
     commandListener: () => {
       void executeCopyFromSelection();
     },
@@ -120,6 +123,7 @@ function registerCopyMenuCommands() {
     tag: "menuitem",
     id: `zotero-toolsmenu-${addon.data.config.addonRef}-copy-reader`,
     label: getString("menu-copy-reader"),
+    icon: menuIcon,
     commandListener: () => {
       void executeCopyFromReader();
     },
