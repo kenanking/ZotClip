@@ -13,6 +13,7 @@
 ### Task 1: Normalize field-label and dropdown font weight
 
 **Files:**
+
 - Modify: `addon/content/preferences.css`
 
 **Step 1: Write the failing test surrogate**
@@ -65,6 +66,7 @@ git commit -m "style: refine settings typography hierarchy"
 ### Task 2: Verify build and formatting
 
 **Files:**
+
 - Verify only
 
 **Step 1: Run the build**

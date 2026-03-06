@@ -23,11 +23,12 @@
 .zotclip-pref-field-label {
   display: block;
   margin: 0 0 6px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .zotclip-pref-menulist {
   min-width: 18rem;
+  font-weight: 400;
 }
 
 .zotclip-pref-type-grid {
