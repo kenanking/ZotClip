@@ -17,6 +17,5 @@ pref-reader-ctrl-c-mode = Reader Ctrl+C Behavior
 pref-reader-ctrl-c-mode-smart.label = Smart (copy text when selected)
 pref-reader-ctrl-c-mode-never.label = Never intercept Ctrl+C
 pref-reader-ctrl-c-mode-always.label = Always copy current attachment file
-pref-allow-path-fallback = Allow path-text fallback when file clipboard fails
-pref-compatibility-note = File paste support depends on the destination app.
+pref-compatibility-note = File paste support depends on the destination app; file-copy failures fall back to attachment paths automatically.
 pref-help = { $name } Build { $version } { $time }

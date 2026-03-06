@@ -5,7 +5,6 @@ import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import {
-  getAllowPathFallback,
   getAllowedAttachmentTypes,
   getMultiAttachmentMode,
   getReaderCtrlCMode,
@@ -131,16 +130,12 @@ async function executeCopyFromSelection(): Promise<void> {
   const result = await copyFromSelection(
     getMultiAttachmentMode(),
     getAllowedAttachmentTypes(),
-    getAllowPathFallback(),
   );
   notifyCopyResult(result);
 }
 
 async function executeCopyFromReader(): Promise<void> {
-  const result = await copyFromReader(
-    getAllowedAttachmentTypes(),
-    getAllowPathFallback(),
-  );
+  const result = await copyFromReader(getAllowedAttachmentTypes());
   notifyCopyResult(result);
 }
 

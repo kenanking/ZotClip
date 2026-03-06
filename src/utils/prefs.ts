@@ -51,10 +51,6 @@ export function getReaderCtrlCMode(): ReaderCtrlCMode {
   return "smart";
 }
 
-export function getAllowPathFallback(): boolean {
-  return getPref("allowPathFallback") !== false;
-}
-
 export function getEnabledAttachmentTypes(): string[] {
   return normalizeExtensionList(getPref("enabledAttachmentTypes") || "");
 }

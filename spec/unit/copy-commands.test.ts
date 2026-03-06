@@ -18,8 +18,9 @@ test("copyFromSelection copies from current pane selection", async () => {
   let selectedCalled = false;
   let resolverAllowedTypes: string[] = [];
   let writerCalled = false;
+  let fallbackEnabled = false;
 
-  const result = await copyFromSelection("all", ["pdf", "epub"], true, {
+  const result = await copyFromSelection("all", ["pdf", "epub"], {
     getSelectedItems: () => {
       selectedCalled = true;
       return [{ id: 1 } as Zotero.Item];
@@ -30,8 +31,9 @@ test("copyFromSelection copies from current pane selection", async () => {
       return sampleFiles;
     },
     resolveFromReader: async () => [],
-    writeClipboard: async () => {
+    writeClipboard: async (_files, allowPathFallback) => {
       writerCalled = true;
+      fallbackEnabled = allowPathFallback;
       return {
         ok: true,
         format: "file-object",
@@ -43,13 +45,15 @@ test("copyFromSelection copies from current pane selection", async () => {
   assert.equal(selectedCalled, true);
   assert.deepEqual(resolverAllowedTypes, ["pdf", "epub"]);
   assert.equal(writerCalled, true);
+  assert.equal(fallbackEnabled, true);
   assert.equal(result.ok, true);
 });
 
 test("copyFromReader copies from current reader item", async () => {
   let resolverAllowedTypes: string[] = [];
+  let fallbackEnabled = false;
 
-  const result = await copyFromReader(["pdf"], true, {
+  const result = await copyFromReader(["pdf"], {
     getSelectedItems: () => [],
     getCurrentReaderItemID: () => 1001,
     resolveFromItems: async () => [],
@@ -59,13 +63,17 @@ test("copyFromReader copies from current reader item", async () => {
       }
       return sampleFiles;
     },
-    writeClipboard: async () => ({
-      ok: true,
-      format: "file-object",
-      count: 1,
-    }),
+    writeClipboard: async (_files, allowPathFallback) => {
+      fallbackEnabled = allowPathFallback;
+      return {
+        ok: true,
+        format: "file-object",
+        count: 1,
+      };
+    },
   });
 
   assert.deepEqual(resolverAllowedTypes, ["pdf"]);
+  assert.equal(fallbackEnabled, true);
   assert.equal(result.ok, true);
 });

@@ -54,17 +54,15 @@ const DEFAULT_DEPS: CopyCommandDeps = {
 export async function copyFromSelection(
   mode: MultiAttachmentMode = "all",
   allowedTypes: string[],
-  allowPathFallback = true,
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
   const selectedItems = deps.getSelectedItems();
   const files = await deps.resolveFromItems(selectedItems, mode, allowedTypes);
-  return deps.writeClipboard(files, allowPathFallback);
+  return deps.writeClipboard(files, true);
 }
 
 export async function copyFromReader(
   allowedTypes: string[],
-  allowPathFallback = true,
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
   const readerItemID = deps.getCurrentReaderItemID();
@@ -78,5 +76,5 @@ export async function copyFromReader(
   }
 
   const files = await deps.resolveFromReader(readerItemID, allowedTypes);
-  return deps.writeClipboard(files, allowPathFallback);
+  return deps.writeClipboard(files, true);
 }

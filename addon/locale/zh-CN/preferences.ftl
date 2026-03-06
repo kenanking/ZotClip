@@ -17,6 +17,5 @@ pref-reader-ctrl-c-mode = 阅读器 Ctrl+C 行为
 pref-reader-ctrl-c-mode-smart.label = 智能（选中文本时复制文本）
 pref-reader-ctrl-c-mode-never.label = 从不拦截 Ctrl+C
 pref-reader-ctrl-c-mode-always.label = 始终复制当前附件文件
-pref-allow-path-fallback = 文件剪贴板失败时允许回退为路径文本
-pref-compatibility-note = 文件粘贴是否可用取决于目标应用。
+pref-compatibility-note = 文件粘贴是否可用取决于目标应用；复制文件失败时会自动回退为路径文本。
 pref-help = { $name } 构建 { $version } { $time }
