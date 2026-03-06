@@ -13,6 +13,7 @@
 ### Task 1: Fix dropdown labels and tidy settings layout
 
 **Files:**
+
 - Modify: `addon/content/preferences.xhtml`
 - Create: `addon/content/preferences.css`
 - Modify: `addon/locale/zh-CN/preferences.ftl`
@@ -47,7 +48,7 @@ Expected: FAIL because the current page has no lightweight layout classes or sty
   id="zotero-prefpane-__addonRef__-multi-attachment-mode"
   class="zotclip-pref-menulist"
   preference="multiAttachmentMode"
->
+></menulist>
 ```
 
 ```ftl
@@ -79,6 +80,7 @@ git commit -m "fix: restore dropdown labels in settings"
 ### Task 2: Remove the path-fallback preference from the UI and runtime config
 
 **Files:**
+
 - Modify: `addon/content/preferences.xhtml`
 - Modify: `addon/locale/zh-CN/preferences.ftl`
 - Modify: `addon/locale/en-US/preferences.ftl`
@@ -137,6 +139,7 @@ git commit -m "refactor: remove path fallback preference"
 ### Task 3: Distinguish fallback-used results in clipboard and notifier flows
 
 **Files:**
+
 - Modify: `src/modules/copy/types.ts`
 - Modify: `src/modules/copy/clipboardWriter.ts`
 - Modify: `src/modules/copy/notifier.ts`
@@ -209,6 +212,7 @@ git commit -m "fix: surface clipboard fallback as failure"
 ### Task 4: Re-run focused preference-script coverage
 
 **Files:**
+
 - Modify: `src/modules/preferenceScript.ts`
 - Modify: `spec/unit/preference-script.test.ts`
 
@@ -256,6 +260,7 @@ git commit -m "test: keep preference script coverage aligned"
 ### Task 5: Full verification
 
 **Files:**
+
 - Verify only
 
 **Step 1: Run the unit suite**

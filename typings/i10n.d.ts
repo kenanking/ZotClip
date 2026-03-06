@@ -9,7 +9,6 @@ export type FluentMessageId =
   | 'menu-copy-reader-shortcut'
   | 'menu-copy-selected'
   | 'notify-copy-failed'
-  | 'pref-allow-path-fallback'
   | 'pref-compatibility-note'
   | 'pref-custom-types'
   | 'pref-custom-types-help'

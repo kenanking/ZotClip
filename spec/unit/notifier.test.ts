@@ -52,8 +52,5 @@ test("notifier prefers explicit failure message when provided", () => {
     message: "Windows file clipboard is unavailable in Zotero.",
   });
 
-  assert.equal(
-    message,
-    "Windows file clipboard is unavailable in Zotero.",
-  );
+  assert.equal(message, "Windows file clipboard is unavailable in Zotero.");
 });

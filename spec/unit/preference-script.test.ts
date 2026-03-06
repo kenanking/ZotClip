@@ -25,6 +25,7 @@ test("preference script syncs menulist visible value from stored prefs", () => {
 
   assert.equal(syncedValue, "primary");
   assert.equal(menulist.value, "primary");
+  assert.equal(menulist.selectedItem?.value, "primary");
 });
 
 test("preference script falls back to the first menu item for invalid values", () => {
@@ -34,6 +35,7 @@ test("preference script falls back to the first menu item for invalid values", (
 
   assert.equal(syncedValue, "smart");
   assert.equal(menulist.value, "smart");
+  assert.equal(menulist.selectedItem?.value, "smart");
 });
 
 function createFakeMenulist(values: string[]) {
@@ -41,6 +43,7 @@ function createFakeMenulist(values: string[]) {
 
   return {
     value: "",
+    selectedItem: null,
     querySelectorAll(selector: string) {
       if (selector === "menuitem") {
         return items;

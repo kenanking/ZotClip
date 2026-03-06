@@ -23,7 +23,7 @@ const DEFAULT_DEPS: ReaderHookDeps = {
     return !!selection && selection.toString().trim().length > 0;
   },
   triggerCopyFromReader: async () => {
-    await copyFromReader(getAllowedAttachmentTypes(), true);
+    await copyFromReader(getAllowedAttachmentTypes());
   },
 };
 

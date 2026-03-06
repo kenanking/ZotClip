@@ -12,8 +12,8 @@ const enUs = readFileSync(
 );
 
 test("dropdown localization defines menuitem labels via Fluent attributes", () => {
-  assert.match(zhCn, /pref-multi-attachment-mode-all\.label =/);
-  assert.match(zhCn, /pref-reader-ctrl-c-mode-smart\.label =/);
-  assert.match(enUs, /pref-multi-attachment-mode-all\.label =/);
-  assert.match(enUs, /pref-reader-ctrl-c-mode-smart\.label =/);
+  assert.match(zhCn, /pref-multi-attachment-mode-all =\s+\.label =/);
+  assert.match(zhCn, /pref-reader-ctrl-c-mode-smart =\s+\.label =/);
+  assert.match(enUs, /pref-multi-attachment-mode-all =\s+\.label =/);
+  assert.match(enUs, /pref-reader-ctrl-c-mode-smart =\s+\.label =/);
 });

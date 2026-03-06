@@ -52,11 +52,14 @@ export function syncMenulistValue(
   menulist: MenulistLike,
   preferredValue: string,
 ): string {
-  const itemValues = getMenulistItemValues(menulist);
-  const nextValue = itemValues.includes(preferredValue)
-    ? preferredValue
-    : itemValues[0] || preferredValue;
+  const items = Array.from(menulist.querySelectorAll("menuitem"));
+  const nextItem =
+    items.find((item) => getMenuitemValue(item) === preferredValue) ||
+    items[0] ||
+    null;
+  const nextValue = getMenuitemValue(nextItem) || preferredValue;
   menulist.value = nextValue;
+  menulist.selectedItem = nextItem;
   return nextValue;
 }
 
@@ -208,12 +211,6 @@ function getSelectedPresetTypes(checkboxes: HTMLInputElement[]): string[] {
 
 function getCheckboxType(checkbox: HTMLInputElement): string {
   return checkbox.dataset.zotclipAttachmentType || "";
-}
-
-function getMenulistItemValues(menulist: MenulistLike): string[] {
-  return Array.from(menulist.querySelectorAll("menuitem"))
-    .map((item) => getMenuitemValue(item))
-    .filter((value) => value.length > 0);
 }
 
 function getMenulistCurrentValue(menulist: MenulistLike): string {

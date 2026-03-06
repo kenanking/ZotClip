@@ -21,7 +21,7 @@ const DEFAULT_DEPS: SelectionHookDeps = {
   },
   isEditableTarget: (event) => isEditableNode(event.target),
   triggerCopyFromSelection: async () => {
-    await copyFromSelection("all", getAllowedAttachmentTypes(), true);
+    await copyFromSelection("all", getAllowedAttachmentTypes());
   },
 };
 
