@@ -112,6 +112,7 @@ export async function writeClipboard(
         ok: true,
         format: "path-text",
         count: paths.length,
+        fallbackUsed: true,
         message: "File clipboard unavailable. Copied file path text instead.",
       };
     }
@@ -145,6 +146,7 @@ export async function writeClipboard(
       ok: true,
       format: "path-text",
       count: paths.length,
+      fallbackUsed: true,
       message: "File clipboard unavailable. Copied file path text instead.",
     };
   }

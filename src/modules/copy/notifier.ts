@@ -9,11 +9,20 @@ export function formatCopyMessage(result: ClipboardResult): string {
     return "Copy failed. Please check file availability and clipboard support in target app.";
   }
 
-  if (result.format === "path-text") {
-    return `File clipboard unavailable. Copied ${result.count} attachment path(s) instead.`;
+  if (result.fallbackUsed && result.format === "path-text") {
+    return `Attachment file copy failed. Copied ${result.count} attachment path(s) instead.`;
   }
 
   return `Copied ${result.count} attachment file(s) to clipboard (${result.format}).`;
+}
+
+export function getCopyResultNotificationType(
+  result: ClipboardResult,
+): "success" | "fail" {
+  if (result.ok && !result.fallbackUsed) {
+    return "success";
+  }
+  return "fail";
 }
 
 export function notifyCopyResult(result: ClipboardResult): void {
@@ -23,7 +32,7 @@ export function notifyCopyResult(result: ClipboardResult): void {
   })
     .createLine({
       text: message,
-      type: result.ok ? "success" : "fail",
+      type: getCopyResultNotificationType(result),
       progress: 100,
     })
     .show();

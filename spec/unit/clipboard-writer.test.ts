@@ -79,6 +79,7 @@ test("ClipboardWriter falls back to path-text when native write fails", async ()
   assert.equal(fallbackCalled, true);
   assert.equal(result.ok, true);
   assert.equal(result.format, "path-text");
+  assert.equal(result.fallbackUsed, true);
   assert.equal(result.count, 1);
 });
 
@@ -121,5 +122,6 @@ test("ClipboardWriter falls back to path-text when native Windows clipboard writ
   assert.equal(fallbackCalled, true);
   assert.equal(result.ok, true);
   assert.equal(result.format, "path-text");
+  assert.equal(result.fallbackUsed, true);
   assert.equal(result.count, 2);
 });

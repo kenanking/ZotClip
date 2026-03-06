@@ -30,5 +30,6 @@ export interface ClipboardResult {
   ok: boolean;
   format: ClipboardFormat;
   count: number;
+  fallbackUsed?: boolean;
   message?: string;
 }
