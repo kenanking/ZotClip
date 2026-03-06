@@ -4,36 +4,46 @@
 
 - Zotero 8 installed
 - Windows target system
-- At least one regular item with multiple PDF attachments
+- At least one regular item with mixed attachment types (`PDF`, `EPUB`, `TXT`)
 
 ## Library Copy Flow
 
-- [ ] Select one PDF attachment item in library view.
+- [ ] Select one allowed attachment item in library view.
 - [ ] Press `Ctrl+C`.
 - [ ] Confirm the success notification appears.
 - [ ] Paste into Explorer or another file-aware target and confirm the file is
       pasted as a file object.
-- [ ] Trigger `Copy PDF File(s)` from the item context menu.
+- [ ] Trigger `Copy Attachment File(s)` from the item context menu.
 - [ ] Paste into Explorer or another file-aware target and confirm the file is
       pasted as a file object.
 
-## Multi-PDF Strategy
+## Allowed Attachment Types
 
-- [ ] Set `Multi-PDF Strategy` to `Copy all PDF attachments`.
-- [ ] Select a parent item with multiple PDF attachments.
-- [ ] Trigger copy and confirm multiple files are copied.
+- [ ] Open `Edit -> Preferences -> ZotClip`.
+- [ ] Confirm `PDF`, `EPUB`, `MOBI`, and `TXT` preset type checkboxes are shown.
+- [ ] Disable `EPUB` and confirm an EPUB attachment is no longer copied.
+- [ ] Re-enable `EPUB` and confirm it is copied again.
+- [ ] Enter a custom extension such as `djvu` and confirm the value is normalized.
+- [ ] Clear all preset and custom types and confirm the pane shows a validation error.
+
+## Multi-Attachment Strategy
+
+- [ ] Set `Multi-Attachment Strategy` to `Copy all allowed attachments`.
+- [ ] Select a parent item with multiple allowed attachments.
+- [ ] Trigger copy and confirm multiple allowed files are copied.
 - [ ] Paste into Explorer or another file-aware target and confirm all files
       appear as pasted files, not as text.
-- [ ] Switch to `Copy only the primary PDF attachment`.
+- [ ] Switch to `Copy only the primary allowed attachment`.
 - [ ] Trigger copy again and confirm only one file is copied.
 
 ## Reader Copy Flow
 
-- [ ] Open a PDF in Zotero reader.
+- [ ] Open an allowed attachment in Zotero reader.
 - [ ] Select some text and press `Ctrl+C`; confirm text copy behavior is unchanged.
-- [ ] Clear text selection and press `Ctrl+C`; confirm the current PDF is copied
-      as a file object.
-- [ ] Press `Ctrl+Shift+C`; confirm the current PDF is copied as a file object.
+- [ ] Clear text selection and press `Ctrl+C`; confirm the current attachment is
+      copied as a file object.
+- [ ] Press `Ctrl+Shift+C`; confirm the current attachment is copied as a file object.
+- [ ] Disable the current attachment type in preferences and confirm reader copy fails.
 
 ## Clipboard Fallback
 

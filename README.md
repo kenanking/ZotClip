@@ -1,17 +1,21 @@
 # ZotClip
 
-ZotClip is a Zotero 8 plugin that copies PDF attachments to the clipboard.
+ZotClip is a Zotero 8 plugin that copies allowed attachment files to the
+clipboard.
 
 ## Features
 
-- Copy PDF files from selected items or attachments in library view
+- Copy allowed attachment files from selected items or attachments in library
+  view
+- Configure allowed attachment types with built-in presets (`PDF`, `EPUB`,
+  `MOBI`, `TXT`) plus custom extensions
 - Reader `Ctrl+C` smart behavior:
   - keep native text copy when text is selected
-  - copy current reader PDF file when no text is selected
+  - copy the current reader attachment file when no text is selected
 - Fallback shortcut in reader: `Ctrl+Shift+C`
-- Multi-PDF strategy options:
-  - copy all PDF attachments
-  - copy only the primary PDF attachment
+- Multi-attachment strategy options:
+  - copy all allowed attachments
+  - copy only the primary allowed attachment
 - Clipboard behavior:
   - Windows: writes native `CF_HDROP` file clipboard data for single and
     multiple files
@@ -30,22 +34,24 @@ ZotClip is a Zotero 8 plugin that copies PDF attachments to the clipboard.
 ### Library
 
 1. Select one or more items/attachments in library view.
-2. Press `Ctrl+C` to copy the resolved PDF file to the clipboard.
-3. Or open item context menu and click `Copy PDF File(s)`.
+2. Press `Ctrl+C` to copy the resolved allowed attachment file(s) to the
+   clipboard.
+3. Or open item context menu and click `Copy Attachment File(s)`.
 
 ### Reader
 
-1. Open a PDF in reader.
+1. Open an allowed attachment in reader.
 2. Press `Ctrl+C`:
    - with text selection: native text copy
-   - without text selection: copy current PDF file to the clipboard
-3. Press `Ctrl+Shift+C` to force copy of the current reader PDF file.
+   - without text selection: copy the current attachment file to the clipboard
+3. Press `Ctrl+Shift+C` to force copy of the current reader attachment file.
 
 ### Preferences
 
 Open `Edit -> Preferences -> ZotClip` and configure:
 
-- `Multi-PDF Strategy` (`all` or `primary`)
+- `Multi-Attachment Strategy` (`all` or `primary`)
+- `Allowed Attachment Types` (preset checkboxes plus custom extensions)
 - `Reader Ctrl+C Behavior` (`smart`, `never`, `always`)
 - `Allow path-text fallback`
 

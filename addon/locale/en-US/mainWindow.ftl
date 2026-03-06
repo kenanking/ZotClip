@@ -1,2 +1,2 @@
-mainwindow-copy-selected = Copy PDF File(s)
-mainwindow-copy-reader = Copy Current Reader PDF
+mainwindow-copy-selected = Copy Attachment File(s)
+mainwindow-copy-reader = Copy Current Reader Attachment

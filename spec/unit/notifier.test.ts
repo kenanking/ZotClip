@@ -12,7 +12,20 @@ test("notifier formats fallback message with count", () => {
 
   assert.equal(
     message,
-    "File clipboard unavailable. Copied 2 file path(s) instead.",
+    "File clipboard unavailable. Copied 2 attachment path(s) instead.",
+  );
+});
+
+test("notifier formats success message with attachment wording", () => {
+  const message = formatCopyMessage({
+    ok: true,
+    format: "file-object",
+    count: 2,
+  });
+
+  assert.equal(
+    message,
+    "Copied 2 attachment file(s) to clipboard (file-object).",
   );
 });
 

@@ -10,10 +10,10 @@ export function formatCopyMessage(result: ClipboardResult): string {
   }
 
   if (result.format === "path-text") {
-    return `File clipboard unavailable. Copied ${result.count} file path(s) instead.`;
+    return `File clipboard unavailable. Copied ${result.count} attachment path(s) instead.`;
   }
 
-  return `Copied ${result.count} PDF file(s) to clipboard (${result.format}).`;
+  return `Copied ${result.count} attachment file(s) to clipboard (${result.format}).`;
 }
 
 export function notifyCopyResult(result: ClipboardResult): void {
