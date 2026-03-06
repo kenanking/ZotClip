@@ -9,6 +9,8 @@ const markup = readFileSync(
 
 test("preferences markup uses native layout without custom stylesheet", () => {
   assert.match(markup, /<groupbox/);
-  assert.doesNotMatch(markup, /preferences\.css/);
   assert.doesNotMatch(markup, /zotclip-pref-card/);
+  assert.match(markup, /class="zotclip-pref-menulist"/);
+  assert.match(markup, /class="zotclip-pref-field-label"/);
+  assert.match(markup, /chrome:\/\/__addonRef__\/content\/preferences\.css/);
 });

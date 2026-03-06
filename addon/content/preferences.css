@@ -1,0 +1,64 @@
+.zotclip-pref-group {
+  padding: 8px 0 0;
+}
+
+.zotclip-pref-section {
+  margin-top: 12px;
+}
+
+.zotclip-pref-row {
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.zotclip-pref-row + .zotclip-pref-row {
+  margin-top: 10px;
+}
+
+.zotclip-pref-field {
+  margin-top: 10px;
+}
+
+.zotclip-pref-field-label {
+  display: block;
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.zotclip-pref-menulist {
+  min-width: 18rem;
+}
+
+.zotclip-pref-type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 6px;
+}
+
+.zotclip-pref-type-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zotclip-pref-textinput {
+  box-sizing: border-box;
+  min-width: 24rem;
+  width: 100%;
+}
+
+.zotclip-pref-help {
+  margin-top: 4px;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}
+
+.zotclip-pref-validation {
+  margin-top: 4px;
+  color: #b00020;
+}
+
+.zotclip-pref-build {
+  margin-top: 10px;
+}
