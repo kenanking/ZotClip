@@ -8,10 +8,11 @@ import {
 } from "../../src/modules/copy/attachmentTypes";
 
 test("attachment types normalize custom extension input", () => {
-  assert.deepEqual(
-    normalizeExtensionList(" PDF, .epub, , MOBI ,pdf "),
-    ["pdf", "epub", "mobi"],
-  );
+  assert.deepEqual(normalizeExtensionList(" PDF, .epub, , MOBI ,pdf "), [
+    "pdf",
+    "epub",
+    "mobi",
+  ]);
 });
 
 test("attachment types extract lowercase extension from path", () => {

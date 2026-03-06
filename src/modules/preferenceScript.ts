@@ -1,4 +1,7 @@
-import { ATTACHMENT_TYPE_PRESETS, normalizeExtensionList } from "./copy/attachmentTypes";
+import {
+  ATTACHMENT_TYPE_PRESETS,
+  normalizeExtensionList,
+} from "./copy/attachmentTypes";
 import {
   getCustomAttachmentTypes,
   getEnabledAttachmentTypes,
@@ -81,10 +84,15 @@ function getAttachmentTypeControls(
     "[data-zotclip-type-validation]",
   );
   const presetCheckboxes = Array.from(
-    doc.querySelectorAll<HTMLInputElement>("[data-zotclip-attachment-type]"),
-  );
+    doc.querySelectorAll("[data-zotclip-attachment-type]"),
+  ) as HTMLInputElement[];
 
-  if (!panel || !customInput || !validationMessage || !presetCheckboxes.length) {
+  if (
+    !panel ||
+    !customInput ||
+    !validationMessage ||
+    !presetCheckboxes.length
+  ) {
     return undefined;
   }
 
@@ -98,7 +106,9 @@ function getAttachmentTypeControls(
 
 function persistAttachmentTypePrefs(controls: AttachmentTypeControls): void {
   const selectedPresetTypes = getSelectedPresetTypes(controls.presetCheckboxes);
-  const normalizedCustomTypes = normalizeExtensionList(controls.customInput.value);
+  const normalizedCustomTypes = normalizeExtensionList(
+    controls.customInput.value,
+  );
   controls.customInput.value = normalizedCustomTypes.join(", ");
 
   const isValid = validateAttachmentTypeSelection(

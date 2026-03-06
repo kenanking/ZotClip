@@ -13,6 +13,7 @@
 ### Task 1: Add attachment-type normalization helpers
 
 **Files:**
+
 - Create: `src/modules/copy/attachmentTypes.ts`
 - Create: `spec/unit/attachment-types.test.ts`
 - Modify: `src/modules/copy/types.ts`
@@ -31,10 +32,11 @@ import {
 } from "../../src/modules/copy/attachmentTypes";
 
 test("attachment types normalize custom extension input", () => {
-  assert.deepEqual(
-    normalizeExtensionList(" PDF, .epub, , MOBI ,pdf "),
-    ["pdf", "epub", "mobi"],
-  );
+  assert.deepEqual(normalizeExtensionList(" PDF, .epub, , MOBI ,pdf "), [
+    "pdf",
+    "epub",
+    "mobi",
+  ]);
 });
 
 test("attachment types extract lowercase extension from path", () => {
@@ -92,6 +94,7 @@ git commit -m "feat: add attachment type normalization helpers"
 ### Task 2: Make the resolver filter by allowed attachment types
 
 **Files:**
+
 - Modify: `src/modules/copy/attachmentResolver.ts`
 - Modify: `src/modules/copy/types.ts`
 - Modify: `spec/unit/attachment-resolver.test.ts`
@@ -104,22 +107,36 @@ git commit -m "feat: add attachment type normalization helpers"
 ```ts
 test("AttachmentResolver: all mode keeps allowed attachment types only", async () => {
   const pdf = makeAttachment(11, "C:/papers/a.pdf", { parentID: 1 });
-  const epub = makeAttachment(12, "C:/books/b.epub", { parentID: 1, isPDF: false });
-  const txt = makeAttachment(13, "C:/notes/c.txt", { parentID: 1, isPDF: false });
+  const epub = makeAttachment(12, "C:/books/b.epub", {
+    parentID: 1,
+    isPDF: false,
+  });
+  const txt = makeAttachment(13, "C:/notes/c.txt", {
+    parentID: 1,
+    isPDF: false,
+  });
   const regular = makeRegular(1, [11, 12, 13]);
 
-  const resolved = await resolveAttachmentsFromItems([regular], "all", ["pdf", "epub"], {
-    getItemsByIDs: () => [pdf, epub, txt],
-  });
+  const resolved = await resolveAttachmentsFromItems(
+    [regular],
+    "all",
+    ["pdf", "epub"],
+    {
+      getItemsByIDs: () => [pdf, epub, txt],
+    },
+  );
 
-  assert.deepEqual(resolved.map((entry) => entry.path), [
-    "C:/papers/a.pdf",
-    "C:/books/b.epub",
-  ]);
+  assert.deepEqual(
+    resolved.map((entry) => entry.path),
+    ["C:/papers/a.pdf", "C:/books/b.epub"],
+  );
 });
 
 test("reader resolver rejects attachment when type is not allowed", async () => {
-  const attachment = makeAttachment(1001, "C:/books/reader.epub", { parentID: 90, isPDF: false });
+  const attachment = makeAttachment(1001, "C:/books/reader.epub", {
+    parentID: 90,
+    isPDF: false,
+  });
 
   const resolved = await resolveAttachmentFromReader(1001, ["pdf"], {
     getItemsByIDs: () => [],
@@ -157,6 +174,7 @@ export async function resolveAttachmentFromReader(
 ```
 
 Implementation requirements:
+
 - rename `MultiPDFMode` to `MultiAttachmentMode`
 - rename `ResolvedPDF` to `ResolvedAttachment`
 - for `primary` mode, prefer best attachments first, then fall back to child attachments to find the first allowed type
@@ -177,6 +195,7 @@ git commit -m "feat: filter attachment resolution by allowed types"
 ### Task 3: Thread allowed types through copy commands and preference reads
 
 **Files:**
+
 - Modify: `addon/prefs.js`
 - Modify: `typings/prefs.d.ts`
 - Modify: `src/utils/prefs.ts`
@@ -231,6 +250,7 @@ export function getAllowedAttachmentTypes(): string[] {
 ```
 
 Implementation requirements:
+
 - replace `multiPdfMode` with `multiAttachmentMode`
 - update `copyFromSelection` to accept `allowedTypes`
 - update `copyFromReader` to accept `allowedTypes`
@@ -251,6 +271,7 @@ git commit -m "feat: wire allowed attachment types through copy commands"
 ### Task 4: Redesign the preferences pane and add validation logic
 
 **Files:**
+
 - Modify: `addon/content/preferences.xhtml`
 - Create: `addon/content/preferences.css`
 - Modify: `src/modules/preferenceScript.ts`
@@ -295,7 +316,10 @@ export function buildEffectiveAttachmentTypes(
   enabledTypes: string[],
   customInput: string,
 ): string[] {
-  return normalizeExtensionList([...enabledTypes, ...normalizeExtensionList(customInput)]);
+  return normalizeExtensionList([
+    ...enabledTypes,
+    ...normalizeExtensionList(customInput),
+  ]);
 }
 
 export function validateAttachmentTypeSelection(
@@ -307,6 +331,7 @@ export function validateAttachmentTypeSelection(
 ```
 
 Implementation requirements:
+
 - group the pane into `Copy Scope`, `Allowed Attachment Types`, and `Compatibility`
 - rename the dropdown label to `Multi-Attachment Strategy`
 - render preset type checkboxes for `PDF`, `EPUB`, `MOBI`, `TXT`
@@ -329,6 +354,7 @@ git commit -m "feat: redesign preferences pane for attachment type control"
 ### Task 5: Update notifier and menu wording for attachment-oriented copy
 
 **Files:**
+
 - Modify: `src/modules/copy/notifier.ts`
 - Modify: `spec/unit/notifier.test.ts`
 - Modify: `addon/locale/en-US/addon.ftl`
@@ -363,6 +389,7 @@ return `Copied ${result.count} attachment file(s) to clipboard (${result.format}
 ```
 
 Implementation requirements:
+
 - update menu labels in both locales from `PDF` wording to `attachment` wording
 - update README feature and usage text to describe attachment-type filtering
 
@@ -381,6 +408,7 @@ git commit -m "docs: update copy wording for attachment type support"
 ### Task 6: Replace the icon assets with the provided artwork
 
 **Files:**
+
 - Modify: `icon.png`
 - Modify: `addon/content/icons/favicon.png`
 - Modify: `addon/content/icons/favicon@0.5x.png`
@@ -429,12 +457,14 @@ git commit -m "feat: replace ZotClip icon assets"
 ### Task 7: Refresh manual docs and run full verification
 
 **Files:**
+
 - Modify: `docs/testing/2026-03-05-zotclip-v1-manual-checklist.md`
 - Modify: `README.md`
 
 **Step 1: Update the manual checklist**
 
 Add scenarios for:
+
 - toggling preset attachment types
 - entering custom extensions
 - blocking empty allowed-type configuration

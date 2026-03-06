@@ -1,4 +1,5 @@
 import { copyFromReader } from "./copyCommands";
+import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export type ReaderCtrlCMode = "smart" | "never" | "always";
 
@@ -22,7 +23,7 @@ const DEFAULT_DEPS: ReaderHookDeps = {
     return !!selection && selection.toString().trim().length > 0;
   },
   triggerCopyFromReader: async () => {
-    await copyFromReader(true);
+    await copyFromReader(getAllowedAttachmentTypes(), true);
   },
 };
 

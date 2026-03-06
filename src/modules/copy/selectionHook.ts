@@ -1,4 +1,5 @@
 import { copyFromSelection } from "./copyCommands";
+import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export interface SelectionHookDeps {
   isLibraryContext(event: KeyboardEvent): boolean;
@@ -20,7 +21,7 @@ const DEFAULT_DEPS: SelectionHookDeps = {
   },
   isEditableTarget: (event) => isEditableNode(event.target),
   triggerCopyFromSelection: async () => {
-    await copyFromSelection("all", true);
+    await copyFromSelection("all", getAllowedAttachmentTypes(), true);
   },
 };
 

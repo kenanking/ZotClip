@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  resolveAttachmentFromReader,
-} from "../../src/modules/copy/attachmentResolver";
+import { resolveAttachmentFromReader } from "../../src/modules/copy/attachmentResolver";
 
 function makeAttachment(
   id: number,

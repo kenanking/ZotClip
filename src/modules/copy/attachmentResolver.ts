@@ -75,7 +75,11 @@ export async function resolveAttachmentFromReader(
     return [];
   }
 
-  return resolveAllowedAttachments([item], item.parentID || item.id, allowedSet);
+  return resolveAllowedAttachments(
+    [item],
+    item.parentID || item.id,
+    allowedSet,
+  );
 }
 
 async function resolveCandidateAttachments(
@@ -85,7 +89,11 @@ async function resolveCandidateAttachments(
   deps: AttachmentResolverDeps,
 ): Promise<ResolvedAttachment[]> {
   if (item.isAttachment()) {
-    return resolveAllowedAttachments([item], item.parentID || item.id, allowedSet);
+    return resolveAllowedAttachments(
+      [item],
+      item.parentID || item.id,
+      allowedSet,
+    );
   }
 
   if (mode === "primary") {
