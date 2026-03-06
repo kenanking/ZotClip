@@ -1,6 +1,7 @@
 import { copyFromReader, copyFromSelection } from "./modules/copy/copyCommands";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
+import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import {
@@ -11,6 +12,7 @@ import {
 import { createZToolkit } from "./utils/ztoolkit";
 
 const readerHookDisposers = new WeakMap<Window, () => void>();
+const selectionHookDisposers = new WeakMap<Window, () => void>();
 
 async function onStartup() {
   await Promise.all([
@@ -53,11 +55,20 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     },
   );
   readerHookDisposers.set(win, disposeReaderHook);
+
+  const disposeSelectionHook = registerSelectionShortcutHandler(win, {
+    triggerCopyFromSelection: async () => {
+      await executeCopyFromSelection();
+    },
+  });
+  selectionHookDisposers.set(win, disposeSelectionHook);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
   readerHookDisposers.get(win)?.();
   readerHookDisposers.delete(win);
+  selectionHookDisposers.get(win)?.();
+  selectionHookDisposers.delete(win);
   ztoolkit.unregisterAll();
 }
 

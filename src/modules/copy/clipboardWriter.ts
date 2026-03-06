@@ -1,12 +1,14 @@
 import type { ClipboardResult, ResolvedPDF } from "./types";
 
 export interface ClipboardWriterDeps {
+  isWindows?(): boolean;
   writeFileObject(paths: string[]): Promise<boolean>;
   writeURIList(paths: string[]): Promise<boolean>;
   writePathText(paths: string[]): boolean;
 }
 
 const DEFAULT_DEPS: ClipboardWriterDeps = {
+  isWindows: () => Zotero.isWin,
   writeFileObject: async (paths) => {
     if (!paths.length) {
       return false;
@@ -90,6 +92,27 @@ export async function writeClipboard(
       format: "none",
       count: 0,
       message: "No files to copy.",
+    };
+  }
+
+  // Zotero does not expose a reliable Windows file clipboard write here,
+  // so prefer deterministic path fallback over a silent no-op.
+  if (deps.isWindows?.()) {
+    if (allowPathFallback && deps.writePathText(paths)) {
+      return {
+        ok: true,
+        format: "path-text",
+        count: paths.length,
+        message: "File clipboard unavailable. Copied file path text instead.",
+      };
+    }
+
+    return {
+      ok: false,
+      format: "none",
+      count: paths.length,
+      message:
+        "Windows file clipboard is unavailable in Zotero; enable path fallback to copy file paths instead.",
     };
   }
 

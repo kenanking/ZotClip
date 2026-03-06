@@ -9,8 +9,11 @@
 ## Library Copy Flow
 
 - [ ] Select one PDF attachment item in library view.
+- [ ] Press `Ctrl+C`.
+- [ ] Confirm the success notification appears.
+- [ ] Paste into a text field and confirm the absolute file path is copied.
 - [ ] Trigger `Copy PDF File(s)` from the item context menu.
-- [ ] Paste into File Explorer and confirm the file is copied.
+- [ ] Paste into a text field and confirm the absolute file path is copied.
 
 ## Multi-PDF Strategy
 
@@ -24,13 +27,15 @@
 
 - [ ] Open a PDF in Zotero reader.
 - [ ] Select some text and press `Ctrl+C`; confirm text copy behavior is unchanged.
-- [ ] Clear text selection and press `Ctrl+C`; confirm current PDF file copy is triggered.
-- [ ] Press `Ctrl+Shift+C`; confirm current PDF file copy is triggered as fallback.
+- [ ] Clear text selection and press `Ctrl+C`; confirm current PDF file path is copied.
+- [ ] Press `Ctrl+Shift+C`; confirm current PDF file path is copied as fallback.
 
 ## Clipboard Fallback
 
-- [ ] Use a destination app that does not accept file-object paste.
-- [ ] Trigger copy and confirm path-text fallback message appears.
+- [ ] Disable `Allow path-text fallback`.
+- [ ] Trigger copy and confirm the operation reports Windows clipboard limitations.
+- [ ] Enable `Allow path-text fallback`.
+- [ ] Trigger copy and confirm the path-text success message appears.
 - [ ] Confirm pasted content is absolute file path text.
 
 ## Preferences

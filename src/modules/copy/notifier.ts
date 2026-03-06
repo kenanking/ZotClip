@@ -1,6 +1,10 @@
 import type { ClipboardResult } from "./types";
 
 export function formatCopyMessage(result: ClipboardResult): string {
+  if (result.message && !result.ok) {
+    return result.message;
+  }
+
   if (!result.ok) {
     return "Copy failed. Please check file availability and clipboard support in target app.";
   }
