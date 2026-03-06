@@ -10,6 +10,8 @@ declare namespace _ZoteroTypes {
       "multiPdfMode": string;
       "readerCtrlCMode": string;
       "allowPathFallback": boolean;
+      "enabledAttachmentTypes": string;
+      "customAttachmentTypes": string;
     };
   }
 }

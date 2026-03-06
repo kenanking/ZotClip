@@ -6,6 +6,7 @@ import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import {
   getAllowPathFallback,
+  getAllowedAttachmentTypes,
   getMultiPDFMode,
   getReaderCtrlCMode,
 } from "./utils/prefs";
@@ -129,13 +130,17 @@ function registerCopyMenuCommands() {
 async function executeCopyFromSelection(): Promise<void> {
   const result = await copyFromSelection(
     getMultiPDFMode(),
+    getAllowedAttachmentTypes(),
     getAllowPathFallback(),
   );
   notifyCopyResult(result);
 }
 
 async function executeCopyFromReader(): Promise<void> {
-  const result = await copyFromReader(getAllowPathFallback());
+  const result = await copyFromReader(
+    getAllowedAttachmentTypes(),
+    getAllowPathFallback(),
+  );
   notifyCopyResult(result);
 }
 

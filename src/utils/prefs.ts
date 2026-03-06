@@ -1,5 +1,6 @@
 import { config } from "../../package.json";
-import type { MultiPDFMode } from "../modules/copy/types";
+import { normalizeExtensionList } from "../modules/copy/attachmentTypes";
+import type { MultiAttachmentMode } from "../modules/copy/types";
 import type { ReaderCtrlCMode } from "../modules/copy/readerHook";
 
 type PluginPrefsMap = _ZoteroTypes.Prefs["PluginPrefsMap"];
@@ -37,7 +38,7 @@ export function clearPref(key: string) {
   return Zotero.Prefs.clear(`${PREFS_PREFIX}.${key}`, true);
 }
 
-export function getMultiPDFMode(): MultiPDFMode {
+export function getMultiPDFMode(): MultiAttachmentMode {
   const value = getPref("multiPdfMode");
   return value === "primary" ? "primary" : "all";
 }
@@ -52,4 +53,19 @@ export function getReaderCtrlCMode(): ReaderCtrlCMode {
 
 export function getAllowPathFallback(): boolean {
   return getPref("allowPathFallback") !== false;
+}
+
+export function getEnabledAttachmentTypes(): string[] {
+  return normalizeExtensionList(getPref("enabledAttachmentTypes") || "");
+}
+
+export function getCustomAttachmentTypes(): string[] {
+  return normalizeExtensionList(getPref("customAttachmentTypes") || "");
+}
+
+export function getAllowedAttachmentTypes(): string[] {
+  return normalizeExtensionList([
+    ...getEnabledAttachmentTypes(),
+    ...getCustomAttachmentTypes(),
+  ]);
 }
