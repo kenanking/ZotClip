@@ -1,4 +1,13 @@
-import type { MultiPDFMode, ResolvedPDF } from "./types";
+import {
+  extractExtensionFromPath,
+  normalizeExtensionList,
+} from "./attachmentTypes";
+import type {
+  MultiAttachmentMode,
+  MultiPDFMode,
+  ResolvedAttachment,
+  ResolvedPDF,
+} from "./types";
 
 export interface AttachmentResolverDeps {
   getItemsByIDs(ids: number[]): Zotero.Item[];
@@ -15,71 +24,83 @@ export async function resolvePDFsFromItems(
   mode: MultiPDFMode,
   deps: AttachmentResolverDeps = DEFAULT_DEPS,
 ): Promise<ResolvedPDF[]> {
-  const results: ResolvedPDF[] = [];
-
-  for (const item of items) {
-    const candidates = await resolveCandidateAttachments(item, mode, deps);
-    for (const attachment of candidates) {
-      if (!attachment.isPDFAttachment()) {
-        continue;
-      }
-
-      const path = await attachment.getFilePathAsync();
-      if (!path || typeof path !== "string") {
-        continue;
-      }
-
-      results.push({
-        itemID: item.isAttachment() ? item.parentID || item.id : item.id,
-        attachmentID: attachment.id,
-        path,
-      });
-    }
-  }
-
-  return dedupeByPath(results);
+  return resolveAttachmentsFromItems(items, mode, ["pdf"], deps);
 }
 
 export async function resolvePDFFromReader(
   itemID: number,
   deps: AttachmentResolverDeps = DEFAULT_DEPS,
 ): Promise<ResolvedPDF[]> {
+  return resolveAttachmentFromReader(itemID, ["pdf"], deps);
+}
+
+export async function resolveAttachmentsFromItems(
+  items: Zotero.Item[],
+  mode: MultiAttachmentMode,
+  allowedTypes: string[],
+  deps: AttachmentResolverDeps = DEFAULT_DEPS,
+): Promise<ResolvedAttachment[]> {
+  const allowedSet = buildAllowedTypeSet(allowedTypes);
+  if (!allowedSet.size) {
+    return [];
+  }
+
+  const results: ResolvedAttachment[] = [];
+
+  for (const item of items) {
+    const candidates = await resolveCandidateAttachments(
+      item,
+      mode,
+      allowedSet,
+      deps,
+    );
+    results.push(...candidates);
+  }
+
+  return dedupeByPath(results);
+}
+
+export async function resolveAttachmentFromReader(
+  itemID: number,
+  allowedTypes: string[],
+  deps: AttachmentResolverDeps = DEFAULT_DEPS,
+): Promise<ResolvedAttachment[]> {
+  const allowedSet = buildAllowedTypeSet(allowedTypes);
+  if (!allowedSet.size) {
+    return [];
+  }
+
   const item = deps.getItemByID?.(itemID);
-  if (!item || !item.isAttachment() || !item.isPDFAttachment()) {
+  if (!item || !item.isAttachment()) {
     return [];
   }
 
-  const path = await item.getFilePathAsync();
-  if (!path || typeof path !== "string") {
-    return [];
-  }
-
-  return [
-    {
-      itemID: item.parentID || item.id,
-      attachmentID: item.id,
-      path,
-    },
-  ];
+  return resolveAllowedAttachments([item], item.parentID || item.id, allowedSet);
 }
 
 async function resolveCandidateAttachments(
   item: Zotero.Item,
-  mode: MultiPDFMode,
+  mode: MultiAttachmentMode,
+  allowedSet: Set<string>,
   deps: AttachmentResolverDeps,
-): Promise<Zotero.Item[]> {
+): Promise<ResolvedAttachment[]> {
   if (item.isAttachment()) {
-    return item.isPDFAttachment() ? [item] : [];
+    return resolveAllowedAttachments([item], item.parentID || item.id, allowedSet);
   }
 
   if (mode === "primary") {
     const bestMany = await item.getBestAttachments();
-    if (bestMany?.length) {
-      return bestMany;
+    const bestCandidates = bestMany?.length
+      ? bestMany
+      : await resolveBestAttachmentCandidate(item);
+    const bestResolved = await resolveAllowedAttachments(
+      bestCandidates,
+      item.id,
+      allowedSet,
+    );
+    if (bestResolved.length) {
+      return [bestResolved[0]];
     }
-
-    const bestOne = await item.getBestAttachment();
-    return bestOne ? [bestOne] : [];
   }
 
   const childIDs = item.getAttachments(true);
@@ -87,10 +108,59 @@ async function resolveCandidateAttachments(
     return [];
   }
 
-  return deps.getItemsByIDs(childIDs);
+  const resolvedChildren = await resolveAllowedAttachments(
+    deps.getItemsByIDs(childIDs),
+    item.id,
+    allowedSet,
+  );
+
+  return mode === "primary" ? resolvedChildren.slice(0, 1) : resolvedChildren;
 }
 
-function dedupeByPath(input: ResolvedPDF[]): ResolvedPDF[] {
+async function resolveAllowedAttachments(
+  attachments: Zotero.Item[],
+  itemID: number,
+  allowedSet: Set<string>,
+): Promise<ResolvedAttachment[]> {
+  const results: ResolvedAttachment[] = [];
+
+  for (const attachment of attachments) {
+    if (!attachment?.isAttachment?.()) {
+      continue;
+    }
+
+    const path = await attachment.getFilePathAsync();
+    if (!path || typeof path !== "string") {
+      continue;
+    }
+
+    const extension = extractExtensionFromPath(path);
+    if (!extension || !allowedSet.has(extension)) {
+      continue;
+    }
+
+    results.push({
+      itemID,
+      attachmentID: attachment.id,
+      path,
+    });
+  }
+
+  return results;
+}
+
+async function resolveBestAttachmentCandidate(
+  item: Zotero.Item,
+): Promise<Zotero.Item[]> {
+  const bestOne = await item.getBestAttachment();
+  return bestOne ? [bestOne] : [];
+}
+
+function buildAllowedTypeSet(allowedTypes: string[]): Set<string> {
+  return new Set(normalizeExtensionList(allowedTypes));
+}
+
+function dedupeByPath(input: ResolvedAttachment[]): ResolvedAttachment[] {
   const seen = new Set<string>();
   return input.filter((result) => {
     if (seen.has(result.path)) {

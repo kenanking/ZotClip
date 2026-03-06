@@ -16,13 +16,15 @@ export const RESOLVE_ERRORS = [
 export type ClipboardFormat = (typeof CLIPBOARD_FORMATS)[number];
 export type ResolveErrorCode = (typeof RESOLVE_ERRORS)[number];
 
-export type MultiPDFMode = "all" | "primary";
+export type MultiAttachmentMode = "all" | "primary";
+export type MultiPDFMode = MultiAttachmentMode;
 
-export interface ResolvedPDF {
+export interface ResolvedAttachment {
   itemID: number;
   attachmentID: number;
   path: string;
 }
+export type ResolvedPDF = ResolvedAttachment;
 
 export interface ClipboardResult {
   ok: boolean;

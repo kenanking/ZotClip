@@ -1,18 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolvePDFsFromItems } from "../../src/modules/copy/attachmentResolver";
+import {
+  resolveAttachmentsFromItems,
+} from "../../src/modules/copy/attachmentResolver";
 
 function makeAttachment(
   id: number,
   path: string | false,
-  options: { isPDF?: boolean; parentID?: number } = {},
+  options: { parentID?: number } = {},
 ) {
   return {
     id,
     parentID: options.parentID,
     isAttachment: () => true,
-    isPDFAttachment: () => options.isPDF ?? true,
     getFilePathAsync: async () => path,
   } as unknown as Zotero.Item;
 }
@@ -31,55 +32,70 @@ function makeRegular(
   } as unknown as Zotero.Item;
 }
 
-test("AttachmentResolver: collects all PDF children in all mode", async () => {
+test("AttachmentResolver: collects all allowed children in all mode", async () => {
   const a1 = makeAttachment(11, "C:/papers/a.pdf", { parentID: 1 });
-  const a2 = makeAttachment(12, "C:/papers/b.pdf", { parentID: 1 });
-  const a3 = makeAttachment(13, "C:/papers/not-pdf.epub", {
-    isPDF: false,
-    parentID: 1,
-  });
+  const a2 = makeAttachment(12, "C:/books/b.epub", { parentID: 1 });
+  const a3 = makeAttachment(13, "C:/notes/c.txt", { parentID: 1 });
   const regular = makeRegular(1, [11, 12, 13]);
 
-  const resolved = await resolvePDFsFromItems([regular], "all", {
-    getItemsByIDs: () => [a1, a2, a3],
-  });
+  const resolved = await resolveAttachmentsFromItems(
+    [regular],
+    "all",
+    ["pdf", "epub"],
+    {
+      getItemsByIDs: () => [a1, a2, a3],
+    },
+  );
 
   assert.equal(resolved.length, 2);
   assert.deepEqual(
     resolved.map((r) => r.path),
-    ["C:/papers/a.pdf", "C:/papers/b.pdf"],
+    ["C:/papers/a.pdf", "C:/books/b.epub"],
   );
 });
 
-test("AttachmentResolver: uses best attachment in primary mode", async () => {
-  const best = makeAttachment(21, "C:/papers/primary.pdf", { parentID: 2 });
-  const secondary = makeAttachment(22, "C:/papers/secondary.pdf", {
+test("AttachmentResolver: primary mode falls back to first allowed child", async () => {
+  const bestDisallowed = makeAttachment(21, "C:/notes/not-allowed.txt", {
     parentID: 2,
   });
-  const regular = makeRegular(2, [21, 22], {
-    bestMany: [best],
-    bestOne: secondary,
+  const allowedFallback = makeAttachment(22, "C:/books/primary.epub", {
+    parentID: 2,
+  });
+  const otherDisallowed = makeAttachment(23, "C:/notes/other.txt", {
+    parentID: 2,
+  });
+  const regular = makeRegular(2, [21, 22, 23], {
+    bestMany: [bestDisallowed],
+    bestOne: bestDisallowed,
   });
 
-  const resolved = await resolvePDFsFromItems([regular], "primary", {
-    getItemsByIDs: () => {
-      throw new Error("all-mode child lookup should not be called");
+  const resolved = await resolveAttachmentsFromItems(
+    [regular],
+    "primary",
+    ["epub"],
+    {
+      getItemsByIDs: () => [bestDisallowed, allowedFallback, otherDisallowed],
     },
-  });
+  );
 
   assert.equal(resolved.length, 1);
-  assert.equal(resolved[0].attachmentID, 21);
-  assert.equal(resolved[0].path, "C:/papers/primary.pdf");
+  assert.equal(resolved[0].attachmentID, 22);
+  assert.equal(resolved[0].path, "C:/books/primary.epub");
 });
 
-test("AttachmentResolver: accepts selected PDF attachment directly", async () => {
+test("AttachmentResolver: accepts selected attachment directly when type is allowed", async () => {
   const attachment = makeAttachment(30, "C:/papers/direct.pdf", {
     parentID: 3,
   });
 
-  const resolved = await resolvePDFsFromItems([attachment], "all", {
-    getItemsByIDs: () => [],
-  });
+  const resolved = await resolveAttachmentsFromItems(
+    [attachment],
+    "all",
+    ["pdf"],
+    {
+      getItemsByIDs: () => [],
+    },
+  );
 
   assert.equal(resolved.length, 1);
   assert.equal(resolved[0].itemID, 3);
