@@ -5,6 +5,8 @@ import {
 import {
   getCustomAttachmentTypes,
   getEnabledAttachmentTypes,
+  getMultiAttachmentMode,
+  getReaderCtrlCMode,
   setPref,
 } from "../utils/prefs";
 
@@ -13,6 +15,18 @@ interface AttachmentTypeControls {
   presetCheckboxes: HTMLInputElement[];
   customInput: HTMLInputElement;
   validationMessage: HTMLElement;
+}
+
+interface MenuitemLike {
+  value?: string;
+  getAttribute?: (name: string) => string | null;
+}
+
+interface MenulistLike {
+  value: string;
+  selectedItem?: MenuitemLike | null;
+  querySelectorAll: (selector: string) => Iterable<MenuitemLike>;
+  addEventListener?: (type: string, listener: () => void) => void;
 }
 
 const PRESET_TYPE_SET = new Set<string>(ATTACHMENT_TYPE_PRESETS);
@@ -34,10 +48,24 @@ export function validateAttachmentTypeSelection(
   return buildEffectiveAttachmentTypes(enabledTypes, customInput).length > 0;
 }
 
+export function syncMenulistValue(
+  menulist: MenulistLike,
+  preferredValue: string,
+): string {
+  const itemValues = getMenulistItemValues(menulist);
+  const nextValue = itemValues.includes(preferredValue)
+    ? preferredValue
+    : itemValues[0] || preferredValue;
+  menulist.value = nextValue;
+  return nextValue;
+}
+
 export async function registerPrefsScripts(window: Window) {
   addon.data.prefs = {
     window,
   };
+
+  syncPreferenceMenulists(window.document);
 
   const controls = getAttachmentTypeControls(window.document);
   if (!controls) {
@@ -70,6 +98,35 @@ export async function registerPrefsScripts(window: Window) {
   });
   controls.customInput.addEventListener("blur", () => {
     persistAttachmentTypePrefs(controls);
+  });
+}
+
+function syncPreferenceMenulists(doc: Document): void {
+  registerMenulistSync(
+    doc.getElementById(
+      "zotero-prefpane-__addonRef__-multi-attachment-mode",
+    ) as MenulistLike | null,
+    getMultiAttachmentMode(),
+  );
+  registerMenulistSync(
+    doc.getElementById(
+      "zotero-prefpane-__addonRef__-reader-ctrl-c-mode",
+    ) as MenulistLike | null,
+    getReaderCtrlCMode(),
+  );
+}
+
+function registerMenulistSync(
+  menulist: MenulistLike | null,
+  preferredValue: string,
+): void {
+  if (!menulist) {
+    return;
+  }
+
+  syncMenulistValue(menulist, preferredValue);
+  menulist.addEventListener?.("command", () => {
+    syncMenulistValue(menulist, getMenulistCurrentValue(menulist));
   });
 }
 
@@ -151,4 +208,18 @@ function getSelectedPresetTypes(checkboxes: HTMLInputElement[]): string[] {
 
 function getCheckboxType(checkbox: HTMLInputElement): string {
   return checkbox.dataset.zotclipAttachmentType || "";
+}
+
+function getMenulistItemValues(menulist: MenulistLike): string[] {
+  return Array.from(menulist.querySelectorAll("menuitem"))
+    .map((item) => getMenuitemValue(item))
+    .filter((value) => value.length > 0);
+}
+
+function getMenulistCurrentValue(menulist: MenulistLike): string {
+  return menulist.value || getMenuitemValue(menulist.selectedItem || null);
+}
+
+function getMenuitemValue(item: MenuitemLike | null): string {
+  return item?.value || item?.getAttribute?.("value") || "";
 }

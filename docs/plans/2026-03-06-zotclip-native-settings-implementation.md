@@ -13,6 +13,7 @@
 ### Task 1: Lock in native preference markup with a failing regression test
 
 **Files:**
+
 - Create: `spec/unit/preferences-markup.test.ts`
 - Modify: `addon/content/preferences.xhtml`
 - Delete: `addon/content/preferences.css`
@@ -42,7 +43,9 @@ Expected: FAIL because the current markup still links `preferences.css` and uses
 **Step 3: Write minimal implementation**
 
 ```xhtml
-<groupbox onload="Zotero.__addonInstance__.hooks.onPrefsEvent('load', { window })">
+<groupbox
+  onload="Zotero.__addonInstance__.hooks.onPrefsEvent('load', { window })"
+>
   <label><html:h2 data-l10n-id="pref-title"></html:h2></label>
   <!-- native hbox/checkbox rows -->
 </groupbox>
@@ -66,6 +69,7 @@ git commit -m "fix: restore native preferences layout"
 ### Task 2: Add a failing unit test for menulist value synchronization
 
 **Files:**
+
 - Modify: `spec/unit/preference-script.test.ts`
 - Modify: `src/modules/preferenceScript.ts`
 
@@ -135,6 +139,7 @@ git commit -m "fix: sync preference menulist labels"
 ### Task 3: Change the package version with a regression test
 
 **Files:**
+
 - Create: `spec/unit/package-version.test.ts`
 - Modify: `package.json`
 
@@ -180,6 +185,7 @@ git commit -m "chore: reset development version"
 ### Task 4: Verify the full change set
 
 **Files:**
+
 - Verify only
 
 **Step 1: Run the targeted unit tests**

@@ -1,155 +1,116 @@
 <linkset>
   <html:link rel="localization" href="__addonRef__-preferences.ftl" />
-  <html:link
-    rel="stylesheet"
-    href="chrome://__addonRef__/content/preferences.css"
-  />
 </linkset>
-<vbox
-  class="zotclip-pref-root"
+<groupbox
   onload="Zotero.__addonInstance__.hooks.onPrefsEvent('load', { window })"
 >
-  <vbox class="zotclip-pref-stack">
-    <html:div class="zotclip-pref-header">
-      <html:h2 class="zotclip-pref-title" data-l10n-id="pref-title"></html:h2>
+  <label><html:h2 data-l10n-id="pref-title"></html:h2></label>
+
+  <label><html:h3 data-l10n-id="pref-section-copy"></html:h3></label>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-multi-attachment-mode"
+      data-l10n-id="pref-multi-attachment-mode"
+    ></html:label>
+    <menulist
+      id="zotero-prefpane-__addonRef__-multi-attachment-mode"
+      preference="multiAttachmentMode"
+    >
+      <menupopup>
+        <menuitem value="all" data-l10n-id="pref-multi-attachment-mode-all" />
+        <menuitem
+          value="primary"
+          data-l10n-id="pref-multi-attachment-mode-primary"
+        />
+      </menupopup>
+    </menulist>
+  </hbox>
+
+  <separator class="thin" />
+
+  <vbox data-zotclip-types-panel="true">
+    <label><html:h3 data-l10n-id="pref-section-types"></html:h3></label>
+
+    <description>
+      <html:span data-l10n-id="pref-type-presets"></html:span>
+    </description>
+
+    <html:div>
+      <html:label>
+        <html:input type="checkbox" data-zotclip-attachment-type="pdf" />
+        <html:span data-l10n-id="pref-type-pdf"></html:span>
+      </html:label>
+      <html:label>
+        <html:input type="checkbox" data-zotclip-attachment-type="epub" />
+        <html:span data-l10n-id="pref-type-epub"></html:span>
+      </html:label>
+      <html:label>
+        <html:input type="checkbox" data-zotclip-attachment-type="mobi" />
+        <html:span data-l10n-id="pref-type-mobi"></html:span>
+      </html:label>
+      <html:label>
+        <html:input type="checkbox" data-zotclip-attachment-type="txt" />
+        <html:span data-l10n-id="pref-type-txt"></html:span>
+      </html:label>
     </html:div>
 
-    <vbox class="zotclip-pref-card">
-      <html:h3
-        class="zotclip-pref-section-title"
-        data-l10n-id="pref-section-copy"
-      ></html:h3>
-
-      <hbox class="zotclip-pref-row" align="center">
-        <html:label
-          class="zotclip-pref-label"
-          for="zotero-prefpane-__addonRef__-multi-attachment-mode"
-          data-l10n-id="pref-multi-attachment-mode"
-        ></html:label>
-        <menulist
-          id="zotero-prefpane-__addonRef__-multi-attachment-mode"
-          class="zotclip-pref-menulist"
-          preference="multiAttachmentMode"
-        >
-          <menupopup>
-            <menuitem
-              value="all"
-              data-l10n-id="pref-multi-attachment-mode-all"
-            />
-            <menuitem
-              value="primary"
-              data-l10n-id="pref-multi-attachment-mode-primary"
-            />
-          </menupopup>
-        </menulist>
-      </hbox>
-    </vbox>
-
-    <vbox class="zotclip-pref-card" data-zotclip-types-panel="true">
-      <html:h3
-        class="zotclip-pref-section-title"
-        data-l10n-id="pref-section-types"
-      ></html:h3>
-
-      <html:span
-        class="zotclip-pref-subtitle"
-        data-l10n-id="pref-type-presets"
-      ></html:span>
-
-      <html:div class="zotclip-type-grid">
-        <html:label class="zotclip-type-chip">
-          <html:input type="checkbox" data-zotclip-attachment-type="pdf" />
-          <html:span data-l10n-id="pref-type-pdf"></html:span>
-        </html:label>
-        <html:label class="zotclip-type-chip">
-          <html:input type="checkbox" data-zotclip-attachment-type="epub" />
-          <html:span data-l10n-id="pref-type-epub"></html:span>
-        </html:label>
-        <html:label class="zotclip-type-chip">
-          <html:input type="checkbox" data-zotclip-attachment-type="mobi" />
-          <html:span data-l10n-id="pref-type-mobi"></html:span>
-        </html:label>
-        <html:label class="zotclip-type-chip">
-          <html:input type="checkbox" data-zotclip-attachment-type="txt" />
-          <html:span data-l10n-id="pref-type-txt"></html:span>
-        </html:label>
-      </html:div>
-
-      <html:div class="zotclip-pref-field">
-        <html:label
-          class="zotclip-pref-label zotclip-pref-label-block"
-          for="zotero-prefpane-__addonRef__-custom-attachment-types"
-          data-l10n-id="pref-custom-types"
-        ></html:label>
-        <html:input
-          id="zotero-prefpane-__addonRef__-custom-attachment-types"
-          class="zotclip-pref-textinput"
-          type="text"
-          data-zotclip-custom-types="true"
-        />
-        <html:p
-          class="zotclip-pref-help"
-          data-l10n-id="pref-custom-types-help"
-        ></html:p>
-        <html:p
-          class="zotclip-pref-error"
-          data-l10n-id="pref-type-validation"
-          data-zotclip-type-validation="true"
-          hidden="hidden"
-        ></html:p>
-      </html:div>
-    </vbox>
-
-    <vbox class="zotclip-pref-card">
-      <html:h3
-        class="zotclip-pref-section-title"
-        data-l10n-id="pref-section-compatibility"
-      ></html:h3>
-
-      <hbox class="zotclip-pref-row" align="center">
-        <html:label
-          class="zotclip-pref-label"
-          for="zotero-prefpane-__addonRef__-reader-ctrl-c-mode"
-          data-l10n-id="pref-reader-ctrl-c-mode"
-        ></html:label>
-        <menulist
-          id="zotero-prefpane-__addonRef__-reader-ctrl-c-mode"
-          class="zotclip-pref-menulist"
-          preference="readerCtrlCMode"
-        >
-          <menupopup>
-            <menuitem
-              value="smart"
-              data-l10n-id="pref-reader-ctrl-c-mode-smart"
-            />
-            <menuitem
-              value="never"
-              data-l10n-id="pref-reader-ctrl-c-mode-never"
-            />
-            <menuitem
-              value="always"
-              data-l10n-id="pref-reader-ctrl-c-mode-always"
-            />
-          </menupopup>
-        </menulist>
-      </hbox>
-
-      <checkbox
-        id="zotero-prefpane-__addonRef__-allow-path-fallback"
-        class="zotclip-pref-inline-checkbox"
-        preference="allowPathFallback"
-        data-l10n-id="pref-allow-path-fallback"
+    <vbox>
+      <html:label
+        for="zotero-prefpane-__addonRef__-custom-attachment-types"
+        data-l10n-id="pref-custom-types"
+      ></html:label>
+      <html:input
+        id="zotero-prefpane-__addonRef__-custom-attachment-types"
+        type="text"
+        data-zotclip-custom-types="true"
       />
-
-      <description class="zotclip-pref-help">
-        <html:span data-l10n-id="pref-compatibility-note"></html:span>
+      <description>
+        <html:span data-l10n-id="pref-custom-types-help"></html:span>
+      </description>
+      <description data-zotclip-type-validation="true" hidden="hidden">
+        <html:span data-l10n-id="pref-type-validation"></html:span>
       </description>
     </vbox>
-
-    <html:p
-      class="zotclip-pref-build"
-      data-l10n-id="pref-help"
-      data-l10n-args='{"time": "__buildTime__","name": "__addonName__","version":"__buildVersion__"}'
-    ></html:p>
   </vbox>
+
+  <separator class="thin" />
+
+  <label><html:h3 data-l10n-id="pref-section-compatibility"></html:h3></label>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-reader-ctrl-c-mode"
+      data-l10n-id="pref-reader-ctrl-c-mode"
+    ></html:label>
+    <menulist
+      id="zotero-prefpane-__addonRef__-reader-ctrl-c-mode"
+      preference="readerCtrlCMode"
+    >
+      <menupopup>
+        <menuitem value="smart" data-l10n-id="pref-reader-ctrl-c-mode-smart" />
+        <menuitem value="never" data-l10n-id="pref-reader-ctrl-c-mode-never" />
+        <menuitem
+          value="always"
+          data-l10n-id="pref-reader-ctrl-c-mode-always"
+        />
+      </menupopup>
+    </menulist>
+  </hbox>
+
+  <checkbox
+    id="zotero-prefpane-__addonRef__-allow-path-fallback"
+    preference="allowPathFallback"
+    data-l10n-id="pref-allow-path-fallback"
+  />
+
+  <description>
+    <html:span data-l10n-id="pref-compatibility-note"></html:span>
+  </description>
+</groupbox>
+<vbox>
+  <html:label
+    data-l10n-id="pref-help"
+    data-l10n-args='{"time": "__buildTime__","name": "__addonName__","version":"__buildVersion__"}'
+  ></html:label>
 </vbox>
