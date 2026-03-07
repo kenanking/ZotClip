@@ -20,8 +20,8 @@ clipboard.
   - Windows: writes native `CF_HDROP` file clipboard data for single and
     multiple files
   - non-Windows: tries file object first, then URI list
-  - all platforms: fall back to absolute file path text only when file clipboard
-    write fails and fallback is enabled
+  - all platforms: fall back to absolute file path text when file clipboard
+    write fails
 
 ## Requirements
 
@@ -53,14 +53,13 @@ Open `Edit -> Preferences -> ZotClip` and configure:
 - `Multi-Attachment Strategy` (`all` or `primary`)
 - `Allowed Attachment Types` (preset checkboxes plus custom extensions)
 - `Reader Ctrl+C Behavior` (`smart`, `never`, `always`)
-- `Allow path-text fallback`
 
 ## Windows Note
 
 Windows targets expect native file clipboard data rather than `text/uri-list`
 when pasting real files. ZotClip now writes `CF_HDROP` directly on Windows so
 multi-file copy can paste as actual files into Explorer and other file-aware
-targets, with path-text only as fallback.
+targets, with path-text used only when native file clipboard write fails.
 
 ## Development
 
@@ -77,4 +76,4 @@ npm run test:unit
 npm run build
 ```
 
-Manual checklist: `docs/testing/2026-03-05-zotclip-v1-manual-checklist.md`
+Manual checklist: `docs/manual-testing.md`

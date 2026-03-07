@@ -1,4 +1,8 @@
 import { copyFromReader, copyFromSelection } from "./modules/copy/copyCommands";
+import {
+  registerCopyMenuCommands,
+  unregisterCopyMenuCommands,
+} from "./modules/copy/menuCommands";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
 import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
@@ -15,6 +19,7 @@ import { config } from "../package.json";
 const readerHookDisposers = new WeakMap<Window, () => void>();
 const selectionHookDisposers = new WeakMap<Window, () => void>();
 const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
+let registeredCopyMenuIDs: string[] = [];
 
 async function onStartup() {
   await Promise.all([
@@ -30,6 +35,14 @@ async function onStartup() {
     label: getString("prefs-title"),
     image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.svg`,
   });
+  registeredCopyMenuIDs = registerCopyMenuCommands({
+    addonRef: addon.data.config.addonRef,
+    pluginID: addon.data.config.addonID,
+    menuIcon,
+    getLabel: (key) => getString(key),
+    onCopySelection: executeCopyFromSelection,
+    onCopyReader: executeCopyFromReader,
+  });
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -44,8 +57,6 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   win.MozXULElement.insertFTLIfNeeded(
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
-
-  registerCopyMenuCommands();
 
   const disposeReaderHook = registerReaderShortcutHandler(
     win,
@@ -75,6 +86,8 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  unregisterCopyMenuCommands(registeredCopyMenuIDs);
+  registeredCopyMenuIDs = [];
   ztoolkit.unregisterAll();
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed
@@ -106,28 +119,6 @@ function onShortcuts(_type: string) {
 
 function onDialogEvents(_type: string) {
   return;
-}
-
-function registerCopyMenuCommands() {
-  ztoolkit.Menu.register("item", {
-    tag: "menuitem",
-    id: `zotero-itemmenu-${addon.data.config.addonRef}-copy-selected`,
-    label: getString("menu-copy-selected"),
-    icon: menuIcon,
-    commandListener: () => {
-      void executeCopyFromSelection();
-    },
-  });
-
-  ztoolkit.Menu.register("menuTools", {
-    tag: "menuitem",
-    id: `zotero-toolsmenu-${addon.data.config.addonRef}-copy-reader`,
-    label: getString("menu-copy-reader"),
-    icon: menuIcon,
-    commandListener: () => {
-      void executeCopyFromReader();
-    },
-  });
 }
 
 async function executeCopyFromSelection(): Promise<void> {

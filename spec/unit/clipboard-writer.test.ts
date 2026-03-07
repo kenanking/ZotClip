@@ -6,7 +6,6 @@ import { writeClipboard } from "../../src/modules/copy/clipboardWriter";
 test("ClipboardWriter returns file-object when native write succeeds", async () => {
   const result = await writeClipboard(
     [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
-    true,
     {
       writeFileObject: async () => true,
       writeURIList: async () => false,
@@ -30,7 +29,6 @@ test("ClipboardWriter uses native Windows clipboard before other strategies", as
       { attachmentID: 1, itemID: 1, path: "C:/a.pdf" },
       { attachmentID: 2, itemID: 1, path: "C:/b.pdf" },
     ],
-    true,
     {
       isWindows: () => true,
       writeWindowsFileDrop: async () => {
@@ -65,7 +63,6 @@ test("ClipboardWriter falls back to path-text when native write fails", async ()
   let fallbackCalled = false;
   const result = await writeClipboard(
     [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
-    true,
     {
       writeFileObject: async () => false,
       writeURIList: async () => false,
@@ -79,7 +76,6 @@ test("ClipboardWriter falls back to path-text when native write fails", async ()
   assert.equal(fallbackCalled, true);
   assert.equal(result.ok, true);
   assert.equal(result.format, "path-text");
-  assert.equal(result.fallbackUsed, true);
   assert.equal(result.count, 1);
 });
 
@@ -94,7 +90,6 @@ test("ClipboardWriter falls back to path-text when native Windows clipboard writ
       { attachmentID: 1, itemID: 1, path: "C:/a.pdf" },
       { attachmentID: 2, itemID: 1, path: "C:/b.pdf" },
     ],
-    true,
     {
       isWindows: () => true,
       writeWindowsFileDrop: async () => {
@@ -122,6 +117,5 @@ test("ClipboardWriter falls back to path-text when native Windows clipboard writ
   assert.equal(fallbackCalled, true);
   assert.equal(result.ok, true);
   assert.equal(result.format, "path-text");
-  assert.equal(result.fallbackUsed, true);
   assert.equal(result.count, 2);
 });

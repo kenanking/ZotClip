@@ -21,10 +21,7 @@ export interface CopyCommandDeps {
     itemID: number,
     allowedTypes: string[],
   ): Promise<ResolvedAttachment[]>;
-  writeClipboard(
-    files: ResolvedAttachment[],
-    allowPathFallback: boolean,
-  ): Promise<ClipboardResult>;
+  writeClipboard(files: ResolvedAttachment[]): Promise<ClipboardResult>;
 }
 
 const DEFAULT_DEPS: CopyCommandDeps = {
@@ -47,8 +44,7 @@ const DEFAULT_DEPS: CopyCommandDeps = {
     resolveAttachmentsFromItems(items, mode, allowedTypes),
   resolveFromReader: (itemID, allowedTypes) =>
     resolveAttachmentFromReader(itemID, allowedTypes),
-  writeClipboard: (files, allowPathFallback) =>
-    writeClipboard(files, allowPathFallback),
+  writeClipboard: (files) => writeClipboard(files),
 };
 
 export async function copyFromSelection(
@@ -58,7 +54,7 @@ export async function copyFromSelection(
 ): Promise<ClipboardResult> {
   const selectedItems = deps.getSelectedItems();
   const files = await deps.resolveFromItems(selectedItems, mode, allowedTypes);
-  return deps.writeClipboard(files, true);
+  return deps.writeClipboard(files);
 }
 
 export async function copyFromReader(
@@ -76,5 +72,5 @@ export async function copyFromReader(
   }
 
   const files = await deps.resolveFromReader(readerItemID, allowedTypes);
-  return deps.writeClipboard(files, true);
+  return deps.writeClipboard(files);
 }

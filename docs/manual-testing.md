@@ -1,4 +1,4 @@
-# ZotClip v1 Manual Checklist
+# ZotClip Manual Testing
 
 ## Environment
 
@@ -23,8 +23,10 @@
 - [ ] Confirm `PDF`, `EPUB`, `MOBI`, and `TXT` preset type checkboxes are shown.
 - [ ] Disable `EPUB` and confirm an EPUB attachment is no longer copied.
 - [ ] Re-enable `EPUB` and confirm it is copied again.
-- [ ] Enter a custom extension such as `djvu` and confirm the value is normalized.
-- [ ] Clear all preset and custom types and confirm the pane shows a validation error.
+- [ ] Enter a custom extension such as `djvu` and confirm the value is
+      normalized.
+- [ ] Clear all preset and custom types and confirm the pane shows a validation
+      error.
 
 ## Multi-Attachment Strategy
 
@@ -39,22 +41,17 @@
 ## Reader Copy Flow
 
 - [ ] Open an allowed attachment in Zotero reader.
-- [ ] Select some text and press `Ctrl+C`; confirm text copy behavior is unchanged.
+- [ ] Select some text and press `Ctrl+C`; confirm text copy behavior is
+      unchanged.
 - [ ] Clear text selection and press `Ctrl+C`; confirm the current attachment is
       copied as a file object.
-- [ ] Press `Ctrl+Shift+C`; confirm the current attachment is copied as a file object.
-- [ ] Disable the current attachment type in preferences and confirm reader copy fails.
+- [ ] Press `Ctrl+Shift+C`; confirm the current attachment is copied as a file
+      object.
+- [ ] Disable the current attachment type in preferences and confirm reader copy
+      fails.
 
 ## Clipboard Fallback
 
-- [ ] Disable `Allow path-text fallback`.
-- [ ] Trigger copy and confirm the operation reports Windows clipboard limitations.
-- [ ] Enable `Allow path-text fallback`.
-- [ ] Trigger copy and confirm the path-text success message appears.
+- [ ] Trigger copy in a target that rejects native file clipboard data.
+- [ ] Confirm the notification explains that a path-text fallback was used.
 - [ ] Confirm pasted content is absolute file path text.
-
-## Preferences
-
-- [ ] Toggle `Allow path-text fallback` off.
-- [ ] Trigger copy in an unsupported destination and confirm operation reports failure.
-- [ ] Toggle fallback on again and confirm fallback copy works.

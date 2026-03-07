@@ -18,7 +18,6 @@ test("copyFromSelection copies from current pane selection", async () => {
   let selectedCalled = false;
   let resolverAllowedTypes: string[] = [];
   let writerCalled = false;
-  let fallbackEnabled = false;
 
   const result = await copyFromSelection("all", ["pdf", "epub"], {
     getSelectedItems: () => {
@@ -31,9 +30,8 @@ test("copyFromSelection copies from current pane selection", async () => {
       return sampleFiles;
     },
     resolveFromReader: async () => [],
-    writeClipboard: async (_files, allowPathFallback) => {
+    writeClipboard: async () => {
       writerCalled = true;
-      fallbackEnabled = allowPathFallback;
       return {
         ok: true,
         format: "file-object",
@@ -45,13 +43,11 @@ test("copyFromSelection copies from current pane selection", async () => {
   assert.equal(selectedCalled, true);
   assert.deepEqual(resolverAllowedTypes, ["pdf", "epub"]);
   assert.equal(writerCalled, true);
-  assert.equal(fallbackEnabled, true);
   assert.equal(result.ok, true);
 });
 
 test("copyFromReader copies from current reader item", async () => {
   let resolverAllowedTypes: string[] = [];
-  let fallbackEnabled = false;
 
   const result = await copyFromReader(["pdf"], {
     getSelectedItems: () => [],
@@ -63,8 +59,7 @@ test("copyFromReader copies from current reader item", async () => {
       }
       return sampleFiles;
     },
-    writeClipboard: async (_files, allowPathFallback) => {
-      fallbackEnabled = allowPathFallback;
+    writeClipboard: async () => {
       return {
         ok: true,
         format: "file-object",
@@ -74,6 +69,26 @@ test("copyFromReader copies from current reader item", async () => {
   });
 
   assert.deepEqual(resolverAllowedTypes, ["pdf"]);
-  assert.equal(fallbackEnabled, true);
   assert.equal(result.ok, true);
+});
+
+test("copyFromReader returns a failure result when no reader tab is active", async () => {
+  const result = await copyFromReader(["pdf"], {
+    getSelectedItems: () => [],
+    getCurrentReaderItemID: () => undefined,
+    resolveFromItems: async () => [],
+    resolveFromReader: async () => sampleFiles,
+    writeClipboard: async () => ({
+      ok: true,
+      format: "file-object",
+      count: 1,
+    }),
+  });
+
+  assert.deepEqual(result, {
+    ok: false,
+    format: "none",
+    count: 0,
+    message: "No active reader attachment.",
+  });
 });

@@ -7,7 +7,7 @@
   icons.
 - `spec/unit/`: fast unit tests run by `npm run test:unit`.
 - `test/`: scaffold/Zotero startup tests run by `npm run test`.
-- `docs/testing/`: manual verification notes.
+- `docs/manual-testing.md`: manual verification checklist.
 
 ## Commands
 

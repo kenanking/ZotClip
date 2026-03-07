@@ -2,12 +2,7 @@ import {
   extractExtensionFromPath,
   normalizeExtensionList,
 } from "./attachmentTypes";
-import type {
-  MultiAttachmentMode,
-  MultiPDFMode,
-  ResolvedAttachment,
-  ResolvedPDF,
-} from "./types";
+import type { MultiAttachmentMode, ResolvedAttachment } from "./types";
 
 export interface AttachmentResolverDeps {
   getItemsByIDs(ids: number[]): Zotero.Item[];
@@ -18,21 +13,6 @@ const DEFAULT_DEPS: AttachmentResolverDeps = {
   getItemsByIDs: (ids) => Zotero.Items.get(ids),
   getItemByID: (id) => Zotero.Items.get(id),
 };
-
-export async function resolvePDFsFromItems(
-  items: Zotero.Item[],
-  mode: MultiPDFMode,
-  deps: AttachmentResolverDeps = DEFAULT_DEPS,
-): Promise<ResolvedPDF[]> {
-  return resolveAttachmentsFromItems(items, mode, ["pdf"], deps);
-}
-
-export async function resolvePDFFromReader(
-  itemID: number,
-  deps: AttachmentResolverDeps = DEFAULT_DEPS,
-): Promise<ResolvedPDF[]> {
-  return resolveAttachmentFromReader(itemID, ["pdf"], deps);
-}
 
 export async function resolveAttachmentsFromItems(
   items: Zotero.Item[],

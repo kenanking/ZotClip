@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveAttachmentsFromItems } from "../../src/modules/copy/attachmentResolver";
+import {
+  resolveAttachmentFromReader,
+  resolveAttachmentsFromItems,
+} from "../../src/modules/copy/attachmentResolver";
 
 function makeAttachment(
   id: number,
@@ -98,4 +101,33 @@ test("AttachmentResolver: accepts selected attachment directly when type is allo
   assert.equal(resolved.length, 1);
   assert.equal(resolved[0].itemID, 3);
   assert.equal(resolved[0].attachmentID, 30);
+});
+
+test("AttachmentResolver: resolves current reader attachment when type is allowed", async () => {
+  const attachment = makeAttachment(1001, "C:/papers/reader.pdf", {
+    parentID: 90,
+  });
+
+  const resolved = await resolveAttachmentFromReader(1001, ["pdf"], {
+    getItemsByIDs: () => [],
+    getItemByID: () => attachment,
+  });
+
+  assert.equal(resolved.length, 1);
+  assert.equal(resolved[0].itemID, 90);
+  assert.equal(resolved[0].attachmentID, 1001);
+  assert.equal(resolved[0].path, "C:/papers/reader.pdf");
+});
+
+test("AttachmentResolver: rejects current reader attachment when type is not allowed", async () => {
+  const attachment = makeAttachment(1002, "C:/books/reader.epub", {
+    parentID: 91,
+  });
+
+  const resolved = await resolveAttachmentFromReader(1002, ["pdf"], {
+    getItemsByIDs: () => [],
+    getItemByID: () => attachment,
+  });
+
+  assert.deepEqual(resolved, []);
 });

@@ -1,4 +1,4 @@
-import type { ClipboardResult, ResolvedPDF } from "./types";
+import type { ClipboardResult, ResolvedAttachment } from "./types";
 import { writeWindowsFileDrop } from "./windowsFileClipboard";
 
 export interface ClipboardWriterDeps {
@@ -84,8 +84,7 @@ const DEFAULT_DEPS: ClipboardWriterDeps = {
 };
 
 export async function writeClipboard(
-  files: ResolvedPDF[],
-  allowPathFallback: boolean,
+  files: ResolvedAttachment[],
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
   const paths = uniqueNonEmptyPaths(files);
@@ -107,12 +106,11 @@ export async function writeClipboard(
       };
     }
 
-    if (allowPathFallback && deps.writePathText(paths)) {
+    if (deps.writePathText(paths)) {
       return {
         ok: true,
         format: "path-text",
         count: paths.length,
-        fallbackUsed: true,
         message: "File clipboard unavailable. Copied file path text instead.",
       };
     }
@@ -141,12 +139,11 @@ export async function writeClipboard(
     };
   }
 
-  if (allowPathFallback && deps.writePathText(paths)) {
+  if (deps.writePathText(paths)) {
     return {
       ok: true,
       format: "path-text",
       count: paths.length,
-      fallbackUsed: true,
       message: "File clipboard unavailable. Copied file path text instead.",
     };
   }
@@ -159,7 +156,7 @@ export async function writeClipboard(
   };
 }
 
-function uniqueNonEmptyPaths(files: ResolvedPDF[]): string[] {
+function uniqueNonEmptyPaths(files: ResolvedAttachment[]): string[] {
   const seen = new Set<string>();
   const paths: string[] = [];
 
