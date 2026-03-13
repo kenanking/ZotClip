@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildClipboardDiagnostics } from "../../src/modules/copy/clipboard/diagnostics";
@@ -66,6 +67,7 @@ test("buildClipboardDiagnostics summarizes detected commands and backend", () =>
     linuxSession: "wayland",
     commands: { "wl-copy": true, xclip: false },
     activeBackend: "linux-wayland-wl-copy-uri-list",
+    languageTag: "en-US",
   });
 
   assert.equal(diagnostics.lines[0], "Platform: linux (wayland)");
@@ -75,6 +77,62 @@ test("buildClipboardDiagnostics summarizes detected commands and backend", () =>
     diagnostics.lines[3],
     "Active backend: linux-wayland-wl-copy-uri-list",
   );
+});
+
+test("buildClipboardDiagnostics includes a simple install command on Wayland", () => {
+  const diagnostics = buildClipboardDiagnostics({
+    platform: "linux",
+    linuxSession: "wayland",
+    commands: { "wl-copy": false },
+    activeBackend: "generic-clipboard-fallback",
+    languageTag: "en-US",
+  });
+
+  assert.match(
+    diagnostics.lines.join("\n"),
+    /Install command: sudo apt install wl-clipboard/,
+  );
+});
+
+test("buildClipboardDiagnostics includes a Chinese install command on X11", () => {
+  const diagnostics = buildClipboardDiagnostics({
+    platform: "linux",
+    linuxSession: "x11",
+    commands: { xclip: false },
+    activeBackend: "generic-clipboard-fallback",
+    languageTag: "zh-CN",
+  });
+
+  assert.match(diagnostics.lines[0], /平台：linux \(x11\)/);
+  assert.match(
+    diagnostics.lines.join("\n"),
+    /安装命令：sudo apt install xclip/,
+  );
+});
+
+test("English shortcut locale copy explains the separate reader behavior", () => {
+  const englishLocale = readFileSync(
+    "addon/locale/en-US/preferences.ftl",
+    "utf8",
+  );
+
+  assert.match(englishLocale, /Library and reader shortcuts are separate\./);
+  assert.match(
+    englishLocale,
+    /Ctrl\+C in the reader keeps its original behavior and is not overridden\./,
+  );
+  assert.match(englishLocale, /No shortcut is set in the reader by default\./);
+});
+
+test("Chinese shortcut locale copy explains the separate reader behavior", () => {
+  const chineseLocale = readFileSync(
+    "addon/locale/zh-CN/preferences.ftl",
+    "utf8",
+  );
+
+  assert.match(chineseLocale, /条目面板和阅读器面板的快捷键互不共用/);
+  assert.match(chineseLocale, /阅读器中的 Ctrl\+C 会保留原有功能/);
+  assert.match(chineseLocale, /阅读器默认不设置快捷键/);
 });
 
 function createFakeMenulist(values: string[]) {

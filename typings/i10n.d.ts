@@ -28,6 +28,7 @@ export type FluentMessageId =
   | 'pref-section-shortcuts'
   | 'pref-section-types'
   | 'pref-shortcut-conflict'
+  | 'pref-shortcut-scope-note'
   | 'pref-shortcut-validation'
   | 'pref-title'
   | 'pref-type-epub'

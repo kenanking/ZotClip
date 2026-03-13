@@ -25,3 +25,16 @@ test("buildReaderButtonState uses the unavailable message when disabled", () => 
   assert.equal(state.disabled, true);
   assert.equal(state.tooltipText, "No eligible reader attachment.");
 });
+
+test("buildReaderButtonState preserves localized Chinese labels", () => {
+  const state = buildReaderButtonState({
+    canCopy: false,
+    shortcutLabel: "",
+    label: "复制当前阅读器附件",
+    unavailableMessage: "当前附件不可复制。",
+  });
+
+  assert.equal(state.disabled, true);
+  assert.equal(state.label, "复制当前阅读器附件");
+  assert.equal(state.tooltipText, "当前附件不可复制。");
+});
