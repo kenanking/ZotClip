@@ -2,6 +2,22 @@ import { config } from "../../../package.json";
 import type { ClipboardResult } from "./types";
 
 export function formatCopyMessage(result: ClipboardResult): string {
+  if (result.outcome === "backend-unavailable" && result.message) {
+    return result.message;
+  }
+
+  if (result.outcome === "copied-files") {
+    return `Copied ${result.count} attachment file(s) to clipboard (file-object).`;
+  }
+
+  if (result.outcome === "copied-file-uris") {
+    return `Copied ${result.count} attachment file URI(s) to clipboard.`;
+  }
+
+  if (result.outcome === "copied-path-text-fallback") {
+    return `Attachment file copy failed. Copied ${result.count} attachment path(s) instead.`;
+  }
+
   if (result.message && !result.ok) {
     return result.message;
   }

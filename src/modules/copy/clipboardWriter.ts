@@ -1,16 +1,25 @@
+import { runClipboardBackends } from "./clipboard/backendRegistry";
+import type { ClipboardBackend } from "./clipboard/backends";
+import { createPathTextBackend } from "./clipboard/pathTextBackend";
+import { buildClipboardPayload } from "./clipboard/payload";
+import {
+  detectCurrentPlatformContext,
+  type PlatformContext,
+} from "./clipboard/platformDetection";
+import { createWindowsBackend } from "./clipboard/windowsBackend";
 import type { ClipboardResult, ResolvedAttachment } from "./types";
 import { writeWindowsFileDrop } from "./windowsFileClipboard";
 
 export interface ClipboardWriterDeps {
-  isWindows?(): boolean;
-  writeWindowsFileDrop?(paths: string[]): Promise<boolean>;
+  detectPlatformContext?(): PlatformContext;
+  writeWindowsFileDrop?(paths: string[]): Promise<boolean> | boolean;
   writeFileObject(paths: string[]): Promise<boolean>;
-  writeURIList(paths: string[]): Promise<boolean>;
-  writePathText(paths: string[]): boolean;
+  writeURIList(fileUris: string[]): Promise<boolean>;
+  writePathText(value: string): boolean;
 }
 
 const DEFAULT_DEPS: ClipboardWriterDeps = {
-  isWindows: () => Zotero.isWin,
+  detectPlatformContext: () => detectCurrentPlatformContext(),
   writeWindowsFileDrop: async (paths) => writeWindowsFileDrop(paths),
   writeFileObject: async (paths) => {
     if (!paths.length) {
@@ -31,13 +40,13 @@ const DEFAULT_DEPS: ClipboardWriterDeps = {
       return false;
     }
   },
-  writeURIList: async (paths) => {
-    if (!paths.length) {
+  writeURIList: async (fileUris) => {
+    if (!fileUris.length) {
       return false;
     }
 
     try {
-      const payload = paths.map((path) => pathToFileURI(path)).join("\r\n");
+      const payload = `${fileUris.join("\r\n")}\r\n`;
       const supportsString = getXPCOMClasses()[
         "@mozilla.org/supports-string;1"
       ].createInstance(Components.interfaces.nsISupportsString);
@@ -68,13 +77,13 @@ const DEFAULT_DEPS: ClipboardWriterDeps = {
       return false;
     }
   },
-  writePathText: (paths) => {
-    if (!paths.length) {
+  writePathText: (value) => {
+    if (!value) {
       return false;
     }
 
     try {
-      Zotero.Utilities.Internal.copyTextToClipboard(paths.join("\n"));
+      Zotero.Utilities.Internal.copyTextToClipboard(value);
       return true;
     } catch (error) {
       ztoolkit.log("writePathText failed", error);
@@ -85,100 +94,102 @@ const DEFAULT_DEPS: ClipboardWriterDeps = {
 
 export async function writeClipboard(
   files: ResolvedAttachment[],
+  source: "library" | "reader" = "library",
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  const paths = uniqueNonEmptyPaths(files);
-  if (!paths.length) {
+  const payload = buildClipboardPayload(files, source);
+  if (!payload.paths.length) {
     return {
       ok: false,
       format: "none",
       count: 0,
+      outcome: "backend-unavailable",
       message: "No files to copy.",
     };
   }
 
-  if (deps.isWindows?.()) {
-    if (await deps.writeWindowsFileDrop?.(paths)) {
-      return {
-        ok: true,
-        format: "file-object",
-        count: paths.length,
-      };
-    }
+  const platformContext = deps.detectPlatformContext?.() || {
+    platform: "linux" as const,
+    linuxSession: "unknown" as const,
+  };
 
-    if (deps.writePathText(paths)) {
-      return {
-        ok: true,
-        format: "path-text",
-        count: paths.length,
-        message: "File clipboard unavailable. Copied file path text instead.",
-      };
-    }
+  const backends =
+    platformContext.platform === "windows"
+      ? buildWindowsBackends(deps)
+      : buildGenericBackends(deps);
 
-    return {
-      ok: false,
-      format: "none",
-      count: paths.length,
-      message: "Clipboard write failed.",
-    };
-  }
+  return runClipboardBackends({
+    payload,
+    backends,
+  });
+}
 
-  if (await deps.writeFileObject(paths)) {
-    return {
-      ok: true,
-      format: "file-object",
-      count: paths.length,
-    };
-  }
+function buildWindowsBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
+  return [
+    createWindowsBackend({
+      writeWindowsFileDrop: async (paths) =>
+        !!(await deps.writeWindowsFileDrop?.(paths)),
+    }),
+    createPathTextBackend({
+      writePathText: (value) => deps.writePathText(value),
+    }),
+  ];
+}
 
-  if (await deps.writeURIList(paths)) {
-    return {
-      ok: true,
-      format: "uri-list",
-      count: paths.length,
-    };
-  }
+function buildGenericBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
+  return [
+    {
+      id: "generic-file-object",
+      priority: 50,
+      isAvailable: async (payload) => ({
+        available: payload.paths.length === 1,
+      }),
+      write: async (payload) => {
+        if (!(await deps.writeFileObject(payload.paths))) {
+          return buildFailureResult(payload.paths.length);
+        }
 
-  if (deps.writePathText(paths)) {
-    return {
-      ok: true,
-      format: "path-text",
-      count: paths.length,
-      message: "File clipboard unavailable. Copied file path text instead.",
-    };
-  }
+        return {
+          ok: true,
+          count: payload.paths.length,
+          format: "file-object",
+          outcome: "copied-files",
+        };
+      },
+    },
+    {
+      id: "generic-uri-list",
+      priority: 40,
+      isAvailable: async (payload) => ({
+        available: payload.fileUris.length > 0,
+      }),
+      write: async (payload) => {
+        if (!(await deps.writeURIList(payload.fileUris))) {
+          return buildFailureResult(payload.paths.length);
+        }
 
+        return {
+          ok: true,
+          count: payload.paths.length,
+          format: "file-uri-list",
+          outcome: "copied-file-uris",
+        };
+      },
+    },
+    createPathTextBackend({
+      writePathText: (value) => deps.writePathText(value),
+    }),
+  ];
+}
+
+function buildFailureResult(count: number): ClipboardResult {
   return {
     ok: false,
+    count,
     format: "none",
-    count: paths.length,
+    outcome: "copy-failed",
     message: "Clipboard write failed.",
   };
-}
-
-function uniqueNonEmptyPaths(files: ResolvedAttachment[]): string[] {
-  const seen = new Set<string>();
-  const paths: string[] = [];
-
-  for (const file of files) {
-    const path = file.path?.trim();
-    if (!path || seen.has(path)) {
-      continue;
-    }
-
-    seen.add(path);
-    paths.push(path);
-  }
-
-  return paths;
-}
-
-function pathToFileURI(path: string): string {
-  const file = getXPCOMClasses()["@mozilla.org/file/local;1"].createInstance(
-    Components.interfaces.nsIFile,
-  );
-  file.initWithPath(path);
-  return Services.io.newFileURI(file).spec;
 }
 
 function getXPCOMClasses(): any {

@@ -18,6 +18,7 @@ test("copyFromSelection copies from current pane selection", async () => {
   let selectedCalled = false;
   let resolverAllowedTypes: string[] = [];
   let writerCalled = false;
+  let writerSource = "";
 
   const result = await copyFromSelection("all", ["pdf", "epub"], {
     getSelectedItems: () => {
@@ -30,12 +31,14 @@ test("copyFromSelection copies from current pane selection", async () => {
       return sampleFiles;
     },
     resolveFromReader: async () => [],
-    writeClipboard: async () => {
+    writeClipboard: async (_files, source) => {
       writerCalled = true;
+      writerSource = source;
       return {
         ok: true,
         format: "file-object",
         count: 1,
+        outcome: "copied-files",
       };
     },
   });
@@ -43,11 +46,13 @@ test("copyFromSelection copies from current pane selection", async () => {
   assert.equal(selectedCalled, true);
   assert.deepEqual(resolverAllowedTypes, ["pdf", "epub"]);
   assert.equal(writerCalled, true);
+  assert.equal(writerSource, "library");
   assert.equal(result.ok, true);
 });
 
 test("copyFromReader copies from current reader item", async () => {
   let resolverAllowedTypes: string[] = [];
+  let writerSource = "";
 
   const result = await copyFromReader(["pdf"], {
     getSelectedItems: () => [],
@@ -59,16 +64,19 @@ test("copyFromReader copies from current reader item", async () => {
       }
       return sampleFiles;
     },
-    writeClipboard: async () => {
+    writeClipboard: async (_files, source) => {
+      writerSource = source;
       return {
         ok: true,
         format: "file-object",
         count: 1,
+        outcome: "copied-files",
       };
     },
   });
 
   assert.deepEqual(resolverAllowedTypes, ["pdf"]);
+  assert.equal(writerSource, "reader");
   assert.equal(result.ok, true);
 });
 
@@ -82,6 +90,7 @@ test("copyFromReader returns a failure result when no reader tab is active", asy
       ok: true,
       format: "file-object",
       count: 1,
+      outcome: "copied-files",
     }),
   });
 

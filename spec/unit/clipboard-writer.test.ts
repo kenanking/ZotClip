@@ -3,22 +3,24 @@ import test from "node:test";
 
 import { writeClipboard } from "../../src/modules/copy/clipboardWriter";
 
-test("ClipboardWriter returns file-object when native write succeeds", async () => {
-  const result = await writeClipboard(
-    [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
-    {
-      writeFileObject: async () => true,
-      writeURIList: async () => false,
-      writePathText: () => false,
-    },
-  );
+test("ClipboardWriter returns backend-unavailable when there are no files to copy", async () => {
+  const result = await writeClipboard([], "library", {
+    detectPlatformContext: () => ({ platform: "windows" }),
+    writeFileObject: async () => false,
+    writeURIList: async () => false,
+    writePathText: () => false,
+  });
 
-  assert.equal(result.ok, true);
-  assert.equal(result.format, "file-object");
-  assert.equal(result.count, 1);
+  assert.deepEqual(result, {
+    ok: false,
+    format: "none",
+    count: 0,
+    outcome: "backend-unavailable",
+    message: "No files to copy.",
+  });
 });
 
-test("ClipboardWriter uses native Windows clipboard before other strategies", async () => {
+test("ClipboardWriter uses the Windows-native backend before other backends", async () => {
   let windowsCalled = false;
   let fileObjectCalled = false;
   let uriCalled = false;
@@ -29,8 +31,9 @@ test("ClipboardWriter uses native Windows clipboard before other strategies", as
       { attachmentID: 1, itemID: 1, path: "C:/a.pdf" },
       { attachmentID: 2, itemID: 1, path: "C:/b.pdf" },
     ],
+    "library",
     {
-      isWindows: () => true,
+      detectPlatformContext: () => ({ platform: "windows" }),
       writeWindowsFileDrop: async () => {
         windowsCalled = true;
         return true;
@@ -57,45 +60,19 @@ test("ClipboardWriter uses native Windows clipboard before other strategies", as
   assert.equal(result.ok, true);
   assert.equal(result.format, "file-object");
   assert.equal(result.count, 2);
+  assert.equal(result.outcome, "copied-files");
 });
 
-test("ClipboardWriter falls back to path-text when native write fails", async () => {
-  let fallbackCalled = false;
-  const result = await writeClipboard(
-    [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
-    {
-      writeFileObject: async () => false,
-      writeURIList: async () => false,
-      writePathText: () => {
-        fallbackCalled = true;
-        return true;
-      },
-    },
-  );
-
-  assert.equal(fallbackCalled, true);
-  assert.equal(result.ok, true);
-  assert.equal(result.format, "path-text");
-  assert.equal(result.count, 1);
-});
-
-test("ClipboardWriter falls back to path-text when native Windows clipboard write fails", async () => {
-  let windowsCalled = false;
+test("ClipboardWriter falls back to path-text when non-Windows backends fail", async () => {
   let fileObjectCalled = false;
   let uriCalled = false;
   let fallbackCalled = false;
 
   const result = await writeClipboard(
-    [
-      { attachmentID: 1, itemID: 1, path: "C:/a.pdf" },
-      { attachmentID: 2, itemID: 1, path: "C:/b.pdf" },
-    ],
+    [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
+    "reader",
     {
-      isWindows: () => true,
-      writeWindowsFileDrop: async () => {
-        windowsCalled = true;
-        return false;
-      },
+      detectPlatformContext: () => ({ platform: "linux", linuxSession: "x11" }),
       writeFileObject: async () => {
         fileObjectCalled = true;
         return false;
@@ -104,18 +81,18 @@ test("ClipboardWriter falls back to path-text when native Windows clipboard writ
         uriCalled = true;
         return false;
       },
-      writePathText: () => {
-        fallbackCalled = true;
+      writePathText: (value) => {
+        fallbackCalled = value === "C:/a.pdf";
         return true;
       },
     },
   );
 
-  assert.equal(windowsCalled, true);
-  assert.equal(fileObjectCalled, false);
-  assert.equal(uriCalled, false);
+  assert.equal(fileObjectCalled, true);
+  assert.equal(uriCalled, true);
   assert.equal(fallbackCalled, true);
   assert.equal(result.ok, true);
   assert.equal(result.format, "path-text");
-  assert.equal(result.count, 2);
+  assert.equal(result.count, 1);
+  assert.equal(result.outcome, "copied-path-text-fallback");
 });

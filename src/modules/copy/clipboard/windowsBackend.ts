@@ -4,7 +4,7 @@ import type { ClipboardBackend } from "./backends";
 import type { ClipboardPayload } from "./types";
 
 export interface WindowsBackendDeps {
-  writeWindowsFileDrop?(paths: string[]): boolean;
+  writeWindowsFileDrop?(paths: string[]): boolean | Promise<boolean>;
 }
 
 const DEFAULT_DEPS: WindowsBackendDeps = {
@@ -21,7 +21,7 @@ export function createWindowsBackend(
       available: payload.paths.length > 0,
     }),
     write: async (payload) => {
-      if (!deps.writeWindowsFileDrop?.(payload.paths)) {
+      if (!(await deps.writeWindowsFileDrop?.(payload.paths))) {
         return buildFailureResult(payload);
       }
 
