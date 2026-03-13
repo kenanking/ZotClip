@@ -487,4 +487,3 @@ Manual verification should expand into a platform matrix:
   hard-coded format.
 - macOS file clipboard support should be designed around native pasteboard
   objects rather than plain text clipboard writes.
-

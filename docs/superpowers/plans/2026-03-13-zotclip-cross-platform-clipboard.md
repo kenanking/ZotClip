@@ -114,6 +114,7 @@
 ### Task 1: Add Clipboard Payload and Result Types
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/types.ts`
 - Create: `src/modules/copy/clipboard/payload.ts`
 - Modify: `src/modules/copy/types.ts`
@@ -235,6 +236,7 @@ git commit -m "feat: add clipboard payload model"
 ### Task 2: Add Platform Detection
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/platformDetection.ts`
 - Test: `spec/unit/platform-detection.test.ts`
 
@@ -329,6 +331,7 @@ git commit -m "feat: detect clipboard platform context"
 ### Task 3: Add Backend Interfaces, Registry, and Windows/Path-Text Backends
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/backends.ts`
 - Create: `src/modules/copy/clipboard/backendRegistry.ts`
 - Create: `src/modules/copy/clipboard/windowsBackend.ts`
@@ -468,6 +471,7 @@ git commit -m "feat: add clipboard backend registry"
 ### Task 4: Migrate the Copy Flow to the Orchestrator
 
 **Files:**
+
 - Modify: `src/modules/copy/clipboardWriter.ts`
 - Modify: `src/modules/copy/copyCommands.ts`
 - Modify: `src/modules/copy/notifier.ts`
@@ -539,6 +543,7 @@ git commit -m "refactor: route copy flow through clipboard orchestrator"
 ### Task 5: Replace Reader Mode Prefs with Shortcut Prefs
 
 **Files:**
+
 - Modify: `addon/prefs.js`
 - Modify: `typings/prefs.d.ts`
 - Modify: `src/utils/prefs.ts`
@@ -621,6 +626,7 @@ git commit -m "feat: replace reader mode prefs with shortcut prefs"
 ### Task 6: Add Shared Shortcut Parsing and Matching
 
 **Files:**
+
 - Create: `src/modules/copy/shortcuts.ts`
 - Test: `spec/unit/shortcuts.test.ts`
 - Modify: `spec/unit/keyboard-shortcuts.test.ts`
@@ -726,6 +732,7 @@ git commit -m "feat: add configurable shortcut matching"
 ### Task 7: Add the Reader Toolbar Button
 
 **Files:**
+
 - Create: `src/modules/copy/readerToolbarButton.ts`
 - Modify: `src/hooks.ts`
 - Test: `spec/unit/reader-toolbar-button.test.ts`
@@ -804,6 +811,7 @@ git commit -m "feat: add reader toolbar copy button"
 ### Task 8: Update Preferences UI, Locale Strings, and Menu Text
 
 **Files:**
+
 - Modify: `addon/content/preferences.xhtml`
 - Modify: `src/modules/preferenceScript.ts`
 - Modify: `addon/locale/en-US/preferences.ftl`
@@ -881,6 +889,7 @@ git commit -m "feat: add shortcut controls to preferences"
 ### Task 9: Add the POSIX Command Runner
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/commandRunner.ts`
 - Test: `spec/unit/command-runner.test.ts`
 
@@ -951,6 +960,7 @@ git commit -m "feat: add subprocess command runner"
 ### Task 10: Implement Linux X11 and Wayland Command Backends
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/linuxCommandBackends.ts`
 - Modify: `src/modules/copy/clipboard/backendRegistry.ts`
 - Modify: `src/modules/copy/clipboard/platformDetection.ts`
@@ -987,7 +997,14 @@ test("linux x11 backend uses xclip with text/uri-list", async () => {
   });
 
   assert.equal(result.outcome, "copied-file-uris");
-  assert.deepEqual(calls[0].args, ["-selection", "clipboard", "-t", "text/uri-list", "-silent", "-i"]);
+  assert.deepEqual(calls[0].args, [
+    "-selection",
+    "clipboard",
+    "-t",
+    "text/uri-list",
+    "-silent",
+    "-i",
+  ]);
 });
 ```
 
@@ -1048,6 +1065,7 @@ git commit -m "feat: add linux clipboard command backends"
 ### Task 11: Implement the macOS `osascript` Backend
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/macosCommandBackend.ts`
 - Modify: `src/modules/copy/clipboard/backendRegistry.ts`
 - Test: `spec/unit/macos-command-backend.test.ts`
@@ -1111,6 +1129,7 @@ git commit -m "feat: add macos clipboard command backend"
 ### Task 12: Add Diagnostics and Wire Them Into Notifications and Preferences
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/diagnostics.ts`
 - Modify: `src/modules/copy/notifier.ts`
 - Modify: `src/modules/preferenceScript.ts`
@@ -1182,6 +1201,7 @@ git commit -m "feat: add clipboard backend diagnostics"
 ### Task 13: Update README and Manual Testing Matrix
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `docs/manual-testing.md`
 
@@ -1223,6 +1243,7 @@ git commit -m "docs: update clipboard platform usage guide"
 ### Task 14: Run Full Verification
 
 **Files:**
+
 - Modify if needed: any files touched by fixes discovered during verification
 
 - [ ] **Step 1: Run unit tests**

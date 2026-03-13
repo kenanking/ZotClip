@@ -3,8 +3,13 @@
 ## Environment
 
 - Zotero 8 installed
-- Windows target system
 - At least one regular item with mixed attachment types (`PDF`, `EPUB`, `TXT`)
+- At least one reader-openable attachment
+- Platform-specific clipboard dependencies installed where required:
+  - Windows: none
+  - Linux X11: `xclip`
+  - Linux Wayland: `wl-copy`
+  - macOS: `osascript`
 
 ## Library Copy Flow
 
@@ -41,17 +46,58 @@
 ## Reader Copy Flow
 
 - [ ] Open an allowed attachment in Zotero reader.
+- [ ] Confirm the ZotClip toolbar button is visible in the reader.
 - [ ] Select some text and press `Ctrl+C`; confirm text copy behavior is
       unchanged.
-- [ ] Clear text selection and press `Ctrl+C`; confirm the current attachment is
-      copied as a file object.
-- [ ] Press `Ctrl+Shift+C`; confirm the current attachment is copied as a file
-      object.
+- [ ] Click the ZotClip toolbar button and confirm the current attachment is
+      copied.
+- [ ] Configure a reader shortcut such as `Ctrl+Shift+C` in preferences.
+- [ ] Press the configured reader shortcut and confirm the current attachment is
+      copied.
+- [ ] Clear the reader shortcut in preferences and confirm the reader stops
+      intercepting keyboard copy.
 - [ ] Disable the current attachment type in preferences and confirm reader copy
-      fails.
+      is disabled and the toolbar button shows an unavailable state.
 
 ## Clipboard Fallback
 
 - [ ] Trigger copy in a target that rejects native file clipboard data.
 - [ ] Confirm the notification explains that a path-text fallback was used.
 - [ ] Confirm pasted content is absolute file path text.
+
+## Preferences Diagnostics
+
+- [ ] Open `Edit -> Preferences -> ZotClip`.
+- [ ] Confirm the diagnostics section shows platform and active backend.
+- [ ] Confirm Linux sessions report `xclip` or `wl-copy` availability.
+- [ ] Confirm macOS reports `osascript` availability.
+- [ ] Remove or hide a required dependency and confirm the diagnostics section
+      reports the missing command and fallback reason.
+
+## Platform Matrix
+
+### Windows
+
+- [ ] Paste copied files into Explorer.
+- [ ] Paste copied files into WeChat or QQ.
+- [ ] Paste copied files into a browser target that accepts file drops/paste.
+
+### Linux X11
+
+- [ ] Paste copied files into a file manager such as Nautilus.
+- [ ] Paste into Chrome.
+- [ ] Paste into Firefox.
+- [ ] Paste into Telegram.
+
+### Linux Wayland
+
+- [ ] Paste copied files into a file manager.
+- [ ] Paste into Chrome.
+- [ ] Paste into Firefox.
+- [ ] Paste into Telegram.
+
+### macOS
+
+- [ ] Paste copied files into Finder.
+- [ ] Paste into a browser target that accepts file pastes.
+- [ ] Paste into a chat target.
