@@ -9,6 +9,8 @@ declare namespace _ZoteroTypes {
     PluginPrefsMap: {
       "multiAttachmentMode": string;
       "readerCtrlCMode": string;
+      "libraryShortcut": string;
+      "readerShortcut": string;
       "enabledAttachmentTypes": string;
       "customAttachmentTypes": string;
     };

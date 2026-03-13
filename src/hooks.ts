@@ -12,6 +12,7 @@ import {
   getAllowedAttachmentTypes,
   getMultiAttachmentMode,
   getReaderCtrlCMode,
+  migrateShortcutPrefs,
 } from "./utils/prefs";
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
@@ -28,6 +29,7 @@ async function onStartup() {
     Zotero.uiReadyPromise,
   ]);
 
+  migrateShortcutPrefs();
   initLocale();
   Zotero.PreferencePanes.register({
     pluginID: addon.data.config.addonID,
