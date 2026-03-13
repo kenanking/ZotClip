@@ -1,26 +1,22 @@
 import { copyFromReader } from "./copyCommands";
+import { matchesShortcut, parseShortcut } from "./shortcuts";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export type ReaderCtrlCMode = "smart" | "never" | "always";
 
 export interface ReaderHookDeps {
+  getShortcut(): string;
   isReaderContext(event: KeyboardEvent): boolean;
-  hasTextSelection(event: KeyboardEvent): boolean;
   triggerCopyFromReader(): Promise<void>;
 }
 
 const DEFAULT_DEPS: ReaderHookDeps = {
+  getShortcut: () => "",
   isReaderContext: () => {
     const tabs = ztoolkit.getGlobal("Zotero_Tabs") as
       | _ZoteroTypes.Zotero_Tabs
       | undefined;
     return tabs?.selectedType === "reader";
-  },
-  hasTextSelection: (event) => {
-    const ownerDocument = (event.target as Node | null)?.ownerDocument;
-    const selection =
-      ownerDocument?.getSelection?.() || event.view?.getSelection?.();
-    return !!selection && selection.toString().trim().length > 0;
   },
   triggerCopyFromReader: async () => {
     await copyFromReader(getAllowedAttachmentTypes());
@@ -29,7 +25,6 @@ const DEFAULT_DEPS: ReaderHookDeps = {
 
 export async function handleReaderCopyShortcut(
   event: KeyboardEvent,
-  mode: ReaderCtrlCMode,
   deps: Partial<ReaderHookDeps> = {},
 ): Promise<boolean> {
   if (event.defaultPrevented) {
@@ -45,27 +40,8 @@ export async function handleReaderCopyShortcut(
     return false;
   }
 
-  const key = event.key.toLowerCase();
-  const isCopyKey = key === "c";
-  const hasMainModifier = event.ctrlKey || event.metaKey;
-  const hasAlt = event.altKey;
-
-  if (!isCopyKey || !hasMainModifier || hasAlt) {
-    return false;
-  }
-
-  const isPrimaryCombo = !event.shiftKey;
-  const isFallbackCombo = event.shiftKey;
-
-  if (isPrimaryCombo) {
-    if (mode === "never") {
-      return false;
-    }
-
-    if (mode === "smart" && finalDeps.hasTextSelection(event)) {
-      return false;
-    }
-  } else if (!isFallbackCombo) {
+  const shortcut = parseShortcut(finalDeps.getShortcut());
+  if (!matchesShortcut(shortcut, event)) {
     return false;
   }
 
@@ -76,11 +52,14 @@ export async function handleReaderCopyShortcut(
 
 export function registerReaderShortcutHandler(
   win: Window,
-  modeProvider: () => ReaderCtrlCMode,
+  shortcutProvider: () => string,
   deps: Partial<ReaderHookDeps> = {},
 ): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    void handleReaderCopyShortcut(event, modeProvider(), deps);
+    void handleReaderCopyShortcut(event, {
+      ...deps,
+      getShortcut: shortcutProvider,
+    });
   };
 
   win.addEventListener("keydown", onKeyDown, true);

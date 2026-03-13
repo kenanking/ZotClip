@@ -8,6 +8,7 @@ function makeKeyEvent(options: {
   ctrl?: boolean;
   meta?: boolean;
   shift?: boolean;
+  alt?: boolean;
   key?: string;
   target?: EventTarget | null;
   defaultPrevented?: boolean;
@@ -17,7 +18,7 @@ function makeKeyEvent(options: {
     ctrlKey: options.ctrl ?? true,
     metaKey: options.meta ?? false,
     shiftKey: options.shift ?? false,
-    altKey: false,
+    altKey: options.alt ?? false,
     key: options.key ?? "c",
     target: options.target ?? null,
     defaultPrevented: options.defaultPrevented ?? false,
@@ -33,11 +34,12 @@ function makeKeyEvent(options: {
   };
 }
 
-test("keyboard shortcuts: library copy intercepts Ctrl+C when items are selected", async () => {
-  const mock = makeKeyEvent({ ctrl: true, key: "c" });
+test("keyboard shortcuts: library copy intercepts the configured shortcut when items are selected", async () => {
+  const mock = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
   let copyCalled = false;
 
   const intercepted = await handleSelectionCopyShortcut(mock.event, {
+    getShortcut: () => "Ctrl+Shift+C",
     isLibraryContext: () => true,
     hasSelectedItems: () => true,
     isEditableTarget: () => false,
@@ -52,12 +54,13 @@ test("keyboard shortcuts: library copy intercepts Ctrl+C when items are selected
 });
 
 test("keyboard shortcuts: library copy skips editable targets and empty selections", async () => {
-  const editable = makeKeyEvent({ ctrl: true, key: "c" });
-  const empty = makeKeyEvent({ ctrl: true, key: "c" });
+  const editable = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
+  const empty = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
 
   const editableIntercepted = await handleSelectionCopyShortcut(
     editable.event,
     {
+      getShortcut: () => "Ctrl+Shift+C",
       isLibraryContext: () => true,
       hasSelectedItems: () => true,
       isEditableTarget: () => true,
@@ -65,6 +68,7 @@ test("keyboard shortcuts: library copy skips editable targets and empty selectio
     },
   );
   const emptyIntercepted = await handleSelectionCopyShortcut(empty.event, {
+    getShortcut: () => "Ctrl+Shift+C",
     isLibraryContext: () => true,
     hasSelectedItems: () => false,
     isEditableTarget: () => false,
@@ -77,13 +81,13 @@ test("keyboard shortcuts: library copy skips editable targets and empty selectio
   assert.equal(empty.wasPrevented(), false);
 });
 
-test("keyboard shortcuts: reader smart mode preserves native copy when text is selected", async () => {
+test("keyboard shortcuts: reader keeps native copy when no shortcut is configured", async () => {
   const mock = makeKeyEvent({ ctrl: true, key: "c" });
   let copyCalled = false;
 
-  const intercepted = await handleReaderCopyShortcut(mock.event, "smart", {
+  const intercepted = await handleReaderCopyShortcut(mock.event, {
+    getShortcut: () => "",
     isReaderContext: () => true,
-    hasTextSelection: () => true,
     triggerCopyFromReader: async () => {
       copyCalled = true;
     },
@@ -94,30 +98,13 @@ test("keyboard shortcuts: reader smart mode preserves native copy when text is s
   assert.equal(mock.wasPrevented(), false);
 });
 
-test("keyboard shortcuts: reader smart mode intercepts Ctrl+C when selection is empty", async () => {
-  const mock = makeKeyEvent({ ctrl: true, key: "c" });
-  let copyCalled = false;
-
-  const intercepted = await handleReaderCopyShortcut(mock.event, "smart", {
-    isReaderContext: () => true,
-    hasTextSelection: () => false,
-    triggerCopyFromReader: async () => {
-      copyCalled = true;
-    },
-  });
-
-  assert.equal(intercepted, true);
-  assert.equal(copyCalled, true);
-  assert.equal(mock.wasPrevented(), true);
-});
-
-test("keyboard shortcuts: reader fallback shortcut intercepts Ctrl+Shift+C even in never mode", async () => {
+test("keyboard shortcuts: reader intercepts the configured shortcut", async () => {
   const mock = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
   let copyCalled = false;
 
-  const intercepted = await handleReaderCopyShortcut(mock.event, "never", {
+  const intercepted = await handleReaderCopyShortcut(mock.event, {
+    getShortcut: () => "Ctrl+Shift+C",
     isReaderContext: () => true,
-    hasTextSelection: () => true,
     triggerCopyFromReader: async () => {
       copyCalled = true;
     },
@@ -131,27 +118,26 @@ test("keyboard shortcuts: reader fallback shortcut intercepts Ctrl+Shift+C even 
 test("keyboard shortcuts: already handled events are ignored", async () => {
   const reader = makeKeyEvent({
     ctrl: true,
+    shift: true,
     key: "c",
     defaultPrevented: true,
   });
   const selection = makeKeyEvent({
     ctrl: true,
+    shift: true,
     key: "c",
     defaultPrevented: true,
   });
 
-  const readerIntercepted = await handleReaderCopyShortcut(
-    reader.event,
-    "smart",
-    {
-      isReaderContext: () => true,
-      hasTextSelection: () => false,
-      triggerCopyFromReader: async () => undefined,
-    },
-  );
+  const readerIntercepted = await handleReaderCopyShortcut(reader.event, {
+    getShortcut: () => "Ctrl+Shift+C",
+    isReaderContext: () => true,
+    triggerCopyFromReader: async () => undefined,
+  });
   const selectionIntercepted = await handleSelectionCopyShortcut(
     selection.event,
     {
+      getShortcut: () => "Ctrl+Shift+C",
       isLibraryContext: () => true,
       hasSelectedItems: () => true,
       isEditableTarget: () => false,
@@ -164,19 +150,20 @@ test("keyboard shortcuts: already handled events are ignored", async () => {
 });
 
 test("keyboard shortcuts: the same event is not handled twice", async () => {
-  const reader = makeKeyEvent({ ctrl: true, key: "c" });
-  const selection = makeKeyEvent({ ctrl: true, key: "c" });
+  const reader = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
+  const selection = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
   let readerCount = 0;
   let selectionCount = 0;
 
   const readerDeps = {
+    getShortcut: () => "Ctrl+Shift+C",
     isReaderContext: () => true,
-    hasTextSelection: () => false,
     triggerCopyFromReader: async () => {
       readerCount += 1;
     },
   };
   const selectionDeps = {
+    getShortcut: () => "Ctrl+Shift+C",
     isLibraryContext: () => true,
     hasSelectedItems: () => true,
     isEditableTarget: () => false,
@@ -187,12 +174,10 @@ test("keyboard shortcuts: the same event is not handled twice", async () => {
 
   const firstReaderIntercept = await handleReaderCopyShortcut(
     reader.event,
-    "smart",
     readerDeps,
   );
   const secondReaderIntercept = await handleReaderCopyShortcut(
     reader.event,
-    "smart",
     readerDeps,
   );
   const firstSelectionIntercept = await handleSelectionCopyShortcut(

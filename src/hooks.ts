@@ -10,8 +10,9 @@ import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import {
   getAllowedAttachmentTypes,
+  getLibraryShortcut,
   getMultiAttachmentMode,
-  getReaderCtrlCMode,
+  getReaderShortcut,
   migrateShortcutPrefs,
 } from "./utils/prefs";
 import { createZToolkit } from "./utils/ztoolkit";
@@ -62,7 +63,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
 
   const disposeReaderHook = registerReaderShortcutHandler(
     win,
-    () => getReaderCtrlCMode(),
+    () => getReaderShortcut(),
     {
       triggerCopyFromReader: async () => {
         await executeCopyFromReader();
@@ -72,6 +73,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   readerHookDisposers.set(win, disposeReaderHook);
 
   const disposeSelectionHook = registerSelectionShortcutHandler(win, {
+    getShortcut: () => getLibraryShortcut(),
     triggerCopyFromSelection: async () => {
       await executeCopyFromSelection();
     },
