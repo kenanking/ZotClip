@@ -162,7 +162,7 @@ async function getReaderButtonAvailability(): Promise<ReaderButtonAvailability> 
   if (!readerItemID) {
     return {
       canCopy: false,
-      unavailableMessage: "No active reader attachment.",
+      unavailableMessage: getString("mainwindow-copy-reader-no-active"),
     };
   }
 
@@ -174,7 +174,7 @@ async function getReaderButtonAvailability(): Promise<ReaderButtonAvailability> 
   if (!files.length) {
     return {
       canCopy: false,
-      unavailableMessage: "No eligible reader attachment.",
+      unavailableMessage: getString("mainwindow-copy-reader-unavailable"),
     };
   }
 

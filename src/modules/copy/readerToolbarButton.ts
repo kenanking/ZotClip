@@ -44,9 +44,7 @@ export function buildReaderButtonState(
     };
   }
 
-  const shortcutSuffix = input.shortcutLabel
-    ? ` (${input.shortcutLabel})`
-    : "";
+  const shortcutSuffix = input.shortcutLabel ? ` (${input.shortcutLabel})` : "";
 
   return {
     disabled: false,

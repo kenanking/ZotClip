@@ -3,6 +3,7 @@ import {
   normalizeExtensionList,
 } from "./copy/attachmentTypes";
 import {
+  getClipboardDiagnostics,
   getCustomAttachmentTypes,
   getEnabledAttachmentTypes,
   getLibraryShortcut,
@@ -10,7 +11,11 @@ import {
   getReaderShortcut,
   setPref,
 } from "../utils/prefs";
-import { formatShortcut, parseShortcut, type ParsedShortcut } from "./copy/shortcuts";
+import {
+  formatShortcut,
+  parseShortcut,
+  type ParsedShortcut,
+} from "./copy/shortcuts";
 
 interface AttachmentTypeControls {
   panel: HTMLElement;
@@ -73,8 +78,10 @@ export function areShortcutInputsConflicting(
   const normalizedLibraryShortcut = normalizeShortcutInput(libraryShortcut);
   const normalizedReaderShortcut = normalizeShortcutInput(readerShortcut);
 
-  return !!normalizedLibraryShortcut &&
-    normalizedLibraryShortcut === normalizedReaderShortcut;
+  return (
+    !!normalizedLibraryShortcut &&
+    normalizedLibraryShortcut === normalizedReaderShortcut
+  );
 }
 
 export function syncMenulistValue(
@@ -110,7 +117,7 @@ export async function registerPrefsScripts(window: Window) {
   if (shortcutControls) {
     syncShortcutControls(shortcutControls);
     registerShortcutEvents(shortcutControls);
-    renderDiagnosticsPlaceholder(shortcutControls);
+    await renderDiagnostics(shortcutControls);
   }
 }
 
@@ -240,7 +247,7 @@ function registerShortcutEvents(controls: ShortcutControls): void {
   const persist = () => persistShortcutPrefs(controls);
 
   for (const input of [controls.libraryInput, controls.readerInput]) {
-    input.addEventListener("keydown", (event) => {
+    input.addEventListener("keydown", (event: KeyboardEvent) => {
       const shortcut = buildShortcutFromEvent(event);
       if (shortcut === undefined) {
         return;
@@ -299,8 +306,12 @@ function setAttachmentTypeValidationState(
 }
 
 function persistShortcutPrefs(controls: ShortcutControls): void {
-  controls.libraryInput.value = normalizeShortcutInput(controls.libraryInput.value);
-  controls.readerInput.value = normalizeShortcutInput(controls.readerInput.value);
+  controls.libraryInput.value = normalizeShortcutInput(
+    controls.libraryInput.value,
+  );
+  controls.readerInput.value = normalizeShortcutInput(
+    controls.readerInput.value,
+  );
 
   const validation = getShortcutValidationState(controls);
   applyShortcutValidationState(controls, validation);
@@ -346,13 +357,17 @@ function applyShortcutValidationState(
   controls.conflictMessage.hidden = !validation.hasConflict;
 }
 
-function renderDiagnosticsPlaceholder(controls: ShortcutControls): void {
+async function renderDiagnostics(controls: ShortcutControls): Promise<void> {
   if (!controls.diagnosticsValue) {
     return;
   }
 
-  controls.diagnosticsValue.textContent =
-    "Diagnostics will appear here after backend probing is added.";
+  try {
+    const diagnostics = await getClipboardDiagnostics();
+    controls.diagnosticsValue.textContent = diagnostics.lines.join("\n");
+  } catch (error) {
+    controls.diagnosticsValue.textContent = `Diagnostics unavailable: ${getErrorMessage(error)}`;
+  }
 }
 
 function buildShortcutFromEvent(event: KeyboardEvent): string | undefined {
@@ -386,10 +401,7 @@ function buildParsedShortcutFromEvent(
 
 function isModifierKey(key: string): boolean {
   return (
-    key === "control" ||
-    key === "shift" ||
-    key === "alt" ||
-    key === "meta"
+    key === "control" || key === "shift" || key === "alt" || key === "meta"
   );
 }
 
@@ -409,4 +421,12 @@ function getMenulistCurrentValue(menulist: MenulistLike): string {
 
 function getMenuitemValue(item: MenuitemLike | null): string {
   return item?.value || item?.getAttribute?.("value") || "";
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
 }

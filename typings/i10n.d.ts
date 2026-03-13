@@ -3,8 +3,8 @@
 /* eslint-disable */
 // @ts-nocheck
 export type FluentMessageId =
-  | 'mainwindow-copy-reader-no-active'
   | 'mainwindow-copy-reader'
+  | 'mainwindow-copy-reader-no-active'
   | 'mainwindow-copy-reader-unavailable'
   | 'mainwindow-copy-selected'
   | 'menu-copy-reader'

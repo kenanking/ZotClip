@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { buildClipboardDiagnostics } from "../../src/modules/copy/clipboard/diagnostics";
 import {
   areShortcutInputsConflicting,
   buildEffectiveAttachmentTypes,
@@ -52,8 +53,28 @@ test("preference script validates shortcut input", () => {
 });
 
 test("preference script detects conflicting shortcuts", () => {
-  assert.equal(areShortcutInputsConflicting("Ctrl+Shift+C", "Ctrl+Shift+C"), true);
+  assert.equal(
+    areShortcutInputsConflicting("Ctrl+Shift+C", "Ctrl+Shift+C"),
+    true,
+  );
   assert.equal(areShortcutInputsConflicting("Ctrl+C", ""), false);
+});
+
+test("buildClipboardDiagnostics summarizes detected commands and backend", () => {
+  const diagnostics = buildClipboardDiagnostics({
+    platform: "linux",
+    linuxSession: "wayland",
+    commands: { "wl-copy": true, xclip: false },
+    activeBackend: "linux-wayland-wl-copy-uri-list",
+  });
+
+  assert.equal(diagnostics.lines[0], "Platform: linux (wayland)");
+  assert.match(diagnostics.lines[1], /wl-copy: available/);
+  assert.match(diagnostics.lines[2], /xclip: missing/);
+  assert.equal(
+    diagnostics.lines[3],
+    "Active backend: linux-wayland-wl-copy-uri-list",
+  );
 });
 
 function createFakeMenulist(values: string[]) {

@@ -2,7 +2,11 @@ import { config } from "../../../package.json";
 import type { ClipboardResult } from "./types";
 
 export function formatCopyMessage(result: ClipboardResult): string {
-  if (result.outcome === "backend-unavailable" && result.message) {
+  if (
+    (result.outcome === "backend-unavailable" ||
+      result.outcome === "dependency-missing") &&
+    result.message
+  ) {
     return result.message;
   }
 
@@ -15,6 +19,10 @@ export function formatCopyMessage(result: ClipboardResult): string {
   }
 
   if (result.outcome === "copied-path-text-fallback") {
+    if (result.message) {
+      return result.message;
+    }
+
     return `Attachment file copy failed. Copied ${result.count} attachment path(s) instead.`;
   }
 

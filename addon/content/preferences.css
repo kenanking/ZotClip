@@ -65,3 +65,10 @@
 .zotclip-pref-build {
   margin-top: 10px;
 }
+
+.zotclip-pref-diagnostics {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
