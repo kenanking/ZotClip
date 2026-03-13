@@ -88,12 +88,16 @@ function buildInstallCommand(
     return "sudo apt install wl-clipboard";
   }
 
-  if (input.linuxSession === "x11" && commands.xclip === false) {
-    return "sudo apt install xclip";
+  if (input.linuxSession === "x11" && commands["python3-gi"] === false) {
+    return "sudo apt install python3-gi";
   }
 
   if (commands["wl-copy"] === false) {
     return "sudo apt install wl-clipboard";
+  }
+
+  if (commands["python3-gi"] === false) {
+    return "sudo apt install python3-gi";
   }
 
   if (commands.xclip === false) {

@@ -94,11 +94,11 @@ test("buildClipboardDiagnostics includes a simple install command on Wayland", (
   );
 });
 
-test("buildClipboardDiagnostics includes a Chinese install command on X11", () => {
+test("buildClipboardDiagnostics includes a Chinese install command for the X11 GTK helper", () => {
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "x11",
-    commands: { xclip: false },
+    commands: { "python3-gi": false, xclip: true },
     activeBackend: "generic-clipboard-fallback",
     languageTag: "zh-CN",
   });
@@ -106,7 +106,7 @@ test("buildClipboardDiagnostics includes a Chinese install command on X11", () =
   assert.match(diagnostics.lines[0], /平台：linux \(x11\)/);
   assert.match(
     diagnostics.lines.join("\n"),
-    /安装命令：sudo apt install xclip/,
+    /安装命令：sudo apt install python3-gi/,
   );
 });
 

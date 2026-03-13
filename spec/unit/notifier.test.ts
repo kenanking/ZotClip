@@ -56,6 +56,23 @@ test("formatCopyMessage uses Chinese when the language starts with zh", () => {
   );
 });
 
+test("formatCopyMessage uses a generic success message for non-file-object copies", () => {
+  assert.equal(
+    formatCopyMessage(
+      {
+        ok: true,
+        format: "file-uri-list",
+        count: 2,
+        outcome: "copied-files",
+      },
+      {
+        getLanguage: () => "zh-CN",
+      },
+    ),
+    "已复制 2 个附件文件到剪贴板。",
+  );
+});
+
 test("formatCopyMessage falls back to English for non-Chinese languages", () => {
   assert.equal(
     formatCopyMessage(
@@ -87,5 +104,23 @@ test("formatCopyMessage localizes known failure messages in Chinese", () => {
       },
     ),
     "当前没有活动的阅读器附件。",
+  );
+});
+
+test("formatCopyMessage localizes the X11 GTK dependency hint in Chinese", () => {
+  assert.equal(
+    formatCopyMessage(
+      {
+        ok: false,
+        format: "none",
+        count: 0,
+        outcome: "dependency-missing",
+        message: "Install python3-gi to enable file copy on X11.",
+      },
+      {
+        getLanguage: () => "zh-CN",
+      },
+    ),
+    "要在 X11 中启用文件复制，请安装 python3-gi。",
   );
 });

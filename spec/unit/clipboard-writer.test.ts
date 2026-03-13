@@ -6,8 +6,6 @@ import { writeClipboard } from "../../src/modules/copy/clipboardWriter";
 test("ClipboardWriter returns backend-unavailable when there are no files to copy", async () => {
   const result = await writeClipboard([], "library", {
     detectPlatformContext: () => ({ platform: "windows" }),
-    writeFileObject: async () => false,
-    writeURIList: async () => false,
     writePathText: () => false,
   });
 
@@ -22,8 +20,6 @@ test("ClipboardWriter returns backend-unavailable when there are no files to cop
 
 test("ClipboardWriter uses the Windows-native backend before other backends", async () => {
   let windowsCalled = false;
-  let fileObjectCalled = false;
-  let uriCalled = false;
   let fallbackCalled = false;
 
   const result = await writeClipboard(
@@ -38,14 +34,6 @@ test("ClipboardWriter uses the Windows-native backend before other backends", as
         windowsCalled = true;
         return true;
       },
-      writeFileObject: async () => {
-        fileObjectCalled = true;
-        return true;
-      },
-      writeURIList: async () => {
-        uriCalled = true;
-        return true;
-      },
       writePathText: () => {
         fallbackCalled = true;
         return true;
@@ -54,8 +42,6 @@ test("ClipboardWriter uses the Windows-native backend before other backends", as
   );
 
   assert.equal(windowsCalled, true);
-  assert.equal(fileObjectCalled, false);
-  assert.equal(uriCalled, false);
   assert.equal(fallbackCalled, false);
   assert.equal(result.ok, true);
   assert.equal(result.format, "file-object");
@@ -64,32 +50,33 @@ test("ClipboardWriter uses the Windows-native backend before other backends", as
 });
 
 test("ClipboardWriter falls back to path-text when non-Windows backends fail", async () => {
-  let fileObjectCalled = false;
-  let uriCalled = false;
   let fallbackCalled = false;
 
   const result = await writeClipboard(
-    [{ attachmentID: 1, itemID: 1, path: "C:/a.pdf" }],
+    [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
     "reader",
     {
       detectPlatformContext: () => ({ platform: "linux", linuxSession: "x11" }),
-      writeFileObject: async () => {
-        fileObjectCalled = true;
-        return false;
-      },
-      writeURIList: async () => {
-        uriCalled = true;
-        return false;
-      },
+      runCommand: async () => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: "gtk unavailable",
+      }),
+      startCommand: async () => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: "helper failed",
+      }),
+      probeCommand: async () => false,
       writePathText: (value) => {
-        fallbackCalled = value === "C:/a.pdf";
+        fallbackCalled = value === "/home/user/a.pdf";
         return true;
       },
     },
   );
 
-  assert.equal(fileObjectCalled, true);
-  assert.equal(uriCalled, true);
   assert.equal(fallbackCalled, true);
   assert.equal(result.ok, true);
   assert.equal(result.format, "path-text");
@@ -97,20 +84,18 @@ test("ClipboardWriter falls back to path-text when non-Windows backends fail", a
   assert.equal(result.outcome, "copied-path-text-fallback");
 });
 
-test("ClipboardWriter prefers the Linux X11 command backend before generic clipboard fallbacks", async () => {
-  let fileObjectCalled = false;
-  let uriCalled = false;
+test("ClipboardWriter prefers the Linux X11 GTK helper backend before command fallbacks", async () => {
   let fallbackCalled = false;
-  const commands: any[] = [];
+  const probeCalls: any[] = [];
+  const helperCalls: any[] = [];
 
   const result = await writeClipboard(
     [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
     "library",
     {
       detectPlatformContext: () => ({ platform: "linux", linuxSession: "x11" }),
-      probeCommand: async (name) => name === "xclip",
       runCommand: async (call) => {
-        commands.push(call);
+        probeCalls.push(call);
         return {
           ok: true,
           exitCode: 0,
@@ -118,13 +103,17 @@ test("ClipboardWriter prefers the Linux X11 command backend before generic clipb
           stderr: "",
         };
       },
-      writeFileObject: async () => {
-        fileObjectCalled = true;
-        return true;
+      startCommand: async (call) => {
+        helperCalls.push(call);
+        return {
+          ok: true,
+          exitCode: 0,
+          stdout: "",
+          stderr: "",
+        };
       },
-      writeURIList: async () => {
-        uriCalled = true;
-        return true;
+      probeCommand: async () => {
+        throw new Error("xclip fallback should not be probed");
       },
       writePathText: () => {
         fallbackCalled = true;
@@ -133,22 +122,15 @@ test("ClipboardWriter prefers the Linux X11 command backend before generic clipb
     },
   );
 
-  assert.equal(fileObjectCalled, false);
-  assert.equal(uriCalled, false);
+  assert.equal(probeCalls.length, 1);
+  assert.equal(helperCalls.length, 1);
   assert.equal(fallbackCalled, false);
-  assert.deepEqual(commands[0], {
-    command: "xclip",
-    args: ["-selection", "clipboard", "-t", "text/uri-list", "-silent", "-i"],
-    stdinText: "file:///home/user/a.pdf\r\n",
-  });
   assert.equal(result.ok, true);
   assert.equal(result.format, "file-uri-list");
-  assert.equal(result.outcome, "copied-file-uris");
+  assert.equal(result.outcome, "copied-files");
 });
 
 test("ClipboardWriter prefers the macOS command backend before path-text fallback", async () => {
-  let fileObjectCalled = false;
-  let uriCalled = false;
   let fallbackCalled = false;
   const commands: any[] = [];
 
@@ -167,14 +149,6 @@ test("ClipboardWriter prefers the macOS command backend before path-text fallbac
           stderr: "",
         };
       },
-      writeFileObject: async () => {
-        fileObjectCalled = true;
-        return true;
-      },
-      writeURIList: async () => {
-        uriCalled = true;
-        return true;
-      },
       writePathText: () => {
         fallbackCalled = true;
         return true;
@@ -182,8 +156,6 @@ test("ClipboardWriter prefers the macOS command backend before path-text fallbac
     },
   );
 
-  assert.equal(fileObjectCalled, false);
-  assert.equal(uriCalled, false);
   assert.equal(fallbackCalled, false);
   assert.deepEqual(commands[0], {
     command: "/usr/bin/osascript",

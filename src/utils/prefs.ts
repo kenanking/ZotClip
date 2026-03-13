@@ -5,6 +5,7 @@ import {
   type ClipboardDiagnostics,
 } from "../modules/copy/clipboard/diagnostics";
 import { createCommandRunner } from "../modules/copy/clipboard/commandRunner";
+import { buildLinuxX11GtkProbeCall } from "../modules/copy/clipboard/linuxX11GtkBackend";
 import {
   detectCurrentPlatformContext,
   type PlatformContext,
@@ -78,8 +79,7 @@ export function getAllowedAttachmentTypes(): string[] {
 
 export async function getClipboardDiagnostics(): Promise<ClipboardDiagnostics> {
   const platformContext = detectCurrentPlatformContext();
-  const commandNames = getClipboardCommandNames(platformContext);
-  const commands = await probeClipboardCommands(commandNames);
+  const commands = await probeClipboardSupport(platformContext);
 
   return buildClipboardDiagnostics({
     platform: platformContext.platform,
@@ -91,40 +91,37 @@ export async function getClipboardDiagnostics(): Promise<ClipboardDiagnostics> {
   });
 }
 
-function getClipboardCommandNames(platformContext: PlatformContext): string[] {
+async function probeClipboardSupport(
+  platformContext: PlatformContext,
+): Promise<Record<string, boolean>> {
   if (platformContext.platform === "linux") {
     if (platformContext.linuxSession === "wayland") {
-      return ["wl-copy"];
+      return {
+        "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
+      };
     }
 
     if (platformContext.linuxSession === "x11") {
-      return ["xclip"];
+      return {
+        "python3-gi": await probeLinuxX11GtkSupport(),
+        xclip: await clipboardCommandRunner.probeCommand("xclip"),
+      };
     }
 
-    return ["wl-copy", "xclip"];
+    return {
+      "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
+      "python3-gi": await probeLinuxX11GtkSupport(),
+      xclip: await clipboardCommandRunner.probeCommand("xclip"),
+    };
   }
 
   if (platformContext.platform === "macos") {
-    return ["osascript"];
+    return {
+      osascript: await clipboardCommandRunner.probeCommand("osascript"),
+    };
   }
 
-  return [];
-}
-
-async function probeClipboardCommands(
-  commandNames: string[],
-): Promise<Record<string, boolean>> {
-  const entries = await Promise.all(
-    commandNames.map(
-      async (commandName) =>
-        [
-          commandName,
-          await clipboardCommandRunner.probeCommand(commandName),
-        ] as const,
-    ),
-  );
-
-  return Object.fromEntries(entries);
+  return {};
 }
 
 function getActiveBackendID(
@@ -146,13 +143,19 @@ function getActiveBackendID(
   }
 
   if (platformContext.linuxSession === "x11") {
-    return commands.xclip
-      ? "linux-x11-xclip-uri-list"
-      : "generic-clipboard-fallback";
+    return commands["python3-gi"]
+      ? "linux-x11-gtk-file-copy"
+      : commands.xclip
+        ? "linux-x11-xclip-uri-list"
+        : "generic-clipboard-fallback";
   }
 
   if (commands["wl-copy"]) {
     return "linux-wayland-wl-copy-uri-list";
+  }
+
+  if (commands["python3-gi"]) {
+    return "linux-x11-gtk-file-copy";
   }
 
   if (commands.xclip) {
@@ -171,8 +174,8 @@ function getFallbackReason(
       return "Install wl-clipboard to enable file copy on Wayland.";
     }
 
-    if (platformContext.linuxSession === "x11" && !commands.xclip) {
-      return "Install xclip to enable file copy on X11.";
+    if (platformContext.linuxSession === "x11" && !commands["python3-gi"]) {
+      return "Install python3-gi to enable file copy on X11.";
     }
   }
 
@@ -181,4 +184,11 @@ function getFallbackReason(
   }
 
   return undefined;
+}
+
+async function probeLinuxX11GtkSupport(): Promise<boolean> {
+  const result = await clipboardCommandRunner.runCommand(
+    buildLinuxX11GtkProbeCall(),
+  );
+  return result.ok;
 }

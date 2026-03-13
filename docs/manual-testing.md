@@ -7,7 +7,7 @@
 - At least one reader-openable attachment
 - Platform-specific clipboard dependencies installed where required:
   - Windows: none
-  - Linux X11: `xclip`
+  - Linux X11: `python3-gi`
   - Linux Wayland: `wl-copy`
   - macOS: `osascript`
 
@@ -69,10 +69,20 @@
 
 - [ ] Open `Edit -> Preferences -> ZotClip`.
 - [ ] Confirm the diagnostics section shows platform and active backend.
-- [ ] Confirm Linux sessions report `xclip` or `wl-copy` availability.
+- [ ] Confirm Linux X11 reports `python3-gi` availability and the GTK helper backend.
+- [ ] Confirm Linux Wayland reports `wl-copy` availability.
 - [ ] Confirm macOS reports `osascript` availability.
 - [ ] Remove or hide a required dependency and confirm the diagnostics section
       reports the missing command and fallback reason.
+
+## X11 Clipboard Inspection
+
+- [ ] On Linux X11, trigger attachment copy from Zotero.
+- [ ] Run `xclip -selection clipboard -t text/uri-list -o | xxd -g 1`.
+- [ ] Confirm the payload starts with `file:///`.
+- [ ] Run `xclip -selection clipboard -t x-special/gnome-copied-files -o | xxd -g 1`.
+- [ ] Confirm the payload starts with `copy\nfile:///`.
+- [ ] Confirm the GNOME payload does not include an extra trailing empty entry.
 
 ## Platform Matrix
 

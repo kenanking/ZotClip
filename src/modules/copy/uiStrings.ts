@@ -55,6 +55,8 @@ const CHINESE_COPY_MESSAGES: Record<string, string> = {
     "文件剪贴板不可用，已改为复制文件路径文本。",
   "Install wl-clipboard to enable file copy on Wayland.":
     "要在 Wayland 中启用文件复制，请安装 wl-clipboard。",
+  "Install python3-gi to enable file copy on X11.":
+    "要在 X11 中启用文件复制，请安装 python3-gi。",
   "Install xclip to enable file copy on X11.":
     "要在 X11 中启用文件复制，请安装 xclip。",
   "macOS osascript is required to copy files.":

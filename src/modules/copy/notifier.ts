@@ -27,6 +27,12 @@ export function formatCopyMessage(
   }
 
   if (result.outcome === "copied-files") {
+    if (result.format !== "file-object") {
+      return isChinese
+        ? `已复制 ${result.count} 个附件文件到剪贴板。`
+        : `Copied ${result.count} attachment file(s) to clipboard.`;
+    }
+
     return isChinese
       ? `已复制 ${result.count} 个附件文件到剪贴板（文件对象）。`
       : `Copied ${result.count} attachment file(s) to clipboard (file-object).`;
