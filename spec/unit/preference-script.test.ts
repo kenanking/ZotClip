@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  areShortcutInputsConflicting,
   buildEffectiveAttachmentTypes,
+  normalizeShortcutInput,
   syncMenulistValue,
+  validateShortcutInput,
   validateAttachmentTypeSelection,
 } from "../../src/modules/preferenceScript";
 
@@ -36,6 +39,21 @@ test("preference script falls back to the first menu item for invalid values", (
   assert.equal(syncedValue, "smart");
   assert.equal(menulist.value, "smart");
   assert.equal(menulist.selectedItem?.value, "smart");
+});
+
+test("preference script normalizes shortcut input", () => {
+  assert.equal(normalizeShortcutInput(" shift + ctrl + c "), "Ctrl+Shift+C");
+  assert.equal(normalizeShortcutInput(""), "");
+});
+
+test("preference script validates shortcut input", () => {
+  assert.equal(validateShortcutInput("Ctrl+Shift+C"), true);
+  assert.equal(validateShortcutInput("Ctrl+"), false);
+});
+
+test("preference script detects conflicting shortcuts", () => {
+  assert.equal(areShortcutInputsConflicting("Ctrl+Shift+C", "Ctrl+Shift+C"), true);
+  assert.equal(areShortcutInputsConflicting("Ctrl+C", ""), false);
 });
 
 function createFakeMenulist(values: string[]) {

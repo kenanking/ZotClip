@@ -5,16 +5,26 @@ import {
 import {
   getCustomAttachmentTypes,
   getEnabledAttachmentTypes,
+  getLibraryShortcut,
   getMultiAttachmentMode,
-  getReaderCtrlCMode,
+  getReaderShortcut,
   setPref,
 } from "../utils/prefs";
+import { formatShortcut, parseShortcut, type ParsedShortcut } from "./copy/shortcuts";
 
 interface AttachmentTypeControls {
   panel: HTMLElement;
   presetCheckboxes: HTMLInputElement[];
   customInput: HTMLInputElement;
   validationMessage: HTMLElement;
+}
+
+interface ShortcutControls {
+  libraryInput: HTMLInputElement;
+  readerInput: HTMLInputElement;
+  validationMessage: HTMLElement;
+  conflictMessage: HTMLElement;
+  diagnosticsValue: HTMLElement | null;
 }
 
 interface MenuitemLike {
@@ -48,6 +58,25 @@ export function validateAttachmentTypeSelection(
   return buildEffectiveAttachmentTypes(enabledTypes, customInput).length > 0;
 }
 
+export function normalizeShortcutInput(value: string): string {
+  return formatShortcut(parseShortcut(value));
+}
+
+export function validateShortcutInput(value: string): boolean {
+  return value.trim().length === 0 || !!parseShortcut(value);
+}
+
+export function areShortcutInputsConflicting(
+  libraryShortcut: string,
+  readerShortcut: string,
+): boolean {
+  const normalizedLibraryShortcut = normalizeShortcutInput(libraryShortcut);
+  const normalizedReaderShortcut = normalizeShortcutInput(readerShortcut);
+
+  return !!normalizedLibraryShortcut &&
+    normalizedLibraryShortcut === normalizedReaderShortcut;
+}
+
 export function syncMenulistValue(
   menulist: MenulistLike,
   preferredValue: string,
@@ -70,38 +99,19 @@ export async function registerPrefsScripts(window: Window) {
 
   syncPreferenceMenulists(window.document);
 
-  const controls = getAttachmentTypeControls(window.document);
-  if (!controls) {
-    return;
+  const attachmentTypeControls = getAttachmentTypeControls(window.document);
+  const shortcutControls = getShortcutControls(window.document);
+
+  if (attachmentTypeControls) {
+    syncAttachmentTypeControls(attachmentTypeControls);
+    registerAttachmentTypeEvents(attachmentTypeControls);
   }
 
-  const enabledTypes = getEnabledAttachmentTypes().filter((type) =>
-    PRESET_TYPE_SET.has(type),
-  );
-  const enabledTypeSet = new Set(enabledTypes);
-
-  for (const checkbox of controls.presetCheckboxes) {
-    checkbox.checked = enabledTypeSet.has(getCheckboxType(checkbox));
+  if (shortcutControls) {
+    syncShortcutControls(shortcutControls);
+    registerShortcutEvents(shortcutControls);
+    renderDiagnosticsPlaceholder(shortcutControls);
   }
-
-  controls.customInput.value = getCustomAttachmentTypes().join(", ");
-  syncAttachmentTypeValidation(controls);
-
-  for (const checkbox of controls.presetCheckboxes) {
-    checkbox.addEventListener("change", () => {
-      persistAttachmentTypePrefs(controls);
-    });
-  }
-
-  controls.customInput.addEventListener("input", () => {
-    syncAttachmentTypeValidation(controls);
-  });
-  controls.customInput.addEventListener("change", () => {
-    persistAttachmentTypePrefs(controls);
-  });
-  controls.customInput.addEventListener("blur", () => {
-    persistAttachmentTypePrefs(controls);
-  });
 }
 
 function syncPreferenceMenulists(doc: Document): void {
@@ -110,12 +120,6 @@ function syncPreferenceMenulists(doc: Document): void {
       "zotero-prefpane-__addonRef__-multi-attachment-mode",
     ) as MenulistLike | null,
     getMultiAttachmentMode(),
-  );
-  registerMenulistSync(
-    doc.getElementById(
-      "zotero-prefpane-__addonRef__-reader-ctrl-c-mode",
-    ) as MenulistLike | null,
-    getReaderCtrlCMode(),
   );
 }
 
@@ -164,6 +168,97 @@ function getAttachmentTypeControls(
   };
 }
 
+function getShortcutControls(doc: Document): ShortcutControls | undefined {
+  const libraryInput = doc.querySelector<HTMLInputElement>(
+    "[data-zotclip-library-shortcut]",
+  );
+  const readerInput = doc.querySelector<HTMLInputElement>(
+    "[data-zotclip-reader-shortcut]",
+  );
+  const validationMessage = doc.querySelector<HTMLElement>(
+    "[data-zotclip-shortcut-validation]",
+  );
+  const conflictMessage = doc.querySelector<HTMLElement>(
+    "[data-zotclip-shortcut-conflict]",
+  );
+  const diagnosticsValue = doc.querySelector<HTMLElement>(
+    "[data-zotclip-diagnostics-value]",
+  );
+
+  if (!libraryInput || !readerInput || !validationMessage || !conflictMessage) {
+    return undefined;
+  }
+
+  return {
+    libraryInput,
+    readerInput,
+    validationMessage,
+    conflictMessage,
+    diagnosticsValue,
+  };
+}
+
+function syncAttachmentTypeControls(controls: AttachmentTypeControls): void {
+  const enabledTypes = getEnabledAttachmentTypes().filter((type) =>
+    PRESET_TYPE_SET.has(type),
+  );
+  const enabledTypeSet = new Set(enabledTypes);
+
+  for (const checkbox of controls.presetCheckboxes) {
+    checkbox.checked = enabledTypeSet.has(getCheckboxType(checkbox));
+  }
+
+  controls.customInput.value = getCustomAttachmentTypes().join(", ");
+  syncAttachmentTypeValidation(controls);
+}
+
+function registerAttachmentTypeEvents(controls: AttachmentTypeControls): void {
+  for (const checkbox of controls.presetCheckboxes) {
+    checkbox.addEventListener("change", () => {
+      persistAttachmentTypePrefs(controls);
+    });
+  }
+
+  controls.customInput.addEventListener("input", () => {
+    syncAttachmentTypeValidation(controls);
+  });
+  controls.customInput.addEventListener("change", () => {
+    persistAttachmentTypePrefs(controls);
+  });
+  controls.customInput.addEventListener("blur", () => {
+    persistAttachmentTypePrefs(controls);
+  });
+}
+
+function syncShortcutControls(controls: ShortcutControls): void {
+  controls.libraryInput.value = getLibraryShortcut();
+  controls.readerInput.value = getReaderShortcut();
+  syncShortcutValidation(controls);
+}
+
+function registerShortcutEvents(controls: ShortcutControls): void {
+  const persist = () => persistShortcutPrefs(controls);
+
+  for (const input of [controls.libraryInput, controls.readerInput]) {
+    input.addEventListener("keydown", (event) => {
+      const shortcut = buildShortcutFromEvent(event);
+      if (shortcut === undefined) {
+        return;
+      }
+
+      event.preventDefault();
+      input.value = shortcut;
+      syncShortcutValidation(controls);
+    });
+
+    input.addEventListener("input", () => {
+      syncShortcutValidation(controls);
+    });
+    input.addEventListener("change", persist);
+    input.addEventListener("blur", persist);
+  }
+}
+
 function persistAttachmentTypePrefs(controls: AttachmentTypeControls): void {
   const selectedPresetTypes = getSelectedPresetTypes(controls.presetCheckboxes);
   const normalizedCustomTypes = normalizeExtensionList(
@@ -201,6 +296,101 @@ function setAttachmentTypeValidationState(
   controls.panel.dataset.invalid = isInvalid ? "true" : "false";
   controls.customInput.dataset.invalid = isInvalid ? "true" : "false";
   controls.validationMessage.hidden = !isInvalid;
+}
+
+function persistShortcutPrefs(controls: ShortcutControls): void {
+  controls.libraryInput.value = normalizeShortcutInput(controls.libraryInput.value);
+  controls.readerInput.value = normalizeShortcutInput(controls.readerInput.value);
+
+  const validation = getShortcutValidationState(controls);
+  applyShortcutValidationState(controls, validation);
+  if (!validation.isValid) {
+    return;
+  }
+
+  setPref("libraryShortcut", controls.libraryInput.value);
+  setPref("readerShortcut", controls.readerInput.value);
+}
+
+function syncShortcutValidation(controls: ShortcutControls): void {
+  applyShortcutValidationState(controls, getShortcutValidationState(controls));
+}
+
+function getShortcutValidationState(controls: ShortcutControls): {
+  isValid: boolean;
+  hasConflict: boolean;
+} {
+  const libraryValid = validateShortcutInput(controls.libraryInput.value);
+  const readerValid = validateShortcutInput(controls.readerInput.value);
+  const hasConflict = areShortcutInputsConflicting(
+    controls.libraryInput.value,
+    controls.readerInput.value,
+  );
+
+  return {
+    isValid: libraryValid && readerValid && !hasConflict,
+    hasConflict,
+  };
+}
+
+function applyShortcutValidationState(
+  controls: ShortcutControls,
+  validation: { isValid: boolean; hasConflict: boolean },
+): void {
+  const libraryValid = validateShortcutInput(controls.libraryInput.value);
+  const readerValid = validateShortcutInput(controls.readerInput.value);
+
+  controls.libraryInput.dataset.invalid = libraryValid ? "false" : "true";
+  controls.readerInput.dataset.invalid = readerValid ? "false" : "true";
+  controls.validationMessage.hidden = libraryValid && readerValid;
+  controls.conflictMessage.hidden = !validation.hasConflict;
+}
+
+function renderDiagnosticsPlaceholder(controls: ShortcutControls): void {
+  if (!controls.diagnosticsValue) {
+    return;
+  }
+
+  controls.diagnosticsValue.textContent =
+    "Diagnostics will appear here after backend probing is added.";
+}
+
+function buildShortcutFromEvent(event: KeyboardEvent): string | undefined {
+  if (event.key === "Tab") {
+    return undefined;
+  }
+
+  if (event.key === "Backspace" || event.key === "Delete") {
+    return "";
+  }
+
+  const parsedShortcut = buildParsedShortcutFromEvent(event);
+  return formatShortcut(parsedShortcut);
+}
+
+function buildParsedShortcutFromEvent(
+  event: KeyboardEvent,
+): ParsedShortcut | undefined {
+  const key = event.key.toLowerCase();
+  if (isModifierKey(key)) {
+    return undefined;
+  }
+
+  return {
+    ctrlOrMeta: event.ctrlKey || event.metaKey,
+    alt: event.altKey,
+    shift: event.shiftKey,
+    key,
+  };
+}
+
+function isModifierKey(key: string): boolean {
+  return (
+    key === "control" ||
+    key === "shift" ||
+    key === "alt" ||
+    key === "meta"
+  );
 }
 
 function getSelectedPresetTypes(checkboxes: HTMLInputElement[]): string[] {

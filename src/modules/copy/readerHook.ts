@@ -2,8 +2,6 @@ import { copyFromReader } from "./copyCommands";
 import { matchesShortcut, parseShortcut } from "./shortcuts";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
-export type ReaderCtrlCMode = "smart" | "never" | "always";
-
 export interface ReaderHookDeps {
   getShortcut(): string;
   isReaderContext(event: KeyboardEvent): boolean;

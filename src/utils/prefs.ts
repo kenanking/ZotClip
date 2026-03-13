@@ -1,7 +1,6 @@
 import { config } from "../../package.json";
 import { normalizeExtensionList } from "../modules/copy/attachmentTypes";
 import type { MultiAttachmentMode } from "../modules/copy/types";
-import type { ReaderCtrlCMode } from "../modules/copy/readerHook";
 
 type PluginPrefsMap = _ZoteroTypes.Prefs["PluginPrefsMap"];
 
@@ -41,14 +40,6 @@ export function clearPref(key: string) {
 export function getMultiAttachmentMode(): MultiAttachmentMode {
   const value = getPref("multiAttachmentMode");
   return value === "primary" ? "primary" : "all";
-}
-
-export function getReaderCtrlCMode(): ReaderCtrlCMode {
-  const value = getPref("readerCtrlCMode");
-  if (value === "always" || value === "never") {
-    return value;
-  }
-  return "smart";
 }
 
 export function getLibraryShortcut(): string {

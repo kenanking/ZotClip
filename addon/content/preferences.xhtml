@@ -93,34 +93,76 @@
   <separator class="thin" />
 
   <label class="zotclip-pref-section"
-    ><html:h3 data-l10n-id="pref-section-compatibility"></html:h3
+    ><html:h3 data-l10n-id="pref-section-shortcuts"></html:h3
   ></label>
 
-  <hbox class="zotclip-pref-row" align="center">
+  <vbox class="zotclip-pref-field">
     <html:label
       class="zotclip-pref-field-label"
-      for="zotero-prefpane-__addonRef__-reader-ctrl-c-mode"
-      data-l10n-id="pref-reader-ctrl-c-mode"
+      for="zotero-prefpane-__addonRef__-library-shortcut"
+      data-l10n-id="pref-library-shortcut"
     ></html:label>
-    <menulist
-      id="zotero-prefpane-__addonRef__-reader-ctrl-c-mode"
-      class="zotclip-pref-menulist"
-      preference="readerCtrlCMode"
+    <html:input
+      id="zotero-prefpane-__addonRef__-library-shortcut"
+      class="zotclip-pref-textinput"
+      type="text"
+      data-zotclip-library-shortcut="true"
+    />
+    <description class="zotclip-pref-help">
+      <html:span data-l10n-id="pref-library-shortcut-help"></html:span>
+    </description>
+  </vbox>
+
+  <vbox class="zotclip-pref-field">
+    <html:label
+      class="zotclip-pref-field-label"
+      for="zotero-prefpane-__addonRef__-reader-shortcut"
+      data-l10n-id="pref-reader-shortcut"
+    ></html:label>
+    <html:input
+      id="zotero-prefpane-__addonRef__-reader-shortcut"
+      class="zotclip-pref-textinput"
+      type="text"
+      data-zotclip-reader-shortcut="true"
+    />
+    <description class="zotclip-pref-help">
+      <html:span data-l10n-id="pref-reader-shortcut-help"></html:span>
+    </description>
+    <description
+      class="zotclip-pref-validation"
+      data-zotclip-shortcut-validation="true"
+      hidden="hidden"
     >
-      <menupopup>
-        <menuitem value="smart" data-l10n-id="pref-reader-ctrl-c-mode-smart" />
-        <menuitem value="never" data-l10n-id="pref-reader-ctrl-c-mode-never" />
-        <menuitem
-          value="always"
-          data-l10n-id="pref-reader-ctrl-c-mode-always"
-        />
-      </menupopup>
-    </menulist>
-  </hbox>
+      <html:span data-l10n-id="pref-shortcut-validation"></html:span>
+    </description>
+    <description
+      class="zotclip-pref-validation"
+      data-zotclip-shortcut-conflict="true"
+      hidden="hidden"
+    >
+      <html:span data-l10n-id="pref-shortcut-conflict"></html:span>
+    </description>
+  </vbox>
 
   <description class="zotclip-pref-help">
     <html:span data-l10n-id="pref-compatibility-note"></html:span>
   </description>
+
+  <separator class="thin" />
+
+  <label class="zotclip-pref-section"
+    ><html:h3 data-l10n-id="pref-section-compatibility"></html:h3
+  ></label>
+
+  <vbox class="zotclip-pref-field">
+    <html:label
+      class="zotclip-pref-field-label"
+      data-l10n-id="pref-diagnostics"
+    ></html:label>
+    <description class="zotclip-pref-help">
+      <html:span data-zotclip-diagnostics-value="true"></html:span>
+    </description>
+  </vbox>
 </groupbox>
 <vbox class="zotclip-pref-build">
   <html:label
