@@ -34,6 +34,14 @@ $env:ZOTERO_PLUGIN_ZOTERO_BIN_PATH='C:\Program Files\Zotero\zotero.exe'
   - clipboard behavior in `clipboardWriter.ts`
   - UI strings in locale files
 
+## Compatibility
+
+- Do not preserve backward compatibility unless the user explicitly asks for it.
+- Prefer removing legacy preferences, migrations, compatibility shims, and old
+  behavior branches instead of carrying them forward.
+- When changing behavior, optimize for the current plugin contract rather than
+  upgrade-path compatibility.
+
 ## Testing
 
 - Add or update targeted tests for every behavior change.
