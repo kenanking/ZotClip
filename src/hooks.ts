@@ -1,11 +1,17 @@
 import { copyFromReader, copyFromSelection } from "./modules/copy/copyCommands";
+import { resolveAttachmentFromReader } from "./modules/copy/attachmentResolver";
 import {
   registerCopyMenuCommands,
   unregisterCopyMenuCommands,
 } from "./modules/copy/menuCommands";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
+import {
+  registerReaderToolbarButton,
+  type ReaderButtonAvailability,
+} from "./modules/copy/readerToolbarButton";
 import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
+import { formatShortcut, parseShortcut } from "./modules/copy/shortcuts";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import {
@@ -19,6 +25,7 @@ import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
 const readerHookDisposers = new WeakMap<Window, () => void>();
+const readerToolbarDisposers = new WeakMap<Window, () => void>();
 const selectionHookDisposers = new WeakMap<Window, () => void>();
 const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
 let registeredCopyMenuIDs: string[] = [];
@@ -72,6 +79,16 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   );
   readerHookDisposers.set(win, disposeReaderHook);
 
+  const disposeReaderToolbar = registerReaderToolbarButton(win, {
+    getLabel: () => getString("mainwindow-copy-reader"),
+    getShortcutLabel: () => formatShortcut(parseShortcut(getReaderShortcut())),
+    getAvailability: async () => getReaderButtonAvailability(),
+    onCommand: async () => {
+      await executeCopyFromReader();
+    },
+  });
+  readerToolbarDisposers.set(win, disposeReaderToolbar);
+
   const disposeSelectionHook = registerSelectionShortcutHandler(win, {
     getShortcut: () => getLibraryShortcut(),
     triggerCopyFromSelection: async () => {
@@ -84,6 +101,8 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
 async function onMainWindowUnload(win: Window): Promise<void> {
   readerHookDisposers.get(win)?.();
   readerHookDisposers.delete(win);
+  readerToolbarDisposers.get(win)?.();
+  readerToolbarDisposers.delete(win);
   selectionHookDisposers.get(win)?.();
   selectionHookDisposers.delete(win);
   ztoolkit.unregisterAll();
@@ -136,6 +155,44 @@ async function executeCopyFromSelection(): Promise<void> {
 async function executeCopyFromReader(): Promise<void> {
   const result = await copyFromReader(getAllowedAttachmentTypes());
   notifyCopyResult(result);
+}
+
+async function getReaderButtonAvailability(): Promise<ReaderButtonAvailability> {
+  const readerItemID = getCurrentReaderItemID();
+  if (!readerItemID) {
+    return {
+      canCopy: false,
+      unavailableMessage: "No active reader attachment.",
+    };
+  }
+
+  const files = await resolveAttachmentFromReader(
+    readerItemID,
+    getAllowedAttachmentTypes(),
+  );
+
+  if (!files.length) {
+    return {
+      canCopy: false,
+      unavailableMessage: "No eligible reader attachment.",
+    };
+  }
+
+  return {
+    canCopy: true,
+  };
+}
+
+function getCurrentReaderItemID(): number | undefined {
+  const tabs = ztoolkit.getGlobal("Zotero_Tabs") as {
+    selectedID?: string;
+  };
+  const selectedTabID = tabs?.selectedID;
+  if (!selectedTabID) {
+    return undefined;
+  }
+
+  return Zotero.Reader.getByTabID(selectedTabID)?.itemID;
 }
 
 export default {
