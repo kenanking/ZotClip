@@ -54,7 +54,7 @@
 - `src/hooks.ts`
   - Register the new reader toolbar button and updated shortcut handlers.
 - `addon/prefs.js`
-  - Replace `readerCtrlCMode` with shortcut preferences.
+  - Store explicit library/reader shortcut preferences.
 - `addon/content/preferences.xhtml`
   - Add library/reader shortcut controls and diagnostics UI.
 - `addon/locale/en-US/preferences.ftl`
@@ -556,18 +556,15 @@ Add tests for:
 
 - `getLibraryShortcut()` defaulting to `Ctrl+C`
 - `getReaderShortcut()` defaulting to `""`
-- legacy `readerCtrlCMode = "always"` mapping once to `Ctrl+Shift+C`
+- the shortcut-pref schema using only library and reader shortcut keys
 
 Example:
 
 ```ts
-test("prefs map legacy reader always mode to Ctrl+Shift+C once", () => {
-  const migrated = migrateLegacyShortcutPrefs({
-    readerCtrlCMode: "always",
-    readerShortcut: "",
-  });
-
-  assert.equal(migrated.readerShortcut, "Ctrl+Shift+C");
+test("prefs define only the shortcut preference keys", () => {
+  const prefsFile = readFileSync("addon/prefs.js", "utf8");
+  assert.equal(prefsFile.includes('pref("libraryShortcut"'), true);
+  assert.equal(prefsFile.includes('pref("readerShortcut"'), true);
 });
 ```
 
@@ -575,7 +572,7 @@ test("prefs map legacy reader always mode to Ctrl+Shift+C once", () => {
 
 Run: `npx tsx --test spec/unit/preference-script.test.ts`
 
-Expected: FAIL because the shortcut helpers and migration do not exist yet.
+Expected: FAIL because the shortcut helpers and schema update do not exist yet.
 
 - [ ] **Step 3: Replace the stored preference schema**
 
@@ -586,9 +583,9 @@ pref("libraryShortcut", "Ctrl+C");
 pref("readerShortcut", "");
 ```
 
-Remove `readerCtrlCMode` from the active schema.
+Keep the active schema focused on `libraryShortcut` and `readerShortcut`.
 
-- [ ] **Step 4: Add pref getters and a one-time legacy migration helper**
+- [ ] **Step 4: Add pref getters for the new shortcut schema**
 
 Implement in `src/utils/prefs.ts`:
 
@@ -602,13 +599,10 @@ export function getReaderShortcut(): string {
 }
 ```
 
-Map the legacy `"always"` reader mode to `Ctrl+Shift+C`; map `"smart"` and
-`"never"` to empty.
+- [ ] **Step 5: Update startup to use the new schema directly**
 
-- [ ] **Step 5: Call the migration helper during startup**
-
-Add the migration call near the top of `onStartup()` before registering window
-hooks.
+No legacy migration is needed. Startup should read the new shortcut preferences
+directly when registering hooks.
 
 - [ ] **Step 6: Run the preference tests again**
 
