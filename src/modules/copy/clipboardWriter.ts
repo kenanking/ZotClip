@@ -1,5 +1,12 @@
 import { runClipboardBackends } from "./clipboard/backendRegistry";
 import type { ClipboardBackend } from "./clipboard/backends";
+import type { CommandCall, CommandResult } from "./clipboard/commandRunner";
+import { createCommandRunner } from "./clipboard/commandRunner";
+import {
+  createLinuxWaylandBackend,
+  createLinuxX11Backend,
+} from "./clipboard/linuxCommandBackends";
+import { createMacosCommandBackend } from "./clipboard/macosCommandBackend";
 import { createPathTextBackend } from "./clipboard/pathTextBackend";
 import { buildClipboardPayload } from "./clipboard/payload";
 import {
@@ -12,14 +19,20 @@ import { writeWindowsFileDrop } from "./windowsFileClipboard";
 
 export interface ClipboardWriterDeps {
   detectPlatformContext?(): PlatformContext;
+  probeCommand?(name: string): Promise<boolean>;
+  runCommand?(call: CommandCall): Promise<CommandResult>;
   writeWindowsFileDrop?(paths: string[]): Promise<boolean> | boolean;
   writeFileObject(paths: string[]): Promise<boolean>;
   writeURIList(fileUris: string[]): Promise<boolean>;
   writePathText(value: string): boolean;
 }
 
+const commandRunner = createCommandRunner();
+
 const DEFAULT_DEPS: ClipboardWriterDeps = {
   detectPlatformContext: () => detectCurrentPlatformContext(),
+  probeCommand: (name) => commandRunner.probeCommand(name),
+  runCommand: (call) => commandRunner.runCommand(call),
   writeWindowsFileDrop: async (paths) => writeWindowsFileDrop(paths),
   writeFileObject: async (paths) => {
     if (!paths.length) {
@@ -116,7 +129,9 @@ export async function writeClipboard(
   const backends =
     platformContext.platform === "windows"
       ? buildWindowsBackends(deps)
-      : buildGenericBackends(deps);
+      : platformContext.platform === "linux"
+        ? buildLinuxBackends(platformContext, deps)
+        : buildMacosBackends(deps);
 
   return runClipboardBackends({
     payload,
@@ -180,6 +195,48 @@ function buildGenericBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
       writePathText: (value) => deps.writePathText(value),
     }),
   ];
+}
+
+function buildLinuxBackends(
+  platformContext: PlatformContext,
+  deps: ClipboardWriterDeps,
+): ClipboardBackend[] {
+  const linuxBackends =
+    platformContext.linuxSession === "wayland"
+      ? [createLinuxWaylandBackend(buildCommandDeps(deps))]
+      : platformContext.linuxSession === "x11"
+        ? [createLinuxX11Backend(buildCommandDeps(deps))]
+        : [
+            createLinuxWaylandBackend(buildCommandDeps(deps)),
+            createLinuxX11Backend(buildCommandDeps(deps)),
+          ];
+
+  return [...linuxBackends, ...buildGenericBackends(deps)];
+}
+
+function buildMacosBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
+  return [
+    createMacosCommandBackend(buildCommandDeps(deps)),
+    createPathTextBackend({
+      writePathText: (value) => deps.writePathText(value),
+    }),
+  ];
+}
+
+function buildCommandDeps(deps: ClipboardWriterDeps): {
+  probeCommand(name: string): Promise<boolean>;
+  runCommand(call: CommandCall): Promise<CommandResult>;
+} {
+  return {
+    probeCommand: async (name) => (await deps.probeCommand?.(name)) ?? false,
+    runCommand: async (call) =>
+      (await deps.runCommand?.(call)) || {
+        ok: false,
+        exitCode: -1,
+        stdout: "",
+        stderr: "Command runner unavailable.",
+      },
+  };
 }
 
 function buildFailureResult(count: number): ClipboardResult {

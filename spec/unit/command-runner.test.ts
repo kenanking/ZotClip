@@ -47,3 +47,23 @@ test("command runner probeCommand returns false when the probe exits non-zero", 
 
   assert.equal(await runner.probeCommand("missing-command"), false);
 });
+
+test("command runner returns a failed result when the process call throws", async () => {
+  const runner = createCommandRunner({
+    runProcess: async () => {
+      throw new Error("spawn failed");
+    },
+  });
+
+  assert.equal(await runner.probeCommand("wl-copy"), false);
+
+  const result = await runner.runCommand({
+    command: "/bin/sh",
+    args: ["-lc", "cat"],
+    stdinText: "hello",
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.exitCode, -1);
+  assert.match(result.stderr, /spawn failed/);
+});

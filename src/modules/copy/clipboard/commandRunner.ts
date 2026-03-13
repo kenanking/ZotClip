@@ -40,17 +40,30 @@ export function createCommandRunner(
 
   return {
     async probeCommand(name: string): Promise<boolean> {
-      const result = await runProcess(buildProbeCommand(name));
-      return result.exitCode === 0;
+      try {
+        const result = await runProcess(buildProbeCommand(name));
+        return result.exitCode === 0;
+      } catch {
+        return false;
+      }
     },
     async runCommand(call: CommandCall): Promise<CommandResult> {
-      const result = await runProcess(call);
-      return {
-        ok: result.exitCode === 0,
-        exitCode: result.exitCode,
-        stdout: result.stdout,
-        stderr: result.stderr,
-      };
+      try {
+        const result = await runProcess(call);
+        return {
+          ok: result.exitCode === 0,
+          exitCode: result.exitCode,
+          stdout: result.stdout,
+          stderr: result.stderr,
+        };
+      } catch (error) {
+        return {
+          ok: false,
+          exitCode: -1,
+          stdout: "",
+          stderr: getErrorMessage(error),
+        };
+      }
     },
   };
 }
@@ -75,4 +88,12 @@ async function defaultRunProcess(
     stdout: await process.stdout.readString(),
     stderr: await process.stderr.readString(),
   };
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
 }
