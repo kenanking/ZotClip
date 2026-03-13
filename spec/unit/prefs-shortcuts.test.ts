@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import {
-  getLibraryShortcut,
-  getReaderShortcut,
-  migrateLegacyShortcutPrefs,
-} from "../../src/utils/prefs";
+import * as prefs from "../../src/utils/prefs";
 import { config } from "../../package.json";
 
 const prefStore = new Map<string, string>();
@@ -29,32 +26,31 @@ const prefStore = new Map<string, string>();
 test("getLibraryShortcut defaults to Ctrl+C", () => {
   prefStore.clear();
 
-  assert.equal(getLibraryShortcut(), "Ctrl+C");
+  assert.equal(prefs.getLibraryShortcut(), "Ctrl+C");
 });
 
 test("getReaderShortcut defaults to empty", () => {
   prefStore.clear();
 
-  assert.equal(getReaderShortcut(), "");
+  assert.equal(prefs.getReaderShortcut(), "");
 });
 
-test('migrateLegacyShortcutPrefs maps "always" to Ctrl+Shift+C', () => {
-  assert.deepEqual(
-    migrateLegacyShortcutPrefs({
-      readerCtrlCMode: "always",
-      readerShortcut: "",
-    }),
-    {
-      readerShortcut: "Ctrl+Shift+C",
-    },
-  );
+test("prefs module no longer exports legacy reader shortcut migration helpers", () => {
+  assert.equal("migrateLegacyShortcutPrefs" in prefs, false);
+  assert.equal("migrateShortcutPrefs" in prefs, false);
+});
+
+test("preference defaults no longer define readerCtrlCMode", () => {
+  const prefsFile = readFileSync("addon/prefs.js", "utf8");
+
+  assert.equal(prefsFile.includes('pref("readerCtrlCMode"'), false);
 });
 
 test("getReaderShortcut returns the stored shortcut", () => {
   prefStore.clear();
   prefStore.set(prefKey("readerShortcut"), "Alt+C");
 
-  assert.equal(getReaderShortcut(), "Alt+C");
+  assert.equal(prefs.getReaderShortcut(), "Alt+C");
 });
 
 function prefKey(key: string): string {

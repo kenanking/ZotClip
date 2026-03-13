@@ -60,37 +60,6 @@ export function getReaderShortcut(): string {
   return (getPref("readerShortcut") || "").trim();
 }
 
-export function migrateLegacyShortcutPrefs(input: {
-  readerCtrlCMode?: string;
-  readerShortcut?: string;
-}): {
-  readerShortcut: string;
-} {
-  const existingShortcut = input.readerShortcut?.trim() || "";
-  if (existingShortcut) {
-    return {
-      readerShortcut: existingShortcut,
-    };
-  }
-
-  return {
-    readerShortcut: input.readerCtrlCMode === "always" ? "Ctrl+Shift+C" : "",
-  };
-}
-
-export function migrateShortcutPrefs(): void {
-  const legacyMode = getPref("readerCtrlCMode");
-  const currentReaderShortcut = getPref("readerShortcut") || "";
-  const migratedPrefs = migrateLegacyShortcutPrefs({
-    readerCtrlCMode: legacyMode,
-    readerShortcut: currentReaderShortcut,
-  });
-
-  if (migratedPrefs.readerShortcut !== currentReaderShortcut) {
-    setPref("readerShortcut", migratedPrefs.readerShortcut);
-  }
-}
-
 export function getEnabledAttachmentTypes(): string[] {
   return normalizeExtensionList(getPref("enabledAttachmentTypes") || "");
 }
