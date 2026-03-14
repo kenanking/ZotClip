@@ -4,6 +4,10 @@ import {
   copyFromSelection,
 } from "./modules/copy/copyCommands";
 import {
+  createCopyService,
+  type CopyServiceDeps,
+} from "./modules/copy/copyService";
+import {
   resolveAttachmentFromReader,
   resolveAttachmentsFromItems,
 } from "./modules/copy/attachmentResolver";
@@ -230,14 +234,12 @@ export function registerMainToolbarCopyButton(
   const buttonHandle = deps.mountButton(win.document, {
     getLabel: () => deps.getLabel(),
     getAvailability: async () => {
-      const items = deps.getSelectedItems(win);
-      const files = await deps.resolveFromItems(
-        items,
-        deps.getMode(),
-        deps.getAllowedTypes(),
-      );
+      const availability = await createSelectionAvailabilityService(
+        win,
+        deps,
+      ).getSelectionAvailability();
 
-      if (!files.length) {
+      if (!availability.canCopy) {
         return {
           canCopy: false,
           unavailableMessage: deps.getUnavailableMessage(),
@@ -280,21 +282,18 @@ export function registerReaderToolbarCopyButton(
   return deps.registerButton({
     getLabel: () => deps.getLabel(),
     getAvailability: async (itemID) => {
-      if (!itemID) {
-        return {
-          canCopy: false,
-          unavailableMessage: deps.getNoActiveMessage(),
-        };
-      }
-
-      const files = await deps.resolveFromReader(
+      const availability = await createReaderAvailabilityService(
         itemID,
-        deps.getAllowedTypes(),
-      );
-      if (!files.length) {
+        deps,
+      ).getReaderAvailability(itemID);
+
+      if (!availability.canCopy) {
         return {
           canCopy: false,
-          unavailableMessage: deps.getUnavailableMessage(),
+          unavailableMessage:
+            availability.messageKey === "copy-reader-no-active"
+              ? deps.getNoActiveMessage()
+              : deps.getUnavailableMessage(),
         };
       }
 
@@ -326,6 +325,65 @@ async function executeCopyFromReaderItem(
 ): Promise<void> {
   const result = await copyFromReaderItem(itemID, getAllowedAttachmentTypes());
   notifyCopyResult(result);
+}
+
+function createSelectionAvailabilityService(
+  win: Window,
+  deps: MainToolbarCopyButtonDeps,
+) {
+  return createCopyService({
+    getSettings: () => ({
+      allowedTypes: deps.getAllowedTypes(),
+      multiAttachmentMode: deps.getMode(),
+    }),
+    getSelectedItems: () => deps.getSelectedItems(win),
+    getCurrentReaderItemID: () => undefined,
+    resolveFromItems: (items, mode, allowedTypes) =>
+      deps.resolveFromItems(items, mode, allowedTypes),
+    resolveFromReader: async () => [],
+    writeClipboard: async () => buildAvailabilityClipboardResult(),
+    getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
+  });
+}
+
+function createReaderAvailabilityService(
+  itemID: number | undefined,
+  deps: ReaderToolbarCopyButtonDeps,
+) {
+  return createCopyService({
+    getSettings: () => ({
+      allowedTypes: deps.getAllowedTypes(),
+      multiAttachmentMode: "all",
+    }),
+    getSelectedItems: () => [],
+    getCurrentReaderItemID: () => itemID,
+    resolveFromItems: async () => [],
+    resolveFromReader: (currentItemID, allowedTypes) =>
+      deps.resolveFromReader(currentItemID, allowedTypes),
+    writeClipboard: async () => buildAvailabilityClipboardResult(),
+    getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
+  });
+}
+
+function buildAvailabilityClipboardResult() {
+  return {
+    ok: false,
+    format: "none" as const,
+    count: 0,
+    messageKey: "copy-no-files" as const,
+  };
+}
+
+function buildEmptyDiagnostics(): Awaited<
+  ReturnType<CopyServiceDeps["getClipboardDiagnostics"]>
+> {
+  return {
+    platform: "linux",
+    linuxSession: "unknown",
+    commands: {},
+    activeBackend: "unknown",
+    lines: [],
+  };
 }
 
 function syncMainToolbarButtons(): void {

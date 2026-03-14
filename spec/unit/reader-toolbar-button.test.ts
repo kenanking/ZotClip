@@ -110,7 +110,7 @@ test("mountReaderToolbarButton appends an icon-only button through renderToolbar
 
   assert.equal(doc.appended.length, 1);
   assert.match(doc.button.className, /zotclip-reader-toolbar-button/);
-  assert.match(doc.button.style, /data:image\/svg\+xml/);
+  assert.match(doc.button.style, /content\/icons\/toolbar-icon\.svg/);
   assert.equal(doc.button.textContent, "");
   assert.equal(doc.button.title, "Copy Current Reader Attachment");
   assert.equal(doc.button.disabled, false);
