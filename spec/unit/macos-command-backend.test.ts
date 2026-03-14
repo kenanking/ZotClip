@@ -57,6 +57,6 @@ test("macOS backend reports osascript dependency hints when unavailable", async 
   assert.deepEqual(await backend.isAvailable(samplePayload), {
     available: false,
     dependency: "osascript",
-    reason: "macOS osascript is required to copy files.",
+    reasonKey: "copy-macos-osascript-missing",
   });
 });

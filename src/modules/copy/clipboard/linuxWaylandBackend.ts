@@ -32,7 +32,7 @@ export function createLinuxWaylandBackend(
       if (!payload.fileUris.length) {
         return {
           available: false,
-          reason: "No file URIs to copy.",
+          reasonKey: "copy-no-file-uris",
         };
       }
 
@@ -40,7 +40,7 @@ export function createLinuxWaylandBackend(
         return {
           available: false,
           dependency: "wl-clipboard",
-          reason: "Install wl-clipboard to enable file copy on Wayland.",
+          reasonKey: "copy-linux-wl-copy-missing",
         };
       }
 

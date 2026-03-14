@@ -68,7 +68,7 @@ export async function writeClipboard(
       format: "none",
       count: 0,
       outcome: "backend-unavailable",
-      message: "No files to copy.",
+      messageKey: "copy-no-files",
     };
   }
 

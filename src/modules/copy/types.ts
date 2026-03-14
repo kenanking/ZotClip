@@ -13,6 +13,18 @@ export type ClipboardOutcome =
   | "dependency-missing"
   | "copy-failed";
 
+export type CopyMessageKey =
+  | "copy-no-files"
+  | "copy-no-file-uris"
+  | "copy-reader-no-active"
+  | "copy-clipboard-write-failed"
+  | "copy-path-text-fallback"
+  | "copy-linux-gtk4-missing"
+  | "copy-linux-wl-copy-missing"
+  | "copy-macos-osascript-missing";
+
+export type CopyMessageArgs = Record<string, string | number>;
+
 export type MultiAttachmentMode = "all" | "primary";
 
 export interface ResolvedAttachment {
@@ -26,5 +38,6 @@ export interface ClipboardResult {
   format: ClipboardFormat;
   count: number;
   outcome?: ClipboardOutcome;
-  message?: string;
+  messageKey?: CopyMessageKey;
+  messageArgs?: CopyMessageArgs;
 }

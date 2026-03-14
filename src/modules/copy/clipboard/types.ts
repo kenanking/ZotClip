@@ -1,3 +1,5 @@
+import type { CopyMessageArgs, CopyMessageKey } from "../types";
+
 export type ClipboardSource = "library" | "reader";
 
 export interface ClipboardPayload {
@@ -10,7 +12,8 @@ export interface ClipboardPayload {
 
 export interface BackendAvailability {
   available: boolean;
-  reason?: string;
+  reasonKey?: CopyMessageKey;
+  reasonArgs?: CopyMessageArgs;
   dependency?: string;
 }
 

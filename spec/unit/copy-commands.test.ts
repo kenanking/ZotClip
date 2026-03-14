@@ -98,6 +98,6 @@ test("copyFromReader returns a failure result when no reader tab is active", asy
     ok: false,
     format: "none",
     count: 0,
-    message: "No active reader attachment.",
+    messageKey: "copy-reader-no-active",
   });
 });

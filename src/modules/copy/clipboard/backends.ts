@@ -1,6 +1,8 @@
 import type {
   ClipboardFormat,
   ClipboardOutcome,
+  CopyMessageArgs,
+  CopyMessageKey,
   ClipboardResult,
 } from "../types";
 import type { BackendAvailability, ClipboardPayload } from "./types";
@@ -39,13 +41,15 @@ export function buildSuccessResult(
  */
 export function buildFailureResult(
   payload: ClipboardPayload,
-  message?: string,
+  messageKey: CopyMessageKey = "copy-clipboard-write-failed",
+  messageArgs?: CopyMessageArgs,
 ): ClipboardResult {
   return {
     ok: false,
     count: payload.paths.length,
     format: "none",
     outcome: "copy-failed",
-    message: message || "Clipboard write failed.",
+    messageKey,
+    messageArgs,
   };
 }

@@ -29,7 +29,7 @@ export function createMacosCommandBackend(
       if (!payload.paths.length) {
         return {
           available: false,
-          reason: "No files to copy.",
+          reasonKey: "copy-no-files",
         };
       }
 
@@ -37,7 +37,7 @@ export function createMacosCommandBackend(
         return {
           available: false,
           dependency: "osascript",
-          reason: "macOS osascript is required to copy files.",
+          reasonKey: "copy-macos-osascript-missing",
         };
       }
 

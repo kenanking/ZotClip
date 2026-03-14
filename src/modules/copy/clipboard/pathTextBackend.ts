@@ -33,7 +33,7 @@ export function createPathTextBackend(
           "path-text",
           "copied-path-text-fallback",
         ),
-        message: "File clipboard unavailable. Copied file path text instead.",
+        messageKey: "copy-path-text-fallback",
       };
     },
   };

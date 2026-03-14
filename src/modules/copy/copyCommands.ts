@@ -70,7 +70,7 @@ export async function copyFromReader(
       ok: false,
       format: "none",
       count: 0,
-      message: "No active reader attachment.",
+      messageKey: "copy-reader-no-active",
     };
   }
 

@@ -14,7 +14,7 @@ test("ClipboardWriter returns backend-unavailable when there are no files to cop
     format: "none",
     count: 0,
     outcome: "backend-unavailable",
-    message: "No files to copy.",
+    messageKey: "copy-no-files",
   });
 });
 

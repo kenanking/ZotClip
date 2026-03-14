@@ -11,8 +11,6 @@ import { BACKEND_IDS, MIME_TYPES, type ClipboardPayload } from "./types";
 
 const GTK_HELPER_COMMAND = "python3";
 const GTK_HELPER_DEPENDENCY = "gtk4-helper";
-const GTK_HELPER_REASON =
-  "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.";
 const GTK_HELPER_START_OPTIONS: StartCommandOptions = {
   startupTimeoutMs: 300,
 };
@@ -108,7 +106,7 @@ export function createLinuxGtkBackend(
       if (!payload.fileUris.length) {
         return {
           available: false,
-          reason: "No file URIs to copy.",
+          reasonKey: "copy-no-file-uris",
         };
       }
 
@@ -117,7 +115,7 @@ export function createLinuxGtkBackend(
         return {
           available: false,
           dependency: GTK_HELPER_DEPENDENCY,
-          reason: GTK_HELPER_REASON,
+          reasonKey: "copy-linux-gtk4-missing",
         };
       }
 

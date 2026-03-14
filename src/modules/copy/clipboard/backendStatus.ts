@@ -1,14 +1,10 @@
+import type { CopyMessageKey } from "../types";
 import type { PlatformContext } from "./platformDetection";
 import { BACKEND_IDS } from "./types";
 
-const GTK_HELPER_REASON =
-  "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.";
-const WAYLAND_REASON = "Install wl-clipboard to enable file copy on Wayland.";
-const MACOS_REASON = "macOS osascript is required to copy files.";
-
 export interface ClipboardBackendStatus {
   activeBackend: string;
-  lastFallbackReason?: string;
+  lastFallbackMessageKey?: CopyMessageKey;
 }
 
 export function resolveClipboardBackendStatus(
@@ -16,16 +12,16 @@ export function resolveClipboardBackendStatus(
   commands: Record<string, boolean>,
 ): ClipboardBackendStatus {
   const activeBackend = getActiveBackendID(platformContext, commands);
-  const lastFallbackReason = getFallbackReason(
+  const lastFallbackMessageKey = getFallbackMessageKey(
     platformContext,
     commands,
     activeBackend,
   );
 
-  return lastFallbackReason
+  return lastFallbackMessageKey
     ? {
         activeBackend,
-        lastFallbackReason,
+        lastFallbackMessageKey,
       }
     : {
         activeBackend,
@@ -63,27 +59,27 @@ function getActiveBackendID(
   return BACKEND_IDS.FALLBACK;
 }
 
-function getFallbackReason(
+function getFallbackMessageKey(
   platformContext: PlatformContext,
   commands: Record<string, boolean>,
   activeBackend: string,
-): string | undefined {
+): CopyMessageKey | undefined {
   if (platformContext.platform === "linux") {
     if (activeBackend !== BACKEND_IDS.FALLBACK) {
       return undefined;
     }
 
     if (platformContext.linuxSession === "wayland" && !commands["wl-copy"]) {
-      return WAYLAND_REASON;
+      return "copy-linux-wl-copy-missing";
     }
 
     if (!commands["gtk4-helper"]) {
-      return GTK_HELPER_REASON;
+      return "copy-linux-gtk4-missing";
     }
   }
 
   if (platformContext.platform === "macos" && !commands.osascript) {
-    return MACOS_REASON;
+    return "copy-macos-osascript-missing";
   }
 
   return undefined;

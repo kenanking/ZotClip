@@ -9,7 +9,7 @@ type ResolveClipboardBackendStatus = (
   commands: Record<string, boolean>,
 ) => {
   activeBackend: string;
-  lastFallbackReason?: string;
+  lastFallbackMessageKey?: string;
 };
 
 async function loadResolver(): Promise<
@@ -86,7 +86,6 @@ test("unknown Linux session keeps a Linux fallback reason only when no file back
 
   assert.deepEqual(result, {
     activeBackend: BACKEND_IDS.FALLBACK,
-    lastFallbackReason:
-      "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.",
+    lastFallbackMessageKey: "copy-linux-gtk4-missing",
   });
 });
