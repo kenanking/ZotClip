@@ -1,4 +1,5 @@
 import { getString } from "../../utils/locale";
+import type { FluentMessageId } from "../../../typings/i10n";
 import type { CopyMessageArgs, CopyMessageKey, ClipboardResult } from "./types";
 import type { ClipboardDiagnosticsLine } from "./clipboard/diagnostics";
 
@@ -14,7 +15,6 @@ type CopyLocaleMessageKey =
   | "copy-diagnostics-troubleshoot"
   | "copy-notify-files"
   | "copy-notify-files-file-object"
-  | "copy-notify-file-uris"
   | "copy-notify-files-with-format"
   | "copy-notify-generic-failure";
 
@@ -42,16 +42,6 @@ export function formatCopyResultMessage(
       result.format === "file-object"
         ? "copy-notify-files-file-object"
         : "copy-notify-files",
-      {
-        count: result.count,
-      },
-      deps,
-    );
-  }
-
-  if (result.outcome === "copied-file-uris") {
-    return renderCopyMessage(
-      "copy-notify-file-uris",
       {
         count: result.count,
       },
@@ -106,7 +96,9 @@ export function renderCopyMessage(
     return deps.renderMessage(key, args);
   }
 
-  return args ? getString(key as any, { args }) : getString(key as any);
+  return args
+    ? getString(key as FluentMessageId, { args })
+    : getString(key as FluentMessageId);
 }
 
 export function renderCopyDiagnosticsLine(

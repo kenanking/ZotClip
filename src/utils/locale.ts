@@ -3,6 +3,11 @@ import { FluentMessageId } from "../../typings/i10n";
 
 export { initLocale, getString, getLocaleID };
 
+interface GetStringOptions {
+  branch?: string | undefined;
+  args?: Record<string, unknown>;
+}
+
 /**
  * Initialize locale data
  */
@@ -44,20 +49,17 @@ function getString(localString: FluentMessageId): string;
 function getString(localString: FluentMessageId, branch: string): string;
 function getString(
   localeString: FluentMessageId,
-  options: { branch?: string | undefined; args?: Record<string, unknown> },
+  options: GetStringOptions,
 ): string;
-function getString(...inputs: any[]) {
-  if (inputs.length === 1) {
-    return _getString(inputs[0]);
-  } else if (inputs.length === 2) {
-    if (typeof inputs[1] === "string") {
-      return _getString(inputs[0], { branch: inputs[1] });
-    } else {
-      return _getString(inputs[0], inputs[1]);
-    }
-  } else {
-    throw new Error("Invalid arguments");
+function getString(
+  localeString: FluentMessageId,
+  branchOrOptions?: string | GetStringOptions,
+): string {
+  if (typeof branchOrOptions === "string") {
+    return _getString(localeString, { branch: branchOrOptions });
   }
+
+  return _getString(localeString, branchOrOptions);
 }
 
 interface Pattern {
@@ -70,7 +72,7 @@ interface Pattern {
 
 function _getString(
   localeString: FluentMessageId,
-  options: { branch?: string | undefined; args?: Record<string, unknown> } = {},
+  options: GetStringOptions = {},
 ): string {
   const localStringWithPrefix = `${config.addonRef}-${localeString}`;
   const { branch, args } = options;

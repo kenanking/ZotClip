@@ -1,5 +1,5 @@
 import { copyFromSelection } from "./copyCommands";
-import { matchesShortcut, parseShortcut } from "./shortcuts";
+import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export interface SelectionHookDeps {
@@ -32,21 +32,17 @@ export async function handleSelectionCopyShortcut(
   event: KeyboardEvent,
   deps: Partial<SelectionHookDeps> = {},
 ): Promise<boolean> {
-  if (event.defaultPrevented) {
-    return false;
-  }
-
   const finalDeps: SelectionHookDeps = {
     ...DEFAULT_DEPS,
     ...deps,
   };
 
-  if (!finalDeps.isLibraryContext(event)) {
-    return false;
-  }
-
-  const shortcut = parseShortcut(finalDeps.getShortcut());
-  if (!matchesShortcut(shortcut, event)) {
+  if (
+    !shouldHandleConfiguredShortcut(event, {
+      getShortcut: () => finalDeps.getShortcut(),
+      matchesContext: (nextEvent) => finalDeps.isLibraryContext(nextEvent),
+    })
+  ) {
     return false;
   }
 

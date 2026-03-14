@@ -52,6 +52,10 @@ test("prefs module no longer exports legacy reader shortcut migration helpers", 
   assert.equal("migrateShortcutPrefs" in prefs, false);
 });
 
+test("prefs module no longer exports the legacy clearPref helper", () => {
+  assert.equal("clearPref" in prefs, false);
+});
+
 test("preference defaults no longer define readerCtrlCMode", () => {
   const prefsFile = readFileSync("addon/prefs.js", "utf8");
 

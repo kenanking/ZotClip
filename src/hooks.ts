@@ -4,6 +4,10 @@ import {
   copyFromSelection,
 } from "./modules/copy/copyCommands";
 import {
+  createCopyService,
+  type CopyServiceDeps,
+} from "./modules/copy/copyService";
+import {
   resolveAttachmentFromReader,
   resolveAttachmentsFromItems,
 } from "./modules/copy/attachmentResolver";
@@ -15,9 +19,11 @@ import {
   registerCopyMenuCommands,
   unregisterCopyMenuCommands,
 } from "./modules/copy/menuCommands";
+import { createMainWindowController } from "./modules/copy/mainWindowController";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
 import { registerReaderToolbarButton } from "./modules/copy/readerToolbarButton";
+import { createReaderToolbarController } from "./modules/copy/readerToolbarController";
 import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
@@ -32,12 +38,8 @@ import {
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
-const readerHookDisposers = new WeakMap<Window, () => void>();
-const mainToolbarDisposers = new WeakMap<Window, () => void>();
-const selectionHookDisposers = new WeakMap<Window, () => void>();
 const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
 let registeredCopyMenuIDs: string[] = [];
-let disposeReaderToolbarButton: (() => void) | null = null;
 let mainToolbarPrefObserver: symbol | null = null;
 let readerToolbarPrefObserver: symbol | null = null;
 
@@ -112,6 +114,34 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
   },
 };
 
+const mainWindowController = createMainWindowController({
+  insertLocale: (win) => {
+    win.MozXULElement.insertFTLIfNeeded(
+      `${addon.data.config.addonRef}-mainWindow.ftl`,
+    );
+  },
+  isMainToolbarButtonEnabled: () => getMainToolbarButtonEnabled(),
+  registerReaderShortcutHandler: (win) =>
+    registerReaderShortcutHandler(win, () => getReaderShortcut(), {
+      triggerCopyFromReader: async () => {
+        await executeCopyFromReader();
+      },
+    }),
+  registerSelectionShortcutHandler: (win) =>
+    registerSelectionShortcutHandler(win, {
+      getShortcut: () => getLibraryShortcut(),
+      triggerCopyFromSelection: async () => {
+        await executeCopyFromSelection();
+      },
+    }),
+  registerMainToolbarCopyButton: (win) => registerMainToolbarCopyButton(win),
+});
+
+const readerToolbarController = createReaderToolbarController({
+  isEnabled: () => getReaderToolbarButtonEnabled(),
+  registerReaderToolbarCopyButton: () => registerReaderToolbarCopyButton(),
+});
+
 async function onStartup() {
   await Promise.all([
     Zotero.initializationPromise,
@@ -119,6 +149,7 @@ async function onStartup() {
     Zotero.uiReadyPromise,
   ]);
 
+  addon.data.ztoolkit = addon.data.ztoolkit || createZToolkit();
   initLocale();
   Zotero.PreferencePanes.register({
     pluginID: addon.data.config.addonID,
@@ -146,59 +177,17 @@ async function onStartup() {
 }
 
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
-  addon.data.ztoolkit = createZToolkit();
-
-  win.MozXULElement.insertFTLIfNeeded(
-    `${addon.data.config.addonRef}-mainWindow.ftl`,
-  );
-
-  const disposeReaderHook = registerReaderShortcutHandler(
-    win,
-    () => getReaderShortcut(),
-    {
-      triggerCopyFromReader: async () => {
-        await executeCopyFromReader();
-      },
-    },
-  );
-  readerHookDisposers.set(win, disposeReaderHook);
-
-  if (getMainToolbarButtonEnabled()) {
-    const disposeMainToolbar = registerMainToolbarCopyButton(win);
-    mainToolbarDisposers.set(win, disposeMainToolbar);
-  }
-
-  const disposeSelectionHook = registerSelectionShortcutHandler(win, {
-    getShortcut: () => getLibraryShortcut(),
-    triggerCopyFromSelection: async () => {
-      await executeCopyFromSelection();
-    },
-  });
-  selectionHookDisposers.set(win, disposeSelectionHook);
+  mainWindowController.load(win);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
-  readerHookDisposers.get(win)?.();
-  readerHookDisposers.delete(win);
-  mainToolbarDisposers.get(win)?.();
-  mainToolbarDisposers.delete(win);
-  selectionHookDisposers.get(win)?.();
-  selectionHookDisposers.delete(win);
-  ztoolkit.unregisterAll();
+  mainWindowController.unload(win);
 }
 
 function onShutdown(): void {
   unregisterToolbarPreferenceObservers();
-  disposeReaderToolbarButton?.();
-  disposeReaderToolbarButton = null;
-  for (const win of Zotero.getMainWindows()) {
-    readerHookDisposers.get(win)?.();
-    readerHookDisposers.delete(win);
-    mainToolbarDisposers.get(win)?.();
-    mainToolbarDisposers.delete(win);
-    selectionHookDisposers.get(win)?.();
-    selectionHookDisposers.delete(win);
-  }
+  readerToolbarController.dispose();
+  mainWindowController.disposeAll(Zotero.getMainWindows());
   unregisterCopyMenuCommands(registeredCopyMenuIDs);
   registeredCopyMenuIDs = [];
   ztoolkit.unregisterAll();
@@ -245,14 +234,12 @@ export function registerMainToolbarCopyButton(
   const buttonHandle = deps.mountButton(win.document, {
     getLabel: () => deps.getLabel(),
     getAvailability: async () => {
-      const items = deps.getSelectedItems(win);
-      const files = await deps.resolveFromItems(
-        items,
-        deps.getMode(),
-        deps.getAllowedTypes(),
-      );
+      const availability = await createSelectionAvailabilityService(
+        win,
+        deps,
+      ).getSelectionAvailability();
 
-      if (!files.length) {
+      if (!availability.canCopy) {
         return {
           canCopy: false,
           unavailableMessage: deps.getUnavailableMessage(),
@@ -295,21 +282,18 @@ export function registerReaderToolbarCopyButton(
   return deps.registerButton({
     getLabel: () => deps.getLabel(),
     getAvailability: async (itemID) => {
-      if (!itemID) {
-        return {
-          canCopy: false,
-          unavailableMessage: deps.getNoActiveMessage(),
-        };
-      }
-
-      const files = await deps.resolveFromReader(
+      const availability = await createReaderAvailabilityService(
         itemID,
-        deps.getAllowedTypes(),
-      );
-      if (!files.length) {
+        deps,
+      ).getReaderAvailability(itemID);
+
+      if (!availability.canCopy) {
         return {
           canCopy: false,
-          unavailableMessage: deps.getUnavailableMessage(),
+          unavailableMessage:
+            availability.messageKey === "copy-reader-no-active"
+              ? deps.getNoActiveMessage()
+              : deps.getUnavailableMessage(),
         };
       }
 
@@ -343,46 +327,71 @@ async function executeCopyFromReaderItem(
   notifyCopyResult(result);
 }
 
-function getCurrentReaderItemID(): number | undefined {
-  const tabs = ztoolkit.getGlobal("Zotero_Tabs") as {
-    selectedID?: string;
-  };
-  const selectedTabID = tabs?.selectedID;
-  if (!selectedTabID) {
-    return undefined;
-  }
+function createSelectionAvailabilityService(
+  win: Window,
+  deps: MainToolbarCopyButtonDeps,
+) {
+  return createCopyService({
+    getSettings: () => ({
+      allowedTypes: deps.getAllowedTypes(),
+      multiAttachmentMode: deps.getMode(),
+    }),
+    getSelectedItems: () => deps.getSelectedItems(win),
+    getCurrentReaderItemID: () => undefined,
+    resolveFromItems: (items, mode, allowedTypes) =>
+      deps.resolveFromItems(items, mode, allowedTypes),
+    resolveFromReader: async () => [],
+    writeClipboard: async () => buildAvailabilityClipboardResult(),
+    getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
+  });
+}
 
-  return Zotero.Reader.getByTabID(selectedTabID)?.itemID;
+function createReaderAvailabilityService(
+  itemID: number | undefined,
+  deps: ReaderToolbarCopyButtonDeps,
+) {
+  return createCopyService({
+    getSettings: () => ({
+      allowedTypes: deps.getAllowedTypes(),
+      multiAttachmentMode: "all",
+    }),
+    getSelectedItems: () => [],
+    getCurrentReaderItemID: () => itemID,
+    resolveFromItems: async () => [],
+    resolveFromReader: (currentItemID, allowedTypes) =>
+      deps.resolveFromReader(currentItemID, allowedTypes),
+    writeClipboard: async () => buildAvailabilityClipboardResult(),
+    getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
+  });
+}
+
+function buildAvailabilityClipboardResult() {
+  return {
+    ok: false,
+    format: "none" as const,
+    count: 0,
+    messageKey: "copy-no-files" as const,
+  };
+}
+
+function buildEmptyDiagnostics(): Awaited<
+  ReturnType<CopyServiceDeps["getClipboardDiagnostics"]>
+> {
+  return {
+    platform: "linux",
+    linuxSession: "unknown",
+    commands: {},
+    activeBackend: "unknown",
+    lines: [],
+  };
 }
 
 function syncMainToolbarButtons(): void {
-  const enabled = getMainToolbarButtonEnabled();
-
-  for (const win of Zotero.getMainWindows()) {
-    const existing = mainToolbarDisposers.get(win);
-
-    if (enabled && !existing) {
-      mainToolbarDisposers.set(win, registerMainToolbarCopyButton(win));
-      continue;
-    }
-
-    if (!enabled && existing) {
-      existing();
-      mainToolbarDisposers.delete(win);
-    }
-  }
+  mainWindowController.syncMainToolbarButtons(Zotero.getMainWindows());
 }
 
 function syncReaderToolbarButton(): void {
-  const enabled = getReaderToolbarButtonEnabled();
-
-  if (enabled) {
-    disposeReaderToolbarButton ||= registerReaderToolbarCopyButton();
-    return;
-  }
-
-  disposeReaderToolbarButton?.();
-  disposeReaderToolbarButton = null;
+  readerToolbarController.sync();
 }
 
 function registerToolbarPreferenceObservers(): void {

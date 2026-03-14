@@ -1,8 +1,8 @@
 import { config } from "../../../package.json";
+import { TOOLBAR_ICON_URL, getToolbarTooltipText } from "./copyUi";
 
 const BUTTON_ID = `${config.addonRef}-main-toolbar-button`;
 const TOOLBAR_ANCHOR_IDS = ["zotero-tb-note-add"];
-const TOOLBAR_ICON_URL = `chrome://${config.addonRef}/content/icons/toolbar-icon.svg`;
 
 type ToolbarButtonElement = XULElement & {
   disabled: boolean;
@@ -58,9 +58,7 @@ export function registerMainToolbarButton(
 
     const availability = await deps.getAvailability();
     currentButton.disabled = !availability.canCopy;
-    currentButton.title = availability.canCopy
-      ? deps.getLabel()
-      : availability.unavailableMessage || deps.getLabel();
+    currentButton.title = getToolbarTooltipText(deps.getLabel(), availability);
     currentButton.setAttribute("tooltiptext", currentButton.title);
   }
 

@@ -1,13 +1,11 @@
 export type ClipboardFormat =
   | "file-object"
-  | "uri-list"
   | "file-uri-list"
   | "path-text"
   | "none";
 
 export type ClipboardOutcome =
   | "copied-files"
-  | "copied-file-uris"
   | "copied-path-text-fallback"
   | "backend-unavailable"
   | "dependency-missing"
