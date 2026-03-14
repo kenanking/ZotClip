@@ -15,9 +15,11 @@ import {
   registerCopyMenuCommands,
   unregisterCopyMenuCommands,
 } from "./modules/copy/menuCommands";
+import { createMainWindowController } from "./modules/copy/mainWindowController";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
 import { registerReaderToolbarButton } from "./modules/copy/readerToolbarButton";
+import { createReaderToolbarController } from "./modules/copy/readerToolbarController";
 import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
@@ -32,12 +34,8 @@ import {
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
-const readerHookDisposers = new WeakMap<Window, () => void>();
-const mainToolbarDisposers = new WeakMap<Window, () => void>();
-const selectionHookDisposers = new WeakMap<Window, () => void>();
 const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
 let registeredCopyMenuIDs: string[] = [];
-let disposeReaderToolbarButton: (() => void) | null = null;
 let mainToolbarPrefObserver: symbol | null = null;
 let readerToolbarPrefObserver: symbol | null = null;
 
@@ -112,6 +110,34 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
   },
 };
 
+const mainWindowController = createMainWindowController({
+  insertLocale: (win) => {
+    win.MozXULElement.insertFTLIfNeeded(
+      `${addon.data.config.addonRef}-mainWindow.ftl`,
+    );
+  },
+  isMainToolbarButtonEnabled: () => getMainToolbarButtonEnabled(),
+  registerReaderShortcutHandler: (win) =>
+    registerReaderShortcutHandler(win, () => getReaderShortcut(), {
+      triggerCopyFromReader: async () => {
+        await executeCopyFromReader();
+      },
+    }),
+  registerSelectionShortcutHandler: (win) =>
+    registerSelectionShortcutHandler(win, {
+      getShortcut: () => getLibraryShortcut(),
+      triggerCopyFromSelection: async () => {
+        await executeCopyFromSelection();
+      },
+    }),
+  registerMainToolbarCopyButton: (win) => registerMainToolbarCopyButton(win),
+});
+
+const readerToolbarController = createReaderToolbarController({
+  isEnabled: () => getReaderToolbarButtonEnabled(),
+  registerReaderToolbarCopyButton: () => registerReaderToolbarCopyButton(),
+});
+
 async function onStartup() {
   await Promise.all([
     Zotero.initializationPromise,
@@ -119,6 +145,7 @@ async function onStartup() {
     Zotero.uiReadyPromise,
   ]);
 
+  addon.data.ztoolkit = addon.data.ztoolkit || createZToolkit();
   initLocale();
   Zotero.PreferencePanes.register({
     pluginID: addon.data.config.addonID,
@@ -146,59 +173,17 @@ async function onStartup() {
 }
 
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
-  addon.data.ztoolkit = createZToolkit();
-
-  win.MozXULElement.insertFTLIfNeeded(
-    `${addon.data.config.addonRef}-mainWindow.ftl`,
-  );
-
-  const disposeReaderHook = registerReaderShortcutHandler(
-    win,
-    () => getReaderShortcut(),
-    {
-      triggerCopyFromReader: async () => {
-        await executeCopyFromReader();
-      },
-    },
-  );
-  readerHookDisposers.set(win, disposeReaderHook);
-
-  if (getMainToolbarButtonEnabled()) {
-    const disposeMainToolbar = registerMainToolbarCopyButton(win);
-    mainToolbarDisposers.set(win, disposeMainToolbar);
-  }
-
-  const disposeSelectionHook = registerSelectionShortcutHandler(win, {
-    getShortcut: () => getLibraryShortcut(),
-    triggerCopyFromSelection: async () => {
-      await executeCopyFromSelection();
-    },
-  });
-  selectionHookDisposers.set(win, disposeSelectionHook);
+  mainWindowController.load(win);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
-  readerHookDisposers.get(win)?.();
-  readerHookDisposers.delete(win);
-  mainToolbarDisposers.get(win)?.();
-  mainToolbarDisposers.delete(win);
-  selectionHookDisposers.get(win)?.();
-  selectionHookDisposers.delete(win);
-  ztoolkit.unregisterAll();
+  mainWindowController.unload(win);
 }
 
 function onShutdown(): void {
   unregisterToolbarPreferenceObservers();
-  disposeReaderToolbarButton?.();
-  disposeReaderToolbarButton = null;
-  for (const win of Zotero.getMainWindows()) {
-    readerHookDisposers.get(win)?.();
-    readerHookDisposers.delete(win);
-    mainToolbarDisposers.get(win)?.();
-    mainToolbarDisposers.delete(win);
-    selectionHookDisposers.get(win)?.();
-    selectionHookDisposers.delete(win);
-  }
+  readerToolbarController.dispose();
+  mainWindowController.disposeAll(Zotero.getMainWindows());
   unregisterCopyMenuCommands(registeredCopyMenuIDs);
   registeredCopyMenuIDs = [];
   ztoolkit.unregisterAll();
@@ -343,46 +328,12 @@ async function executeCopyFromReaderItem(
   notifyCopyResult(result);
 }
 
-function getCurrentReaderItemID(): number | undefined {
-  const tabs = ztoolkit.getGlobal("Zotero_Tabs") as {
-    selectedID?: string;
-  };
-  const selectedTabID = tabs?.selectedID;
-  if (!selectedTabID) {
-    return undefined;
-  }
-
-  return Zotero.Reader.getByTabID(selectedTabID)?.itemID;
-}
-
 function syncMainToolbarButtons(): void {
-  const enabled = getMainToolbarButtonEnabled();
-
-  for (const win of Zotero.getMainWindows()) {
-    const existing = mainToolbarDisposers.get(win);
-
-    if (enabled && !existing) {
-      mainToolbarDisposers.set(win, registerMainToolbarCopyButton(win));
-      continue;
-    }
-
-    if (!enabled && existing) {
-      existing();
-      mainToolbarDisposers.delete(win);
-    }
-  }
+  mainWindowController.syncMainToolbarButtons(Zotero.getMainWindows());
 }
 
 function syncReaderToolbarButton(): void {
-  const enabled = getReaderToolbarButtonEnabled();
-
-  if (enabled) {
-    disposeReaderToolbarButton ||= registerReaderToolbarCopyButton();
-    return;
-  }
-
-  disposeReaderToolbarButton?.();
-  disposeReaderToolbarButton = null;
+  readerToolbarController.sync();
 }
 
 function registerToolbarPreferenceObservers(): void {
