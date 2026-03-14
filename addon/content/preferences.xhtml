@@ -66,17 +66,22 @@
     </html:div>
 
     <vbox class="zotclip-pref-field">
-      <html:label
-        class="zotclip-pref-field-label"
-        for="zotero-prefpane-__addonRef__-custom-attachment-types"
-        data-l10n-id="pref-custom-types"
-      ></html:label>
-      <html:input
-        id="zotero-prefpane-__addonRef__-custom-attachment-types"
-        class="zotclip-pref-textinput"
-        type="text"
-        data-zotclip-custom-types="true"
-      />
+      <html:div
+        class="zotclip-pref-inline-field"
+        data-zotclip-inline-field="custom-types"
+      >
+        <html:label
+          class="zotclip-pref-field-label"
+          for="zotero-prefpane-__addonRef__-custom-attachment-types"
+          data-l10n-id="pref-custom-types"
+        ></html:label>
+        <html:input
+          id="zotero-prefpane-__addonRef__-custom-attachment-types"
+          class="zotclip-pref-textinput"
+          type="text"
+          data-zotclip-custom-types="true"
+        />
+      </html:div>
       <description class="zotclip-pref-help">
         <html:span data-l10n-id="pref-custom-types-help"></html:span>
       </description>
@@ -97,22 +102,21 @@
   ></label>
 
   <vbox class="zotclip-pref-field">
-    <html:label class="zotclip-pref-type-option">
-      <html:input type="checkbox" data-zotclip-main-toolbar-button="true" />
-      <html:span data-l10n-id="pref-main-toolbar-button"></html:span>
-    </html:label>
+    <html:div
+      class="zotclip-pref-toggle-row"
+      data-zotclip-toolbar-buttons-row="true"
+    >
+      <html:label class="zotclip-pref-type-option">
+        <html:input type="checkbox" data-zotclip-main-toolbar-button="true" />
+        <html:span data-l10n-id="pref-main-toolbar-button"></html:span>
+      </html:label>
+      <html:label class="zotclip-pref-type-option">
+        <html:input type="checkbox" data-zotclip-reader-toolbar-button="true" />
+        <html:span data-l10n-id="pref-reader-toolbar-button"></html:span>
+      </html:label>
+    </html:div>
     <description class="zotclip-pref-help">
-      <html:span data-l10n-id="pref-main-toolbar-button-help"></html:span>
-    </description>
-  </vbox>
-
-  <vbox class="zotclip-pref-field">
-    <html:label class="zotclip-pref-type-option">
-      <html:input type="checkbox" data-zotclip-reader-toolbar-button="true" />
-      <html:span data-l10n-id="pref-reader-toolbar-button"></html:span>
-    </html:label>
-    <description class="zotclip-pref-help">
-      <html:span data-l10n-id="pref-reader-toolbar-button-help"></html:span>
+      <html:span data-l10n-id="pref-toolbar-buttons-help"></html:span>
     </description>
   </vbox>
 
@@ -127,37 +131,41 @@
   </description>
 
   <vbox class="zotclip-pref-field">
-    <html:label
-      class="zotclip-pref-field-label"
-      for="zotero-prefpane-__addonRef__-library-shortcut"
-      data-l10n-id="pref-library-shortcut"
-    ></html:label>
-    <html:input
-      id="zotero-prefpane-__addonRef__-library-shortcut"
-      class="zotclip-pref-textinput"
-      type="text"
-      data-zotclip-library-shortcut="true"
-    />
-    <description class="zotclip-pref-help">
-      <html:span data-l10n-id="pref-library-shortcut-help"></html:span>
-    </description>
+    <html:div
+      class="zotclip-pref-inline-field"
+      data-zotclip-inline-field="library-shortcut"
+    >
+      <html:label
+        class="zotclip-pref-field-label"
+        for="zotero-prefpane-__addonRef__-library-shortcut"
+        data-l10n-id="pref-library-shortcut"
+      ></html:label>
+      <html:input
+        id="zotero-prefpane-__addonRef__-library-shortcut"
+        class="zotclip-pref-textinput"
+        type="text"
+        data-zotclip-library-shortcut="true"
+      />
+    </html:div>
   </vbox>
 
   <vbox class="zotclip-pref-field">
-    <html:label
-      class="zotclip-pref-field-label"
-      for="zotero-prefpane-__addonRef__-reader-shortcut"
-      data-l10n-id="pref-reader-shortcut"
-    ></html:label>
-    <html:input
-      id="zotero-prefpane-__addonRef__-reader-shortcut"
-      class="zotclip-pref-textinput"
-      type="text"
-      data-zotclip-reader-shortcut="true"
-    />
-    <description class="zotclip-pref-help">
-      <html:span data-l10n-id="pref-reader-shortcut-help"></html:span>
-    </description>
+    <html:div
+      class="zotclip-pref-inline-field"
+      data-zotclip-inline-field="reader-shortcut"
+    >
+      <html:label
+        class="zotclip-pref-field-label"
+        for="zotero-prefpane-__addonRef__-reader-shortcut"
+        data-l10n-id="pref-reader-shortcut"
+      ></html:label>
+      <html:input
+        id="zotero-prefpane-__addonRef__-reader-shortcut"
+        class="zotclip-pref-textinput"
+        type="text"
+        data-zotclip-reader-shortcut="true"
+      />
+    </html:div>
     <description
       class="zotclip-pref-validation"
       data-zotclip-shortcut-validation="true"
