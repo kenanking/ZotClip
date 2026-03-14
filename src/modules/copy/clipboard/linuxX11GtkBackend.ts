@@ -5,6 +5,7 @@ import type {
   CommandResult,
   StartCommandOptions,
 } from "./commandRunner";
+import { buildLinuxClipboardPayloadInput } from "./linuxPayload";
 import type { ClipboardPayload } from "./types";
 
 const GTK_HELPER_COMMAND = "python3";
@@ -161,10 +162,7 @@ export function buildLinuxX11GtkProbeCall(): CommandCall {
 }
 
 export function buildLinuxX11GtkHelperInput(fileUris: string[]): string {
-  return JSON.stringify({
-    uri_payload: buildUriListPayload(fileUris),
-    gnome_payload: buildGnomeCopiedFilesPayload(fileUris),
-  });
+  return buildLinuxClipboardPayloadInput(fileUris);
 }
 
 export function buildLinuxX11GtkClipboardCommand(
@@ -222,14 +220,6 @@ export function createLinuxX11GtkBackend(
       };
     },
   };
-}
-
-function buildUriListPayload(fileUris: string[]): string {
-  return `${fileUris.join("\r\n")}\r\n`;
-}
-
-function buildGnomeCopiedFilesPayload(fileUris: string[]): string {
-  return `copy\n${fileUris.join("\n")}`;
 }
 
 function buildFailureResult(payload: ClipboardPayload): ClipboardResult {
