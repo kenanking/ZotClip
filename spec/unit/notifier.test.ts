@@ -126,3 +126,21 @@ test("formatCopyMessage localizes the GTK4 helper dependency hint in Chinese", (
     "要在 Linux 中启用文件复制，请安装 python3-gi 和 gir1.2-gtk-4.0。",
   );
 });
+
+test("formatCopyMessage localizes the wl-clipboard dependency hint in Chinese", () => {
+  assert.equal(
+    formatCopyMessage(
+      {
+        ok: false,
+        format: "none",
+        count: 0,
+        outcome: "dependency-missing",
+        message: "Install wl-clipboard to enable file copy on Wayland.",
+      },
+      {
+        getLanguage: () => "zh-CN",
+      },
+    ),
+    "要在 Wayland 中启用文件复制，请安装 wl-clipboard。",
+  );
+});

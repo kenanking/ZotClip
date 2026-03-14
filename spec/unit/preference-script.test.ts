@@ -65,28 +65,31 @@ test("buildClipboardDiagnostics summarizes detected commands and backend", () =>
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "wayland",
-    commands: { "gtk4-helper": true },
-    activeBackend: "linux-gtk4-helper",
+    commands: { "wl-copy": true },
+    activeBackend: "linux-wayland-wl-copy-uri-list",
     languageTag: "en-US",
   });
 
   assert.equal(diagnostics.lines[0], "Platform: linux (wayland)");
-  assert.match(diagnostics.lines[1], /gtk4-helper: available/);
-  assert.equal(diagnostics.lines[2], "Active backend: linux-gtk4-helper");
+  assert.match(diagnostics.lines[1], /wl-copy: available/);
+  assert.equal(
+    diagnostics.lines[2],
+    "Active backend: linux-wayland-wl-copy-uri-list",
+  );
 });
 
-test("buildClipboardDiagnostics includes GTK4 helper install guidance on Wayland", () => {
+test("buildClipboardDiagnostics includes wl-clipboard install guidance on Wayland", () => {
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "wayland",
-    commands: { "gtk4-helper": false },
+    commands: { "wl-copy": false },
     activeBackend: "generic-clipboard-fallback",
     languageTag: "en-US",
   });
 
   assert.match(
     diagnostics.lines.join("\n"),
-    /Install command: sudo apt install python3-gi gir1.2-gtk-4.0/,
+    /Install command: sudo apt install wl-clipboard/,
   );
 });
 
@@ -103,6 +106,24 @@ test("buildClipboardDiagnostics includes a Chinese install command for the GTK4 
   assert.match(
     diagnostics.lines.join("\n"),
     /安装命令：sudo apt install python3-gi gir1.2-gtk-4.0/,
+  );
+});
+
+test("buildClipboardDiagnostics does not show install guidance when a Linux backend is already active", () => {
+  const diagnostics = buildClipboardDiagnostics({
+    platform: "linux",
+    linuxSession: "unknown",
+    commands: {
+      "gtk4-helper": false,
+      "wl-copy": true,
+    },
+    activeBackend: "linux-wayland-wl-copy-uri-list",
+    languageTag: "en-US",
+  });
+
+  assert.equal(
+    diagnostics.lines.some((line) => line.startsWith("Install command: ")),
+    false,
   );
 });
 

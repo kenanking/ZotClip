@@ -86,7 +86,61 @@ test("ClipboardWriter falls back to path-text when non-Windows backends fail", a
   assert.equal(result.outcome, "copied-path-text-fallback");
 });
 
-test("ClipboardWriter prefers the Linux GTK4 helper backend before command fallbacks", async () => {
+test("ClipboardWriter prefers wl-copy on Wayland before path-text fallback", async () => {
+  let fallbackCalled = false;
+  const commandProbeCalls: string[] = [];
+  const commandCalls: any[] = [];
+
+  const result = await writeClipboard(
+    [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
+    "library",
+    {
+      detectPlatformContext: () => ({
+        platform: "linux",
+        linuxSession: "wayland",
+      }),
+      runCommand: async (call) => {
+        commandCalls.push(call);
+        return {
+          ok: true,
+          exitCode: 0,
+          stdout: "",
+          stderr: "",
+        };
+      },
+      startCommand: async () => {
+        throw new Error("GTK helper should not start on Wayland");
+      },
+      probeCommand: async (name) => {
+        commandProbeCalls.push(name);
+        return (
+          {
+            "wl-copy": true,
+          }[name] || false
+        );
+      },
+      writePathText: () => {
+        fallbackCalled = true;
+        return true;
+      },
+    },
+  );
+
+  assert.deepEqual(commandProbeCalls, ["wl-copy"]);
+  assert.deepEqual(commandCalls, [
+    {
+      command: "wl-copy",
+      args: ["--type", "text/uri-list"],
+      stdinText: "file:///home/user/a.pdf\r\n",
+    },
+  ]);
+  assert.equal(fallbackCalled, false);
+  assert.equal(result.ok, true);
+  assert.equal(result.format, "file-uri-list");
+  assert.equal(result.outcome, "copied-files");
+});
+
+test("ClipboardWriter prefers the Linux GTK4 helper backend on X11", async () => {
   let fallbackCalled = false;
   const probeCalls: any[] = [];
   const helperCalls: any[] = [];
@@ -97,7 +151,7 @@ test("ClipboardWriter prefers the Linux GTK4 helper backend before command fallb
     {
       detectPlatformContext: () => ({
         platform: "linux",
-        linuxSession: "wayland",
+        linuxSession: "x11",
       }),
       runCommand: async (call) => {
         probeCalls.push(call);
@@ -118,7 +172,7 @@ test("ClipboardWriter prefers the Linux GTK4 helper backend before command fallb
         };
       },
       probeCommand: async () => {
-        throw new Error("command fallbacks should not be probed");
+        throw new Error("wl-copy should not be probed on X11");
       },
       writePathText: () => {
         fallbackCalled = true;

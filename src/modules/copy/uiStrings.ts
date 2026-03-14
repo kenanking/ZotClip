@@ -55,6 +55,8 @@ const CHINESE_COPY_MESSAGES: Record<string, string> = {
     "文件剪贴板不可用，已改为复制文件路径文本。",
   "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.":
     "要在 Linux 中启用文件复制，请安装 python3-gi 和 gir1.2-gtk-4.0。",
+  "Install wl-clipboard to enable file copy on Wayland.":
+    "要在 Wayland 中启用文件复制，请安装 wl-clipboard。",
   "macOS osascript is required to copy files.":
     "macOS 需要 osascript 才能复制文件。",
 };

@@ -95,8 +95,21 @@ async function probeClipboardSupport(
   platformContext: PlatformContext,
 ): Promise<Record<string, boolean>> {
   if (platformContext.platform === "linux") {
+    if (platformContext.linuxSession === "wayland") {
+      return {
+        "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
+      };
+    }
+
+    if (platformContext.linuxSession === "x11") {
+      return {
+        "gtk4-helper": await probeLinuxGtkSupport(),
+      };
+    }
+
     return {
       "gtk4-helper": await probeLinuxGtkSupport(),
+      "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
     };
   }
 
@@ -121,8 +134,18 @@ function getActiveBackendID(
     return commands.osascript ? "macos-osascript-file-list" : "path-text";
   }
 
+  if (platformContext.linuxSession === "wayland") {
+    return commands["wl-copy"]
+      ? "linux-wayland-wl-copy-uri-list"
+      : "generic-clipboard-fallback";
+  }
+
   if (commands["gtk4-helper"]) {
     return "linux-gtk4-helper";
+  }
+
+  if (commands["wl-copy"]) {
+    return "linux-wayland-wl-copy-uri-list";
   }
 
   return "generic-clipboard-fallback";
@@ -132,6 +155,14 @@ function getFallbackReason(
   platformContext: PlatformContext,
   commands: Record<string, boolean>,
 ): string | undefined {
+  if (
+    platformContext.platform === "linux" &&
+    platformContext.linuxSession === "wayland" &&
+    !commands["wl-copy"]
+  ) {
+    return "Install wl-clipboard to enable file copy on Wayland.";
+  }
+
   if (platformContext.platform === "linux" && !commands["gtk4-helper"]) {
     return "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.";
   }

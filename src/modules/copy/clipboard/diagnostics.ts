@@ -82,10 +82,29 @@ function buildInstallCommand(
     return undefined;
   }
 
+  if (
+    input.activeBackend &&
+    input.activeBackend !== "generic-clipboard-fallback"
+  ) {
+    return undefined;
+  }
+
   const commands = input.commands || {};
+
+  if (input.linuxSession === "wayland" && commands["wl-copy"] === false) {
+    return "sudo apt install wl-clipboard";
+  }
+
+  if (input.linuxSession === "x11" && commands["gtk4-helper"] === false) {
+    return "sudo apt install python3-gi gir1.2-gtk-4.0";
+  }
 
   if (commands["gtk4-helper"] === false) {
     return "sudo apt install python3-gi gir1.2-gtk-4.0";
+  }
+
+  if (commands["wl-copy"] === false) {
+    return "sudo apt install wl-clipboard";
   }
 
   return undefined;
