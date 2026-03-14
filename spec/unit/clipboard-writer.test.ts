@@ -49,6 +49,47 @@ test("ClipboardWriter uses the Windows-native backend before other backends", as
   assert.equal(result.outcome, "copied-files");
 });
 
+test("ClipboardWriter writes prepared clipboard paths when duplicate filenames exist", async () => {
+  let writtenPaths: string[] | undefined;
+
+  const result = await writeClipboard(
+    [
+      { attachmentID: 1, itemID: 1, path: "/src/a/paper.pdf" },
+      { attachmentID: 2, itemID: 1, path: "/src/b/paper.pdf" },
+    ],
+    "library",
+    {
+      detectPlatformContext: () => ({ platform: "windows" }),
+      prepareResolvedAttachments: async () => [
+        {
+          attachmentID: 1,
+          itemID: 1,
+          path: "/src/a/paper.pdf",
+          clipboardPath: "/src/a/paper.pdf",
+        },
+        {
+          attachmentID: 2,
+          itemID: 1,
+          path: "/src/b/paper.pdf",
+          clipboardPath: "/tmp/zotclip-copy/paper_1.pdf",
+        },
+      ],
+      writeWindowsFileDrop: async (paths) => {
+        writtenPaths = paths;
+        return true;
+      },
+      writePathText: () => false,
+    } as any,
+  );
+
+  assert.deepEqual(writtenPaths, [
+    "/src/a/paper.pdf",
+    "/tmp/zotclip-copy/paper_1.pdf",
+  ]);
+  assert.equal(result.ok, true);
+  assert.equal(result.count, 2);
+});
+
 test("ClipboardWriter falls back to path-text when non-Windows backends fail", async () => {
   let fallbackCalled = false;
 

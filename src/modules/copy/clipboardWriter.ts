@@ -16,6 +16,7 @@ import {
   type PlatformContext,
 } from "./clipboard/platformDetection";
 import { createWindowsBackend } from "./clipboard/windowsBackend";
+import { prepareResolvedAttachments } from "./preparedAttachments";
 import type { ClipboardResult, ResolvedAttachment } from "./types";
 import { writeWindowsFileDrop } from "./windowsFileClipboard";
 
@@ -23,6 +24,9 @@ const COMMAND_RUNNER_UNAVAILABLE_MESSAGE = "Command runner unavailable.";
 
 export interface ClipboardWriterDeps {
   detectPlatformContext?(): PlatformContext;
+  prepareResolvedAttachments?(
+    files: ResolvedAttachment[],
+  ): Promise<ResolvedAttachment[]>;
   probeCommand?(name: string): Promise<boolean>;
   runCommand?(call: CommandCall): Promise<CommandResult>;
   startCommand?(
@@ -37,6 +41,7 @@ const commandRunner = createCommandRunner();
 
 const DEFAULT_DEPS: ClipboardWriterDeps = {
   detectPlatformContext: () => detectCurrentPlatformContext(),
+  prepareResolvedAttachments: (files) => prepareResolvedAttachments(files),
   probeCommand: (name) => commandRunner.probeCommand(name),
   runCommand: (call) => commandRunner.runCommand(call),
   startCommand: (call, options) => commandRunner.startCommand(call, options),
@@ -61,7 +66,9 @@ export async function writeClipboard(
   source: "library" | "reader" = "library",
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  const payload = buildClipboardPayload(files, source);
+  const preparedFiles =
+    (await deps.prepareResolvedAttachments?.(files)) || files;
+  const payload = buildClipboardPayload(preparedFiles, source);
   if (!payload.paths.length) {
     return {
       ok: false,
