@@ -1,5 +1,6 @@
 pref-title = ZotClip Settings
 pref-section-copy = Copy Scope
+pref-section-toolbar-buttons = Toolbar Buttons
 pref-section-shortcuts = Shortcuts
 pref-section-types = Allowed Attachment Types
 pref-section-compatibility = Compatibility
@@ -16,6 +17,10 @@ pref-type-txt = TXT
 pref-custom-types = Custom extensions
 pref-custom-types-help = Use comma-separated extensions, for example: azw3, djvu
 pref-type-validation = Select at least one attachment type.
+pref-main-toolbar-button = Show main toolbar copy button
+pref-main-toolbar-button-help = Show an icon-only ZotClip button in the main Zotero top toolbar.
+pref-reader-toolbar-button = Show reader toolbar copy button
+pref-reader-toolbar-button-help = Show an icon-only ZotClip button in the reader top toolbar.
 pref-library-shortcut = Library shortcut
 pref-shortcut-scope-note = Library and reader shortcuts are separate. You can use Ctrl+C in the item pane. Ctrl+C in the reader keeps its original behavior and is not overridden. No shortcut is set in the reader by default. Set one only if you want a reader-specific copy shortcut.
 pref-library-shortcut-help = Focus the field and press the shortcut you want to use in the item pane.

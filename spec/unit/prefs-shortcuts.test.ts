@@ -35,6 +35,18 @@ test("getReaderShortcut defaults to empty", () => {
   assert.equal(prefs.getReaderShortcut(), "");
 });
 
+test("main toolbar button visibility defaults to enabled", () => {
+  prefStore.clear();
+
+  assert.equal(prefs.getMainToolbarButtonEnabled(), true);
+});
+
+test("reader toolbar button visibility defaults to enabled", () => {
+  prefStore.clear();
+
+  assert.equal(prefs.getReaderToolbarButtonEnabled(), true);
+});
+
 test("prefs module no longer exports legacy reader shortcut migration helpers", () => {
   assert.equal("migrateLegacyShortcutPrefs" in prefs, false);
   assert.equal("migrateShortcutPrefs" in prefs, false);
@@ -44,6 +56,16 @@ test("preference defaults no longer define readerCtrlCMode", () => {
   const prefsFile = readFileSync("addon/prefs.js", "utf8");
 
   assert.equal(prefsFile.includes('pref("readerCtrlCMode"'), false);
+});
+
+test("preference defaults define both toolbar button toggles", () => {
+  const prefsFile = readFileSync("addon/prefs.js", "utf8");
+
+  assert.equal(prefsFile.includes('pref("showMainToolbarButton", true)'), true);
+  assert.equal(
+    prefsFile.includes('pref("showReaderToolbarButton", true)'),
+    true,
+  );
 });
 
 test("getReaderShortcut returns the stored shortcut", () => {

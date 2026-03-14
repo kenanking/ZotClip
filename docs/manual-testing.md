@@ -24,14 +24,26 @@
 ## Reader Copy
 
 - [ ] Open an allowed attachment in the reader.
-- [ ] Confirm the ZotClip toolbar button is visible.
+- [ ] Confirm the ZotClip toolbar button is visible in the reader toolbar.
+- [ ] Open the same attachment in a standalone reader window and confirm the button is visible there as well.
 - [ ] Select text inside the reader and press `Ctrl+C`.
 - [ ] Confirm the default text copy behavior is unchanged.
 - [ ] Click the ZotClip toolbar button and confirm the current attachment is
       copied.
+- [ ] Open a reader state where the current attachment cannot be copied and confirm the button stays visible but disabled with an explanatory tooltip.
 - [ ] Set a reader shortcut such as `Ctrl+Shift+C` in `Edit -> Preferences -> ZotClip`.
 - [ ] Press the configured shortcut and confirm the current attachment is copied.
 - [ ] Clear the reader shortcut and confirm the reader no longer intercepts it.
+
+## Toolbar Preferences
+
+- [ ] Open `Edit -> Preferences -> ZotClip`.
+- [ ] Confirm `Show Main Toolbar Button` is enabled by default.
+- [ ] Confirm `Show Reader Toolbar Button` is enabled by default.
+- [ ] Disable `Show Main Toolbar Button` and confirm the main-window toolbar button disappears while the reader button remains available.
+- [ ] Re-enable `Show Main Toolbar Button`.
+- [ ] Disable `Show Reader Toolbar Button` and confirm reader toolbar buttons disappear in both reader tabs and standalone reader windows while the main-window button remains available.
+- [ ] Re-enable `Show Reader Toolbar Button`.
 
 ## Attachment Rules
 

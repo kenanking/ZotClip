@@ -62,6 +62,16 @@ export function getReaderShortcut(): string {
   return (getPref("readerShortcut") || "").trim();
 }
 
+export function getMainToolbarButtonEnabled(): boolean {
+  const value = getPref("showMainToolbarButton");
+  return value !== false;
+}
+
+export function getReaderToolbarButtonEnabled(): boolean {
+  const value = getPref("showReaderToolbarButton");
+  return value !== false;
+}
+
 export function getEnabledAttachmentTypes(): string[] {
   return normalizeExtensionList(getPref("enabledAttachmentTypes") || "");
 }

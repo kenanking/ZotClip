@@ -1,5 +1,6 @@
 pref-title = ZotClip 设置
 pref-section-copy = 复制范围
+pref-section-toolbar-buttons = 工具栏按钮
 pref-section-shortcuts = 快捷键
 pref-section-types = 可复制的附件类型
 pref-section-compatibility = 兼容性
@@ -16,6 +17,10 @@ pref-type-txt = TXT
 pref-custom-types = 自定义扩展名
 pref-custom-types-help = 使用逗号分隔扩展名，例如：azw3, djvu
 pref-type-validation = 至少选择一种附件类型。
+pref-main-toolbar-button = 显示主界面工具栏复制按钮
+pref-main-toolbar-button-help = 在 Zotero 主界面顶部工具栏中显示一个仅图标的 ZotClip 按钮。
+pref-reader-toolbar-button = 显示阅读器工具栏复制按钮
+pref-reader-toolbar-button-help = 在阅读器顶部工具栏中显示一个仅图标的 ZotClip 按钮。
 pref-library-shortcut = 条目面板快捷键
 pref-shortcut-scope-note = 条目面板和阅读器面板的快捷键互不共用。因此，条目面板可以使用 Ctrl+C；阅读器中的 Ctrl+C 会保留原有功能，不会被覆盖。阅读器默认不设置快捷键，如有需要可在这里自行设置。
 pref-library-shortcut-help = 聚焦输入框后，直接按下你想用于条目面板复制的快捷键。

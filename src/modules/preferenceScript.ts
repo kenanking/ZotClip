@@ -7,8 +7,10 @@ import {
   getCustomAttachmentTypes,
   getEnabledAttachmentTypes,
   getLibraryShortcut,
+  getMainToolbarButtonEnabled,
   getMultiAttachmentMode,
   getReaderShortcut,
+  getReaderToolbarButtonEnabled,
   setPref,
 } from "../utils/prefs";
 import { renderCopyDiagnosticsLine } from "./copy/copyMessages";
@@ -31,6 +33,11 @@ interface ShortcutControls {
   validationMessage: HTMLElement;
   conflictMessage: HTMLElement;
   diagnosticsValue: HTMLElement | null;
+}
+
+export interface ToolbarButtonControls {
+  mainToolbarCheckbox: HTMLInputElement;
+  readerToolbarCheckbox: HTMLInputElement;
 }
 
 interface MenuitemLike {
@@ -100,6 +107,28 @@ export function syncMenulistValue(
   return nextValue;
 }
 
+export function readToolbarButtonVisibility(controls: ToolbarButtonControls): {
+  showMainToolbarButton: boolean;
+  showReaderToolbarButton: boolean;
+} {
+  return {
+    showMainToolbarButton: controls.mainToolbarCheckbox.checked,
+    showReaderToolbarButton: controls.readerToolbarCheckbox.checked,
+  };
+}
+
+export function persistToolbarButtonPrefs(
+  controls: ToolbarButtonControls,
+  setPreference: (
+    key: "showMainToolbarButton" | "showReaderToolbarButton",
+    value: boolean,
+  ) => unknown = setPref,
+): void {
+  const visibility = readToolbarButtonVisibility(controls);
+  setPreference("showMainToolbarButton", visibility.showMainToolbarButton);
+  setPreference("showReaderToolbarButton", visibility.showReaderToolbarButton);
+}
+
 export async function registerPrefsScripts(window: Window) {
   addon.data.prefs = {
     window,
@@ -109,10 +138,16 @@ export async function registerPrefsScripts(window: Window) {
 
   const attachmentTypeControls = getAttachmentTypeControls(window.document);
   const shortcutControls = getShortcutControls(window.document);
+  const toolbarButtonControls = getToolbarButtonControls(window.document);
 
   if (attachmentTypeControls) {
     syncAttachmentTypeControls(attachmentTypeControls);
     registerAttachmentTypeEvents(attachmentTypeControls);
+  }
+
+  if (toolbarButtonControls) {
+    syncToolbarButtonControls(toolbarButtonControls);
+    registerToolbarButtonEvents(toolbarButtonControls);
   }
 
   if (shortcutControls) {
@@ -206,6 +241,26 @@ function getShortcutControls(doc: Document): ShortcutControls | undefined {
   };
 }
 
+function getToolbarButtonControls(
+  doc: Document,
+): ToolbarButtonControls | undefined {
+  const mainToolbarCheckbox = doc.querySelector<HTMLInputElement>(
+    "[data-zotclip-main-toolbar-button]",
+  );
+  const readerToolbarCheckbox = doc.querySelector<HTMLInputElement>(
+    "[data-zotclip-reader-toolbar-button]",
+  );
+
+  if (!mainToolbarCheckbox || !readerToolbarCheckbox) {
+    return undefined;
+  }
+
+  return {
+    mainToolbarCheckbox,
+    readerToolbarCheckbox,
+  };
+}
+
 function syncAttachmentTypeControls(controls: AttachmentTypeControls): void {
   const enabledTypes = getEnabledAttachmentTypes().filter((type) =>
     PRESET_TYPE_SET.has(type),
@@ -218,6 +273,11 @@ function syncAttachmentTypeControls(controls: AttachmentTypeControls): void {
 
   controls.customInput.value = getCustomAttachmentTypes().join(", ");
   syncAttachmentTypeValidation(controls);
+}
+
+function syncToolbarButtonControls(controls: ToolbarButtonControls): void {
+  controls.mainToolbarCheckbox.checked = getMainToolbarButtonEnabled();
+  controls.readerToolbarCheckbox.checked = getReaderToolbarButtonEnabled();
 }
 
 function registerAttachmentTypeEvents(controls: AttachmentTypeControls): void {
@@ -236,6 +296,12 @@ function registerAttachmentTypeEvents(controls: AttachmentTypeControls): void {
   controls.customInput.addEventListener("blur", () => {
     persistAttachmentTypePrefs(controls);
   });
+}
+
+function registerToolbarButtonEvents(controls: ToolbarButtonControls): void {
+  const persist = () => persistToolbarButtonPrefs(controls);
+  controls.mainToolbarCheckbox.addEventListener("change", persist);
+  controls.readerToolbarCheckbox.addEventListener("change", persist);
 }
 
 function syncShortcutControls(controls: ShortcutControls): void {

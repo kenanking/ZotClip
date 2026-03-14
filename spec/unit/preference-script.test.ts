@@ -7,6 +7,8 @@ import {
   areShortcutInputsConflicting,
   buildEffectiveAttachmentTypes,
   normalizeShortcutInput,
+  persistToolbarButtonPrefs,
+  readToolbarButtonVisibility,
   syncMenulistValue,
   validateShortcutInput,
   validateAttachmentTypeSelection,
@@ -59,6 +61,38 @@ test("preference script detects conflicting shortcuts", () => {
     true,
   );
   assert.equal(areShortcutInputsConflicting("Ctrl+C", ""), false);
+});
+
+test("preference script reads toolbar toggle controls", () => {
+  const visibility = readToolbarButtonVisibility({
+    mainToolbarCheckbox: { checked: true } as HTMLInputElement,
+    readerToolbarCheckbox: { checked: false } as HTMLInputElement,
+  });
+
+  assert.deepEqual(visibility, {
+    showMainToolbarButton: true,
+    showReaderToolbarButton: false,
+  });
+});
+
+test("preference script persists toolbar toggle values", () => {
+  const calls: Array<{ key: string; value: boolean }> = [];
+
+  persistToolbarButtonPrefs(
+    {
+      mainToolbarCheckbox: { checked: false } as HTMLInputElement,
+      readerToolbarCheckbox: { checked: true } as HTMLInputElement,
+    },
+    (key, value) => {
+      calls.push({ key, value });
+      return true;
+    },
+  );
+
+  assert.deepEqual(calls, [
+    { key: "showMainToolbarButton", value: false },
+    { key: "showReaderToolbarButton", value: true },
+  ]);
 });
 
 test("buildClipboardDiagnostics summarizes detected commands and backend", () => {

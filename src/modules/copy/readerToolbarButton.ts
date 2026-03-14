@@ -1,143 +1,191 @@
 import { config } from "../../../package.json";
 
 const BUTTON_ID = `${config.addonRef}-reader-copy-button`;
-const TOOLBAR_SELECTORS = [
-  "#reader-toolbar .toolbar-end",
-  "#reader-toolbar",
-  ".reader-toolbar .toolbar-end",
-  ".reader-toolbar",
-];
+const VERIFIED_CONTAINER_SELECTOR = ".custom-sections > .section";
+const TOOLBAR_ICON_SVG = [
+  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 800 800" fill="none">',
+  '<g transform="translate(-219.480899,1065.401298) scale(0.161000,-0.161000)" stroke="none">',
+  '<path d="M2755 6550 c-424 -50 -778 -280 -968 -630 -99 -181 -191 -479 -206 -669 -26 -320 70 -634 277 -911 106 -143 232 -277 639 -680 512 -509 618 -609 913 -870 222 -196 543 -493 715 -661 201 -196 273 -253 401 -319 132 -68 230 -93 374 -98 149 -5 230 7 360 55 261 96 499 278 648 495 66 96 153 278 182 378 31 110 38 306 15 425 -26 129 -51 197 -151 400 -71 144 -99 190 -140 232 -42 42 -59 53 -96 58 -60 9 -129 -20 -158 -67 -41 -67 -24 -139 74 -314 65 -117 124 -287 135 -387 9 -85 -3 -222 -25 -292 -21 -65 -86 -194 -125 -251 -47 -69 -170 -188 -240 -234 -108 -70 -258 -138 -333 -151 -139 -23 -288 9 -433 94 -52 30 -121 90 -250 217 -98 97 -245 234 -327 305 -655 568 -729 636 -1206 1114 -375 375 -584 599 -689 738 -77 101 -157 269 -188 393 -94 377 67 871 359 1105 194 154 422 217 654 180 326 -52 550 -178 849 -478 83 -82 177 -173 209 -201 105 -89 186 -168 795 -774 328 -326 606 -598 619 -603 36 -14 100 -11 139 7 54 26 87 77 87 135 0 72 -48 133 -258 326 -99 92 -485 471 -856 843 -449 450 -703 698 -758 738 -96 71 -316 198 -418 241 -209 89 -447 131 -619 111z" fill="#4A4A4A"/>',
+  '<path d="M3310 5494 c-168 -28 -264 -62 -372 -133 -133 -87 -249 -235 -299 -381 -34 -99 -38 -279 -10 -390 26 -104 94 -246 154 -323 76 -98 307 -335 524 -539 113 -106 243 -236 288 -289 95 -109 134 -134 203 -126 110 12 176 132 126 230 -9 18 -182 199 -383 402 -202 204 -396 405 -432 447 -76 90 -122 171 -144 253 -53 205 32 377 235 474 71 34 80 36 180 36 89 0 117 -4 183 -27 42 -16 89 -28 103 -28 57 0 116 51 133 115 21 82 -23 161 -116 205 -103 48 -296 87 -373 74z" fill="#8A8A8A"/>',
+  '<path d="M4000 5067 c-50 -16 -105 -76 -118 -128 -23 -91 22 -173 122 -222 40 -20 68 -44 95 -80 21 -29 167 -178 325 -333 158 -155 306 -306 330 -338 56 -71 103 -183 117 -278 9 -60 8 -85 -5 -141 -37 -157 -114 -236 -295 -298 -83 -29 -146 -32 -241 -13 -133 26 -187 29 -216 9 -74 -48 -84 -155 -21 -224 34 -36 129 -79 225 -102 107 -26 220 -21 343 16 220 66 349 165 443 339 71 131 90 208 90 361 0 187 -35 299 -142 456 -57 84 -75 104 -485 509 -194 191 -314 318 -342 361 -24 37 -59 76 -77 87 -43 26 -103 34 -148 19z" fill="#8A8A8A"/>',
+  "</g>",
+  "</svg>",
+].join("");
+const TOOLBAR_ICON_DATA_URL = `data:image/svg+xml;utf8,${encodeURIComponent(TOOLBAR_ICON_SVG)}`;
 
 export interface ReaderButtonAvailability {
   canCopy: boolean;
   unavailableMessage?: string;
 }
 
-export interface ReaderButtonStateInput {
-  canCopy: boolean;
-  label: string;
-  shortcutLabel: string;
-  unavailableMessage?: string;
-}
-
-export interface ReaderButtonState {
-  disabled: boolean;
-  label: string;
-  tooltipText: string;
+export interface ReaderToolbarRenderEventLike {
+  reader: {
+    itemID?: number;
+    _iframeWindow?: Window;
+  };
+  doc: Document;
+  append: (...nodes: Array<Node | string>) => void;
 }
 
 export interface ReaderToolbarButtonDeps {
   getLabel(): string;
-  getShortcutLabel(): string;
-  getAvailability(): Promise<ReaderButtonAvailability>;
-  onCommand(): Promise<void>;
+  getAvailability(
+    itemID: number | undefined,
+  ): Promise<ReaderButtonAvailability>;
+  onCommand(itemID: number | undefined): Promise<void>;
 }
 
-export function buildReaderButtonState(
-  input: ReaderButtonStateInput,
-): ReaderButtonState {
-  if (!input.canCopy) {
-    return {
-      disabled: true,
-      label: input.label,
-      tooltipText: input.unavailableMessage || input.label,
-    };
-  }
-
-  const shortcutSuffix = input.shortcutLabel ? ` (${input.shortcutLabel})` : "";
-
-  return {
-    disabled: false,
-    label: input.label,
-    tooltipText: `${input.label}${shortcutSuffix}`,
-  };
+export interface ReaderToolbarButtonHandle {
+  refresh(): Promise<void>;
+  dispose(): void;
 }
 
-export function registerReaderToolbarButton(
-  win: Window,
+interface ReaderToolbarAPI {
+  registerEventListener(
+    type: "renderToolbar",
+    handler: (event: ReaderToolbarRenderEventLike) => void,
+    pluginID?: string,
+  ): void;
+  unregisterEventListener(
+    type: "renderToolbar",
+    handler: (event: ReaderToolbarRenderEventLike) => void,
+  ): void;
+  _readers?: Array<{
+    itemID?: number;
+    _iframeWindow?: Window;
+  }>;
+}
+
+export interface ReaderToolbarRegistryDeps extends ReaderToolbarButtonDeps {
+  pluginID?: string;
+  readerAPI?: ReaderToolbarAPI;
+}
+
+export function mountReaderToolbarButton(
+  event: ReaderToolbarRenderEventLike,
   deps: ReaderToolbarButtonDeps,
-): () => void {
-  const refresh = async () => {
-    const button = ensureButton(win.document, deps);
-    if (!button) {
+): ReaderToolbarButtonHandle {
+  const button = ensureButton(event.doc, deps.getLabel(), (...nodes) => {
+    event.append(...nodes);
+  });
+
+  const onCommand = (clickEvent: Event) => {
+    const currentButton = clickEvent.currentTarget as HTMLButtonElement | null;
+    if (currentButton?.disabled) {
       return;
     }
 
-    const availability = await deps.getAvailability();
-    const state = buildReaderButtonState({
-      canCopy: availability.canCopy,
-      label: deps.getLabel(),
-      shortcutLabel: deps.getShortcutLabel(),
-      unavailableMessage: availability.unavailableMessage,
-    });
-
-    applyButtonState(button, state);
-  };
-
-  const onCommand = (event: Event) => {
-    const button = event.currentTarget as HTMLButtonElement | null;
-    if (button?.disabled) {
-      return;
-    }
-
-    void deps.onCommand().then(() => {
+    void deps.onCommand(event.reader.itemID).then(() => {
       void refresh();
     });
   };
 
-  const onRefreshEvent = () => {
-    void refresh();
+  button?.addEventListener("click", onCommand);
+  button?.addEventListener("command", onCommand);
+
+  async function refresh(): Promise<void> {
+    const currentButton = ensureButton(
+      event.doc,
+      deps.getLabel(),
+      (...nodes) => {
+        event.append(...nodes);
+      },
+    );
+    if (!currentButton) {
+      return;
+    }
+
+    const availability = await deps.getAvailability(event.reader.itemID);
+    applyButtonState(currentButton, {
+      disabled: !availability.canCopy,
+      tooltipText: availability.canCopy
+        ? deps.getLabel()
+        : availability.unavailableMessage || deps.getLabel(),
+    });
+  }
+
+  return {
+    refresh,
+    dispose: () => {
+      const currentButton = event.doc.getElementById(
+        BUTTON_ID,
+      ) as HTMLButtonElement | null;
+      currentButton?.removeEventListener("click", onCommand);
+      currentButton?.removeEventListener("command", onCommand);
+      currentButton?.remove();
+    },
+  };
+}
+
+export function registerReaderToolbarButton(
+  deps: ReaderToolbarRegistryDeps,
+): () => void {
+  const readerAPI = deps.readerAPI || (Zotero.Reader as ReaderToolbarAPI);
+  const handles = new Map<Document, ReaderToolbarButtonHandle>();
+
+  const render = (event: ReaderToolbarRenderEventLike) => {
+    let handle = handles.get(event.doc);
+    if (!handle) {
+      handle = mountReaderToolbarButton(event, deps);
+      handles.set(event.doc, handle);
+    }
+
+    void handle.refresh();
   };
 
-  const button = ensureButton(win.document, deps);
-  button?.addEventListener("command", onCommand);
-  button?.addEventListener("click", onCommand);
+  readerAPI.registerEventListener("renderToolbar", render, deps.pluginID);
 
-  win.addEventListener("focus", onRefreshEvent, true);
-  win.addEventListener("pageshow", onRefreshEvent, true);
-  win.document.addEventListener("focusin", onRefreshEvent, true);
+  for (const reader of readerAPI._readers || []) {
+    const doc = reader._iframeWindow?.document;
+    if (!doc) {
+      continue;
+    }
 
-  void refresh();
+    const handle = handles.get(doc);
+    if (handle) {
+      void handle.refresh();
+      continue;
+    }
+
+    const mounted = mountReaderToolbarButton(
+      {
+        reader,
+        doc,
+        append: (...nodes) => {
+          const container = doc.querySelector(VERIFIED_CONTAINER_SELECTOR);
+          if (!container) {
+            return;
+          }
+          container.append(...nodes);
+        },
+      },
+      deps,
+    );
+    handles.set(doc, mounted);
+    void mounted.refresh();
+  }
 
   return () => {
-    const currentButton = win.document.getElementById(BUTTON_ID);
-    currentButton?.removeEventListener("command", onCommand);
-    currentButton?.removeEventListener("click", onCommand);
-    currentButton?.remove();
-    win.removeEventListener("focus", onRefreshEvent, true);
-    win.removeEventListener("pageshow", onRefreshEvent, true);
-    win.document.removeEventListener("focusin", onRefreshEvent, true);
+    readerAPI.unregisterEventListener("renderToolbar", render);
+    for (const handle of handles.values()) {
+      handle.dispose();
+    }
   };
 }
 
 function ensureButton(
   doc: Document,
-  deps: Pick<ReaderToolbarButtonDeps, "getLabel">,
+  label: string,
+  append: (...nodes: Node[]) => void,
 ): HTMLButtonElement | null {
-  const container = findToolbarContainer(doc);
-  if (!container) {
-    return null;
-  }
-
   const existing = doc.getElementById(BUTTON_ID) as HTMLButtonElement | null;
   if (existing) {
     return existing;
   }
 
-  const button = createButton(doc, deps.getLabel());
-  container.append(button);
+  const button = createButton(doc, label);
+  append(button);
   return button;
-}
-
-function findToolbarContainer(doc: Document): Element | null {
-  for (const selector of TOOLBAR_SELECTORS) {
-    const container = doc.querySelector(selector);
-    if (container) {
-      return container;
-    }
-  }
-
-  return null;
 }
 
 function createButton(doc: Document, label: string): HTMLButtonElement {
@@ -147,21 +195,31 @@ function createButton(doc: Document, label: string): HTMLButtonElement {
   button.setAttribute("type", "button");
   button.setAttribute("aria-label", label);
   button.title = label;
-  button.textContent = label;
-  button.style.backgroundImage = `url(chrome://${config.addonRef}/content/icons/favicon.svg)`;
-  button.style.backgroundPosition = "0.4rem center";
-  button.style.backgroundRepeat = "no-repeat";
-  button.style.paddingInlineStart = "1.8rem";
-
+  button.textContent = "";
+  button.setAttribute(
+    "style",
+    [
+      `background-image: url("${TOOLBAR_ICON_DATA_URL}")`,
+      "background-position: center",
+      "background-repeat: no-repeat",
+      "background-size: 16px 16px",
+      "width: 28px",
+      "height: 28px",
+      "min-width: 28px",
+      "padding: 0",
+    ].join("; "),
+  );
   return button;
 }
 
 function applyButtonState(
   button: HTMLButtonElement,
-  state: ReaderButtonState,
+  state: {
+    disabled: boolean;
+    tooltipText: string;
+  },
 ): void {
   button.disabled = state.disabled;
-  button.textContent = state.label;
   button.title = state.tooltipText;
   button.setAttribute("aria-label", state.tooltipText);
 }

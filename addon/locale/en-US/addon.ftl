@@ -1,4 +1,8 @@
 prefs-title = ZotClip
+mainwindow-copy-toolbar = Copy File
+mainwindow-copy-selected-unavailable = No eligible attachments selected
+mainwindow-copy-reader-no-active = No active reader attachment
+mainwindow-copy-reader-unavailable = No eligible reader attachment
 menu-copy-selected = Copy Attachment File(s)
 menu-copy-reader = Copy Current Reader Attachment
 menu-copy-reader-shortcut = Copy Current Reader Attachment (Ctrl+Shift+C)

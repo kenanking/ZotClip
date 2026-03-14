@@ -64,8 +64,15 @@ export async function copyFromReader(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  const readerItemID = deps.getCurrentReaderItemID();
-  if (!readerItemID) {
+  return copyFromReaderItem(deps.getCurrentReaderItemID(), allowedTypes, deps);
+}
+
+export async function copyFromReaderItem(
+  itemID: number | undefined,
+  allowedTypes: string[],
+  deps: CopyCommandDeps = DEFAULT_DEPS,
+): Promise<ClipboardResult> {
+  if (!itemID) {
     return {
       ok: false,
       format: "none",
@@ -74,6 +81,6 @@ export async function copyFromReader(
     };
   }
 
-  const files = await deps.resolveFromReader(readerItemID, allowedTypes);
+  const files = await deps.resolveFromReader(itemID, allowedTypes);
   return deps.writeClipboard(files, "reader");
 }

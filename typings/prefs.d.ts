@@ -10,6 +10,8 @@ declare namespace _ZoteroTypes {
       "multiAttachmentMode": string;
       "libraryShortcut": string;
       "readerShortcut": string;
+      "showMainToolbarButton": boolean;
+      "showReaderToolbarButton": boolean;
       "enabledAttachmentTypes": string;
       "customAttachmentTypes": string;
     };
