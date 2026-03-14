@@ -3,6 +3,7 @@ import {
   resolveAttachmentsFromItems,
 } from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
+import { createCopyService, type CopyServiceDeps } from "./copyService";
 import type {
   ClipboardResult,
   MultiAttachmentMode,
@@ -55,16 +56,14 @@ export async function copyFromSelection(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  const selectedItems = deps.getSelectedItems();
-  const files = await deps.resolveFromItems(selectedItems, mode, allowedTypes);
-  return deps.writeClipboard(files, "library");
+  return createServiceFromCommandDeps(mode, allowedTypes, deps).copySelection();
 }
 
 export async function copyFromReader(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  return copyFromReaderItem(deps.getCurrentReaderItemID(), allowedTypes, deps);
+  return createServiceFromCommandDeps("all", allowedTypes, deps).copyReader();
 }
 
 export async function copyFromReaderItem(
@@ -72,15 +71,36 @@ export async function copyFromReaderItem(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  if (!itemID) {
-    return {
-      ok: false,
-      format: "none",
-      count: 0,
-      messageKey: "copy-reader-no-active",
-    };
-  }
+  return createServiceFromCommandDeps("all", allowedTypes, deps).copyReader(
+    itemID,
+  );
+}
 
-  const files = await deps.resolveFromReader(itemID, allowedTypes);
-  return deps.writeClipboard(files, "reader");
+function createServiceFromCommandDeps(
+  mode: MultiAttachmentMode,
+  allowedTypes: string[],
+  deps: CopyCommandDeps,
+) {
+  const serviceDeps: CopyServiceDeps = {
+    getSettings: () => ({
+      allowedTypes,
+      multiAttachmentMode: mode,
+    }),
+    getSelectedItems: () => deps.getSelectedItems(),
+    getCurrentReaderItemID: () => deps.getCurrentReaderItemID(),
+    resolveFromItems: (items, nextMode, nextAllowedTypes) =>
+      deps.resolveFromItems(items, nextMode, nextAllowedTypes),
+    resolveFromReader: (itemID, nextAllowedTypes) =>
+      deps.resolveFromReader(itemID, nextAllowedTypes),
+    writeClipboard: (files, source) => deps.writeClipboard(files, source),
+    getClipboardDiagnostics: async () => ({
+      platform: "linux",
+      linuxSession: "unknown",
+      commands: {},
+      activeBackend: "unknown",
+      lines: [],
+    }),
+  };
+
+  return createCopyService(serviceDeps);
 }
