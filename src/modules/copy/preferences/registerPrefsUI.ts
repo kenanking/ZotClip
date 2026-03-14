@@ -62,7 +62,8 @@ export async function registerPrefsUI(
   deps.syncPreferenceMenulists?.(window.document);
 
   const sectionHandles = await Promise.all([
-    deps.registerAttachmentTypesSection?.(window.document) || createNoopHandle(),
+    deps.registerAttachmentTypesSection?.(window.document) ||
+      createNoopHandle(),
     deps.registerToolbarButtonsSection?.(window.document) || createNoopHandle(),
     deps.registerShortcutsSection?.(window.document) || createNoopHandle(),
     deps.registerDiagnosticsSection?.(window.document) || createNoopHandle(),

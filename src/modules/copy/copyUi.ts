@@ -9,5 +9,7 @@ export function getToolbarTooltipText(
     unavailableMessage?: string;
   },
 ): string {
-  return availability.canCopy ? label : availability.unavailableMessage || label;
+  return availability.canCopy
+    ? label
+    : availability.unavailableMessage || label;
 }

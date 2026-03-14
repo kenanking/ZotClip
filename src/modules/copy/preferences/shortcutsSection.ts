@@ -1,4 +1,8 @@
-import { getLibraryShortcut, getReaderShortcut, setPref } from "../../../utils/prefs";
+import {
+  getLibraryShortcut,
+  getReaderShortcut,
+  setPref,
+} from "../../../utils/prefs";
 import {
   formatShortcut,
   parseShortcut,

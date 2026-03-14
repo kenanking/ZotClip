@@ -47,7 +47,10 @@ export function createMainWindowController(
       for (const win of wins) {
         const existing = mainToolbarDisposers.get(win);
         if (enabled && !existing) {
-          mainToolbarDisposers.set(win, deps.registerMainToolbarCopyButton(win));
+          mainToolbarDisposers.set(
+            win,
+            deps.registerMainToolbarCopyButton(win),
+          );
           continue;
         }
 

@@ -15,7 +15,10 @@ const clipboardCommandRunner = createCommandRunner();
 export async function getClipboardDiagnostics(): Promise<ClipboardDiagnostics> {
   const platformContext = detectCurrentPlatformContext();
   const commands = await probeClipboardSupport(platformContext);
-  const backendStatus = resolveClipboardBackendStatus(platformContext, commands);
+  const backendStatus = resolveClipboardBackendStatus(
+    platformContext,
+    commands,
+  );
 
   return buildClipboardDiagnostics({
     platform: platformContext.platform,
