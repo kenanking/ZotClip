@@ -22,3 +22,21 @@ test("buildClipboardPayload returns unique paths, file URIs, and path text", () 
   assert.equal(payload.operation, "copy");
   assert.equal(payload.source, "library");
 });
+
+test("buildClipboardPayload prefers clipboardPath over the original path", () => {
+  const payload = buildClipboardPayload(
+    [
+      {
+        itemID: 1,
+        attachmentID: 11,
+        path: "/src/a/paper.pdf",
+        clipboardPath: "/tmp/zotclip-copy/paper.pdf",
+      },
+    ],
+    "library",
+  );
+
+  assert.deepEqual(payload.paths, ["/tmp/zotclip-copy/paper.pdf"]);
+  assert.deepEqual(payload.fileUris, ["file:///tmp/zotclip-copy/paper.pdf"]);
+  assert.equal(payload.pathText, "/tmp/zotclip-copy/paper.pdf");
+});

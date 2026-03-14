@@ -6,7 +6,11 @@ export function buildClipboardPayload(
   source: ClipboardSource,
 ): ClipboardPayload {
   const paths = Array.from(
-    new Set(files.map((file) => file.path?.trim()).filter(Boolean)),
+    new Set(
+      files
+        .map((file) => (file.clipboardPath || file.path)?.trim())
+        .filter(Boolean),
+    ),
   ) as string[];
 
   return {
