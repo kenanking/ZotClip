@@ -31,6 +31,7 @@ export interface ResolvedAttachment {
   itemID: number;
   attachmentID: number;
   path: string;
+  clipboardPath?: string;
 }
 
 export interface ClipboardResult {
