@@ -1,4 +1,6 @@
+import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
+import { BACKEND_IDS } from "./types";
 
 export interface PathTextBackendDeps {
   writePathText?(value: string): boolean;
@@ -15,27 +17,22 @@ export function createPathTextBackend(
   deps: PathTextBackendDeps = DEFAULT_DEPS,
 ): ClipboardBackend {
   return {
-    id: "path-text",
+    id: BACKEND_IDS.PATH_TEXT,
     priority: 0,
     isAvailable: async (payload) => ({
       available: payload.pathText.length > 0,
     }),
     write: async (payload) => {
       if (!deps.writePathText?.(payload.pathText)) {
-        return {
-          ok: false,
-          count: payload.paths.length,
-          format: "none",
-          outcome: "copy-failed",
-          message: "Clipboard write failed.",
-        };
+        return buildFailureResult(payload);
       }
 
       return {
-        ok: true,
-        count: payload.paths.length,
-        format: "path-text",
-        outcome: "copied-path-text-fallback",
+        ...buildSuccessResult(
+          payload,
+          "path-text",
+          "copied-path-text-fallback",
+        ),
         message: "File clipboard unavailable. Copied file path text instead.",
       };
     },

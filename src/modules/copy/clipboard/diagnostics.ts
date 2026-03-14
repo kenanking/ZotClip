@@ -1,5 +1,6 @@
 import type { PlatformContext } from "./platformDetection";
 import { isChineseLanguageTag, localizeKnownCopyMessage } from "../uiStrings";
+import { BACKEND_IDS } from "./types";
 
 export interface ClipboardDiagnosticsInput {
   activeBackend?: string;
@@ -82,10 +83,7 @@ function buildInstallCommand(
     return undefined;
   }
 
-  if (
-    input.activeBackend &&
-    input.activeBackend !== "generic-clipboard-fallback"
-  ) {
+  if (input.activeBackend && input.activeBackend !== BACKEND_IDS.FALLBACK) {
     return undefined;
   }
 

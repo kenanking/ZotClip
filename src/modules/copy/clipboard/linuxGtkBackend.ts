@@ -1,4 +1,5 @@
 import type { ClipboardResult } from "../types";
+import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
 import type {
   CommandCall,
@@ -6,7 +7,7 @@ import type {
   StartCommandOptions,
 } from "./commandRunner";
 import { buildLinuxClipboardPayloadInput } from "./linuxPayload";
-import type { ClipboardPayload } from "./types";
+import { BACKEND_IDS, MIME_TYPES, type ClipboardPayload } from "./types";
 
 const GTK_HELPER_COMMAND = "python3";
 const GTK_HELPER_DEPENDENCY = "gtk4-helper";
@@ -44,9 +45,9 @@ def main() -> int:
     gnome_bytes = GLib.Bytes.new(payload["gnome_payload"].encode("utf-8"))
     provider = Gdk.ContentProvider.new_union(
         [
-            Gdk.ContentProvider.new_for_bytes("text/uri-list", uri_bytes),
+            Gdk.ContentProvider.new_for_bytes("${MIME_TYPES.URI_LIST}", uri_bytes),
             Gdk.ContentProvider.new_for_bytes(
-                "x-special/gnome-copied-files",
+                "${MIME_TYPES.GNOME_COPIED_FILES}",
                 gnome_bytes,
             ),
         ]
@@ -101,7 +102,7 @@ export function createLinuxGtkBackend(
   deps: LinuxGtkBackendDeps,
 ): ClipboardBackend {
   return {
-    id: "linux-gtk4-helper",
+    id: BACKEND_IDS.LINUX_GTK4,
     priority: 110,
     isAvailable: async (payload) => {
       if (!payload.fileUris.length) {
@@ -132,22 +133,7 @@ export function createLinuxGtkBackend(
         return buildFailureResult(payload);
       }
 
-      return {
-        ok: true,
-        count: payload.paths.length,
-        format: "file-uri-list",
-        outcome: "copied-files",
-      };
+      return buildSuccessResult(payload, "file-uri-list", "copied-files");
     },
-  };
-}
-
-function buildFailureResult(payload: ClipboardPayload): ClipboardResult {
-  return {
-    ok: false,
-    count: payload.paths.length,
-    format: "none",
-    outcome: "copy-failed",
-    message: "Clipboard write failed.",
   };
 }

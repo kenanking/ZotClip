@@ -1,4 +1,5 @@
 import type { ClipboardResult } from "../types";
+import { buildFailureResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
 import type { ClipboardPayload } from "./types";
 import { sortClipboardBackends } from "./backends";
@@ -14,15 +15,13 @@ export async function runClipboardBackends(input: {
     try {
       availability = await backend.isAvailable(input.payload);
     } catch (error) {
-      logClipboardBackendError(
-        "Clipboard backend availability failed",
-        backend.id,
-        error,
-      );
+      logUnexpectedBackendError("availability check", backend.id, error);
       continue;
     }
 
     if (!availability.available) {
+      // Backend unavailable is expected behavior (e.g., command not installed)
+      // Don't log this as an error
       continue;
     }
 
@@ -30,11 +29,7 @@ export async function runClipboardBackends(input: {
     try {
       result = await backend.write(input.payload);
     } catch (error) {
-      logClipboardBackendError(
-        "Clipboard backend write failed",
-        backend.id,
-        error,
-      );
+      logUnexpectedBackendError("write", backend.id, error);
       continue;
     }
 
@@ -43,19 +38,21 @@ export async function runClipboardBackends(input: {
     }
   }
 
-  return {
-    ok: false,
-    count: input.payload.paths.length,
-    format: "none",
-    outcome: "copy-failed",
-    message: "Clipboard write failed.",
-  };
+  return buildFailureResult(input.payload);
 }
 
-function logClipboardBackendError(
-  message: string,
+/**
+ * Log unexpected backend errors (exceptions), not expected unavailability.
+ */
+function logUnexpectedBackendError(
+  operation: string,
   backendID: string,
   error: unknown,
 ): void {
-  (globalThis as any).ztoolkit?.log?.(message, backendID, error);
+  // Only log actual exceptions, not expected failures like missing commands
+  (globalThis as any).ztoolkit?.log?.(
+    `Clipboard backend ${operation} failed unexpectedly`,
+    backendID,
+    error,
+  );
 }

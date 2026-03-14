@@ -1,11 +1,11 @@
 import type { ClipboardResult } from "../types";
+import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
 import type { CommandCall, CommandResult } from "./commandRunner";
 import { buildLinuxClipboardPayload } from "./linuxPayload";
-import type { ClipboardPayload } from "./types";
+import { BACKEND_IDS, MIME_TYPES, type ClipboardPayload } from "./types";
 
 const WL_COPY_COMMAND = "wl-copy";
-const URI_LIST_MIME = "text/uri-list";
 
 export interface LinuxWaylandBackendDeps {
   probeCommand(name: string): Promise<boolean>;
@@ -17,7 +17,7 @@ export function buildLinuxWaylandClipboardCall(
 ): CommandCall {
   return {
     command: WL_COPY_COMMAND,
-    args: ["--type", URI_LIST_MIME],
+    args: ["--type", MIME_TYPES.URI_LIST],
     stdinText: buildLinuxClipboardPayload(payload.fileUris).uriListText,
   };
 }
@@ -26,7 +26,7 @@ export function createLinuxWaylandBackend(
   deps: LinuxWaylandBackendDeps,
 ): ClipboardBackend {
   return {
-    id: "linux-wayland-wl-copy-uri-list",
+    id: BACKEND_IDS.LINUX_WAYLAND,
     priority: 110,
     isAvailable: async (payload) => {
       if (!payload.fileUris.length) {
@@ -55,22 +55,7 @@ export function createLinuxWaylandBackend(
         return buildFailureResult(payload);
       }
 
-      return {
-        ok: true,
-        count: payload.paths.length,
-        format: "file-uri-list",
-        outcome: "copied-files",
-      };
+      return buildSuccessResult(payload, "file-uri-list", "copied-files");
     },
-  };
-}
-
-function buildFailureResult(payload: ClipboardPayload): ClipboardResult {
-  return {
-    ok: false,
-    count: payload.paths.length,
-    format: "none",
-    outcome: "copy-failed",
-    message: "Clipboard write failed.",
   };
 }

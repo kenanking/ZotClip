@@ -1,7 +1,8 @@
 import type { ClipboardResult } from "../types";
+import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
 import type { CommandCall, CommandResult } from "./commandRunner";
-import type { ClipboardPayload } from "./types";
+import { BACKEND_IDS, type ClipboardPayload } from "./types";
 
 export interface MacosCommandBackendDeps {
   probeCommand(name: string): Promise<boolean>;
@@ -22,7 +23,7 @@ export function createMacosCommandBackend(
   deps: MacosCommandBackendDeps,
 ): ClipboardBackend {
   return {
-    id: "macos-osascript-file-list",
+    id: BACKEND_IDS.MACOS_OSASCRIPT,
     priority: 95,
     isAvailable: async (payload) => {
       if (!payload.paths.length) {
@@ -52,23 +53,8 @@ export function createMacosCommandBackend(
         return buildFailureResult(payload);
       }
 
-      return {
-        ok: true,
-        count: payload.paths.length,
-        format: "file-object",
-        outcome: "copied-files",
-      };
+      return buildSuccessResult(payload, "file-object", "copied-files");
     },
-  };
-}
-
-function buildFailureResult(payload: ClipboardPayload): ClipboardResult {
-  return {
-    ok: false,
-    count: payload.paths.length,
-    format: "none",
-    outcome: "copy-failed",
-    message: "Clipboard write failed.",
   };
 }
 

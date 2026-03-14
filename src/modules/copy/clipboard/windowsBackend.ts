@@ -1,7 +1,8 @@
 import type { ClipboardResult } from "../types";
 import { writeWindowsFileDrop } from "../windowsFileClipboard";
+import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
-import type { ClipboardPayload } from "./types";
+import { BACKEND_IDS, type ClipboardPayload } from "./types";
 
 export interface WindowsBackendDeps {
   writeWindowsFileDrop?(paths: string[]): boolean | Promise<boolean>;
@@ -15,7 +16,7 @@ export function createWindowsBackend(
   deps: WindowsBackendDeps = DEFAULT_DEPS,
 ): ClipboardBackend {
   return {
-    id: "windows-native",
+    id: BACKEND_IDS.WINDOWS_NATIVE,
     priority: 100,
     isAvailable: async (payload) => ({
       available: payload.paths.length > 0,
@@ -25,22 +26,7 @@ export function createWindowsBackend(
         return buildFailureResult(payload);
       }
 
-      return {
-        ok: true,
-        count: payload.paths.length,
-        format: "file-object",
-        outcome: "copied-files",
-      };
+      return buildSuccessResult(payload, "file-object", "copied-files");
     },
-  };
-}
-
-function buildFailureResult(payload: ClipboardPayload): ClipboardResult {
-  return {
-    ok: false,
-    count: payload.paths.length,
-    format: "none",
-    outcome: "copy-failed",
-    message: "Clipboard write failed.",
   };
 }
