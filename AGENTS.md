@@ -51,6 +51,20 @@ $env:ZOTERO_PLUGIN_ZOTERO_BIN_PATH='C:\Program Files\Zotero\zotero.exe'
 - Run `npm run test` as well when Zotero-based integration coverage is needed
   and the Zotero binary path is configured.
 
+## Release
+
+- Releases are triggered by pushing a Git tag that matches `v**`.
+- Before a release, run `npm run test:unit`, `npm run build`, and
+  `npm run lint:check`.
+- Bump the version with `npm version patch`, `npm version minor`, or
+  `npm version major`. This creates a version commit and a matching Git tag.
+- Push commits and tags with `git push origin main --follow-tags`.
+- The GitHub Actions release workflow then runs `npm run build` and
+  `npm run release`.
+- If an agent updates compatibility claims, release notes, or packaging, it
+  must verify that `package.json`, `addon/manifest.json`, and the release tag
+  stay consistent.
+
 ## Commits
 
 - Use conventional prefixes such as `feat:`, `fix:`, `docs:`, and `chore:`.
