@@ -1,12 +1,29 @@
+import type { CopyMessageArgs, CopyMessageKey } from "../types";
 import type { PlatformContext } from "./platformDetection";
-import { isChineseLanguageTag, localizeKnownCopyMessage } from "../uiStrings";
 import { BACKEND_IDS } from "./types";
+
+export type ClipboardDiagnosticsLineKey =
+  | "copy-diagnostics-platform"
+  | "copy-diagnostics-platform-linux"
+  | "copy-diagnostics-command-available"
+  | "copy-diagnostics-command-missing"
+  | "copy-diagnostics-active-backend"
+  | "copy-diagnostics-note"
+  | "copy-diagnostics-install-command"
+  | "copy-diagnostics-troubleshoot";
+
+export interface ClipboardDiagnosticsLine {
+  key: ClipboardDiagnosticsLineKey;
+  args?: CopyMessageArgs;
+  messageArgs?: CopyMessageArgs;
+  messageKey?: CopyMessageKey;
+}
 
 export interface ClipboardDiagnosticsInput {
   activeBackend?: string;
   commands?: Record<string, boolean>;
-  languageTag?: string;
-  lastFallbackReason?: string;
+  lastFallbackMessageArgs?: CopyMessageArgs;
+  lastFallbackMessageKey?: CopyMessageKey;
   linuxSession?: PlatformContext["linuxSession"];
   platform: PlatformContext["platform"];
 }
@@ -14,9 +31,9 @@ export interface ClipboardDiagnosticsInput {
 export interface ClipboardDiagnostics {
   activeBackend: string;
   commands: Record<string, boolean>;
-  languageTag?: string;
-  lastFallbackReason?: string;
-  lines: string[];
+  lastFallbackMessageArgs?: CopyMessageArgs;
+  lastFallbackMessageKey?: CopyMessageKey;
+  lines: ClipboardDiagnosticsLine[];
   linuxSession?: PlatformContext["linuxSession"];
   platform: PlatformContext["platform"];
 }
@@ -26,32 +43,39 @@ export function buildClipboardDiagnostics(
 ): ClipboardDiagnostics {
   const commands = input.commands || {};
   const activeBackend = input.activeBackend || "unknown";
-  const isChinese = isChineseLanguageTag(input.languageTag);
-  const lines = [
-    buildPlatformLine(input, isChinese),
+  const lines: ClipboardDiagnosticsLine[] = [
+    buildPlatformLine(input),
     ...Object.entries(commands).map(
-      ([command, available]) =>
-        `${command}${isChinese ? "：" : ": "}${available ? (isChinese ? "可用" : "available") : isChinese ? "缺失" : "missing"}`,
+      ([command, available]): ClipboardDiagnosticsLine => ({
+        key: available
+          ? "copy-diagnostics-command-available"
+          : "copy-diagnostics-command-missing",
+        args: { command },
+      }),
     ),
-    `${isChinese ? "当前后端" : "Active backend"}${isChinese ? "：" : ": "}${activeBackend}`,
+    {
+      key: "copy-diagnostics-active-backend",
+      args: { backend: activeBackend },
+    },
   ];
 
-  if (input.lastFallbackReason) {
-    lines.push(
-      `${isChinese ? "说明" : "Note"}${isChinese ? "：" : ": "}${localizeKnownCopyMessage(input.lastFallbackReason, input.languageTag) || input.lastFallbackReason}`,
-    );
+  if (input.lastFallbackMessageKey) {
+    lines.push({
+      key: "copy-diagnostics-note",
+      messageKey: input.lastFallbackMessageKey,
+      messageArgs: input.lastFallbackMessageArgs,
+    });
   }
 
   const installCommand = buildInstallCommand(input);
   if (installCommand) {
-    lines.push(
-      `${isChinese ? "安装命令" : "Install command"}${isChinese ? "：" : ": "}${installCommand}`,
-    );
-    lines.push(
-      isChinese
-        ? "如果仍有问题，请自行排查系统剪贴板环境。"
-        : "If issues persist, troubleshoot your system clipboard environment manually.",
-    );
+    lines.push({
+      key: "copy-diagnostics-install-command",
+      args: { command: installCommand },
+    });
+    lines.push({
+      key: "copy-diagnostics-troubleshoot",
+    });
   }
 
   return {
@@ -59,21 +83,26 @@ export function buildClipboardDiagnostics(
     linuxSession: input.linuxSession,
     commands,
     activeBackend,
-    languageTag: input.languageTag,
-    lastFallbackReason: input.lastFallbackReason,
+    lastFallbackMessageKey: input.lastFallbackMessageKey,
+    lastFallbackMessageArgs: input.lastFallbackMessageArgs,
     lines,
   };
 }
 
 function buildPlatformLine(
   input: ClipboardDiagnosticsInput,
-  isChinese: boolean,
-): string {
+): ClipboardDiagnosticsLine {
   if (input.platform === "linux") {
-    return `${isChinese ? "平台" : "Platform"}${isChinese ? "：" : ": "}linux (${input.linuxSession || "unknown"})`;
+    return {
+      key: "copy-diagnostics-platform-linux",
+      args: { session: input.linuxSession || "unknown" },
+    };
   }
 
-  return `${isChinese ? "平台" : "Platform"}${isChinese ? "：" : ": "}${input.platform}`;
+  return {
+    key: "copy-diagnostics-platform",
+    args: { platform: input.platform },
+  };
 }
 
 function buildInstallCommand(

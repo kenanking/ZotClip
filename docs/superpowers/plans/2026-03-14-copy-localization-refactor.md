@@ -54,6 +54,7 @@
 ### Task 1: Create an Isolated Worktree and Verify the Baseline
 
 **Files:**
+
 - Modify: `.worktrees/` (new worktree only)
 
 - [ ] **Step 1: Create the isolated worktree**
@@ -95,6 +96,7 @@ There is no code change in this task. Leave the tree clean and proceed.
 ### Task 2: Replace Free-Form Copy Messages with Typed Message Keys
 
 **Files:**
+
 - Modify: `src/modules/copy/types.ts`
 - Modify: `src/modules/copy/clipboard/backends.ts`
 - Modify: `src/modules/copy/clipboardWriter.ts`
@@ -209,6 +211,7 @@ Expected: one focused commit for the contract change.
 ### Task 3: Add a Fluent-Backed Copy Message Formatter
 
 **Files:**
+
 - Create: `src/modules/copy/copyMessages.ts`
 - Modify: `src/modules/copy/notifier.ts`
 - Modify: `src/hooks.ts`
@@ -281,7 +284,7 @@ Update `notifier.ts` to render messages via `copyMessages.ts`. Keep its public A
 export function formatCopyMessage(
   result: ClipboardResult,
   deps: CopyMessageRenderDeps = {},
-): string
+): string;
 ```
 
 Update hook-side reader availability producers to pass locale-rendered messages from the same helper layer instead of duplicating string choices.
@@ -309,6 +312,7 @@ git commit -m "refactor: move copy notifications to Fluent"
 ### Task 4: Convert Diagnostics to Structured Descriptors and Fluent Rendering
 
 **Files:**
+
 - Modify: `src/modules/copy/clipboard/diagnostics.ts`
 - Modify: `src/utils/prefs.ts`
 - Modify: `src/modules/copy/copyMessages.ts`
@@ -331,7 +335,10 @@ assert.deepEqual(diagnostics.lines[0], {
 
 ```ts
 assert.equal(
-  renderCopyDiagnosticsLine(diagnostics.lines[0], createTestLocaleDeps("en-US")),
+  renderCopyDiagnosticsLine(
+    diagnostics.lines[0],
+    createTestLocaleDeps("en-US"),
+  ),
   "Platform: linux (wayland)",
 );
 ```
@@ -367,7 +374,7 @@ In `copyMessages.ts`, add a helper such as:
 export function renderCopyDiagnosticsLine(
   line: CopyDiagnosticsLine,
   deps?: CopyMessageRenderDeps,
-): string
+): string;
 ```
 
 Update `src/utils/prefs.ts` to build diagnostics using the new data path and only render at the UI boundary.
@@ -395,6 +402,7 @@ git commit -m "refactor: localize clipboard diagnostics via Fluent"
 ### Task 5: Remove the Transitional Localization Layer and Run Full Verification
 
 **Files:**
+
 - Delete: `src/modules/copy/uiStrings.ts`
 - Modify: any import sites still referencing `uiStrings.ts`
 - Test: all touched unit tests

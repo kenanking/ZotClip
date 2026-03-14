@@ -11,7 +11,6 @@ import {
   detectCurrentPlatformContext,
   type PlatformContext,
 } from "../modules/copy/clipboard/platformDetection";
-import { getCurrentLanguageTag } from "../modules/copy/uiStrings";
 import type { MultiAttachmentMode } from "../modules/copy/types";
 
 type PluginPrefsMap = _ZoteroTypes.Prefs["PluginPrefsMap"];
@@ -91,8 +90,7 @@ export async function getClipboardDiagnostics(): Promise<ClipboardDiagnostics> {
     linuxSession: platformContext.linuxSession,
     commands,
     activeBackend: backendStatus.activeBackend,
-    languageTag: getCurrentLanguageTag(),
-    lastFallbackReason: backendStatus.lastFallbackReason,
+    lastFallbackMessageKey: backendStatus.lastFallbackMessageKey,
   });
 }
 

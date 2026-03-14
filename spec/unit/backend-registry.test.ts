@@ -16,7 +16,10 @@ test("runClipboardBackends picks the first successful backend by priority", asyn
       {
         id: "unavailable",
         priority: 100,
-        isAvailable: async () => ({ available: false, reason: "missing" }),
+        isAvailable: async () => ({
+          available: false,
+          reasonKey: "copy-no-files",
+        }),
         write: async () => {
           throw new Error("should not run");
         },

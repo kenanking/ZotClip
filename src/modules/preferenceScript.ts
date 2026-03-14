@@ -11,6 +11,7 @@ import {
   getReaderShortcut,
   setPref,
 } from "../utils/prefs";
+import { renderCopyDiagnosticsLine } from "./copy/copyMessages";
 import {
   formatShortcut,
   parseShortcut,
@@ -364,7 +365,9 @@ async function renderDiagnostics(controls: ShortcutControls): Promise<void> {
 
   try {
     const diagnostics = await getClipboardDiagnostics();
-    controls.diagnosticsValue.textContent = diagnostics.lines.join("\n");
+    controls.diagnosticsValue.textContent = diagnostics.lines
+      .map((line) => renderCopyDiagnosticsLine(line))
+      .join("\n");
   } catch (error) {
     controls.diagnosticsValue.textContent = `Diagnostics unavailable: ${getErrorMessage(error)}`;
   }
