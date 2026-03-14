@@ -4,20 +4,11 @@
 
 # ZotClip
 
-ZotClip is a small plugin for Zotero 8 that lets you copy attachment files to
-the clipboard from either the library view or the reader. It is meant for the
-simple case where a paper is already in Zotero and you want to paste the
-underlying file directly into Explorer, chat apps, or any other file-aware
-target.
-
-Current platform behavior:
-
-- Windows: native `CF_HDROP` file copy
-- Linux X11: `xclip` `text/uri-list` clipboard backend
-- Linux Wayland: `wl-copy` `text/uri-list` clipboard backend
-- macOS: `osascript` Finder clipboard backend
-- Fallback: absolute attachment path text when file-oriented clipboard copy is
-  unavailable
+ZotClip is a plugin for Zotero 8 and 9 that copies attachment files from the
+library view or reader into the system clipboard. When the target app accepts
+file pastes, attachments are pasted as files. When file-oriented clipboard
+support is not available, ZotClip falls back to copying absolute attachment
+paths as plain text.
 
 ## Installation
 
@@ -27,38 +18,47 @@ open `Tools -> Plugins`, click the gear button, choose `Install Plugin From
 File...`, and select the downloaded package. Restart Zotero if the plugin does
 not appear immediately.
 
-## Dependencies
+## System Support
 
-ZotClip can ship without bundled helpers, but Linux and macOS rely on
-system-provided clipboard commands:
+| System        | Status                         | Clipboard backend                    | What to install                                 |
+| ------------- | ------------------------------ | ------------------------------------ | ----------------------------------------------- |
+| Windows 10/11 | Supported                      | Native `CF_HDROP` file copy          | Nothing extra                                   |
+| Linux X11     | Supported with system packages | GTK4 helper backend                  | `python3-gi` and `gir1.2-gtk-4.0`               |
+| Linux Wayland | Supported with system packages | `wl-copy` `text/uri-list` backend    | `wl-clipboard`                                  |
+| macOS         | Supported                      | `osascript` Finder clipboard backend | Nothing extra; `osascript` is provided by macOS |
 
-- Linux X11: install `xclip`
-- Linux Wayland: install `wl-clipboard` so `wl-copy` is available
-- macOS: `osascript` is expected to be available from the system
-
-If the preferred backend is unavailable, ZotClip falls back to copying absolute
-attachment paths as plain text and shows the reason in notifications and in the
-preferences diagnostics section.
+After installation, open `Edit -> Preferences -> ZotClip` and check the
+`Compatibility` section. Confirm that `Backend diagnostics` reports the
+expected backend for your system and does not show a missing dependency. If the
+compatibility check does not pass, install the required system package before
+retesting.
 
 ## Usage
 
 In the library view, select an attachment or a parent item and press `Ctrl+C`,
-or use `Copy Attachment File(s)` from the context menu.
+or use `Copy Attachment File(s)` from the item context menu.
 
-In the reader, ZotClip does not hijack the default `Ctrl+C`. Use the reader
-toolbar button to copy the current attachment. If you want a keyboard shortcut
-in the reader, configure one explicitly in `Edit -> Preferences -> ZotClip`.
+In the reader, ZotClip keeps the default `Ctrl+C` behavior for text selection.
+Use the reader toolbar button to copy the current attachment. If you want a
+reader-specific shortcut, configure one in `Edit -> Preferences -> ZotClip`.
 
-The preferences pane lets you configure:
+The settings page lets you configure:
 
 - allowed attachment types
 - multi-attachment strategy
 - library shortcut
 - reader shortcut
-- backend diagnostics for the current platform/session
+- compatibility diagnostics for the current platform
 
 ## Development
 
-For local development, run `npm install` and `npm run start`. Before opening a
-PR, run `npm run test:unit`, `npm run build`, and `npm run lint:check`. Manual
-verification notes live in [`docs/manual-testing.md`](docs/manual-testing.md).
+Install dependencies with `npm install`, then run `npm run start` for the local
+development loop.
+
+Before opening a PR, run:
+
+- `npm run test:unit`
+- `npm run build`
+- `npm run lint:check`
+
+Manual verification notes live in [`docs/manual-testing.md`](docs/manual-testing.md).

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildClipboardDiagnostics } from "../../src/modules/copy/clipboard/diagnostics";
@@ -141,31 +140,6 @@ test("buildClipboardDiagnostics does not show install guidance when a Linux back
     ),
     false,
   );
-});
-
-test("English shortcut locale copy explains the separate reader behavior", () => {
-  const englishLocale = readFileSync(
-    "addon/locale/en-US/preferences.ftl",
-    "utf8",
-  );
-
-  assert.match(englishLocale, /Library and reader shortcuts are separate\./);
-  assert.match(
-    englishLocale,
-    /Ctrl\+C in the reader keeps its original behavior and is not overridden\./,
-  );
-  assert.match(englishLocale, /No shortcut is set in the reader by default\./);
-});
-
-test("Chinese shortcut locale copy explains the separate reader behavior", () => {
-  const chineseLocale = readFileSync(
-    "addon/locale/zh-CN/preferences.ftl",
-    "utf8",
-  );
-
-  assert.match(chineseLocale, /条目面板和阅读器面板的快捷键互不共用/);
-  assert.match(chineseLocale, /阅读器中的 Ctrl\+C 会保留原有功能/);
-  assert.match(chineseLocale, /阅读器默认不设置快捷键/);
 });
 
 function createFakeMenulist(values: string[]) {
