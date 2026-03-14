@@ -87,7 +87,7 @@ describe("toolbar buttons", function () {
     assert.equal((windowButton as HTMLButtonElement).disabled, false);
   });
 
-  it("uses an inline toolbar icon inside the reader iframe", async function () {
+  it("uses the shared toolbar icon inside the reader iframe", async function () {
     this.timeout(30000);
 
     tabReader = (await Zotero.Reader.open(attachment!.id, undefined, {
@@ -100,7 +100,10 @@ describe("toolbar buttons", function () {
     const backgroundImage =
       iframeWindow.getComputedStyle(button).backgroundImage;
 
-    assert.match(backgroundImage, /^url\("data:image\/svg\+xml/);
+    assert.match(
+      backgroundImage,
+      /^url\("chrome:\/\/zotclip\/content\/icons\/toolbar-icon\.svg"/,
+    );
   });
 
   async function writeSamplePdf(): Promise<string> {
