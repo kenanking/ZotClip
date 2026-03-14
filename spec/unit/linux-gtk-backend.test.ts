@@ -49,6 +49,8 @@ test("linux GTK backend starts the helper after a successful probe", async () =>
     }),
   });
 
-  assert.deepEqual(await backend.isAvailable(samplePayload), { available: true });
+  assert.deepEqual(await backend.isAvailable(samplePayload), {
+    available: true,
+  });
   assert.equal((await backend.write(samplePayload)).ok, true);
 });

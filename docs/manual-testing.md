@@ -71,17 +71,16 @@
 - [ ] Confirm the diagnostics section shows platform and active backend.
 - [ ] Confirm Linux X11 reports `gtk4-helper` availability and the GTK4 helper backend.
 - [ ] Confirm Linux Wayland reports `gtk4-helper` availability and the GTK4 helper backend.
-- [ ] Confirm temporary Linux fallback tools are only shown when they are actually available as fallbacks.
 - [ ] Confirm macOS reports `osascript` availability.
 - [ ] Remove or hide a required dependency and confirm the diagnostics section
       reports the missing command and fallback reason.
 
-## X11 Clipboard Inspection
+## Optional X11 Clipboard Inspection
 
 - [ ] On Linux X11, trigger attachment copy from Zotero.
-- [ ] Run `xclip -selection clipboard -t text/uri-list -o | xxd -g 1`.
+- [ ] If `xclip` is installed as a debugging tool, run `xclip -selection clipboard -t text/uri-list -o | xxd -g 1`.
 - [ ] Confirm the payload starts with `file:///`.
-- [ ] Run `xclip -selection clipboard -t x-special/gnome-copied-files -o | xxd -g 1`.
+- [ ] If `xclip` is installed as a debugging tool, run `xclip -selection clipboard -t x-special/gnome-copied-files -o | xxd -g 1`.
 - [ ] Confirm the payload starts with `copy\nfile:///`.
 - [ ] Confirm the GNOME payload does not include an extra trailing empty entry.
 

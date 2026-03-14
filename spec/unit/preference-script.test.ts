@@ -65,26 +65,21 @@ test("buildClipboardDiagnostics summarizes detected commands and backend", () =>
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "wayland",
-    commands: { "gtk4-helper": true, "wl-copy": false, xclip: false },
+    commands: { "gtk4-helper": true },
     activeBackend: "linux-gtk4-helper",
     languageTag: "en-US",
   });
 
   assert.equal(diagnostics.lines[0], "Platform: linux (wayland)");
   assert.match(diagnostics.lines[1], /gtk4-helper: available/);
-  assert.match(diagnostics.lines[2], /wl-copy: missing/);
-  assert.match(diagnostics.lines[3], /xclip: missing/);
-  assert.equal(
-    diagnostics.lines[4],
-    "Active backend: linux-gtk4-helper",
-  );
+  assert.equal(diagnostics.lines[2], "Active backend: linux-gtk4-helper");
 });
 
 test("buildClipboardDiagnostics includes GTK4 helper install guidance on Wayland", () => {
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "wayland",
-    commands: { "gtk4-helper": false, "wl-copy": true, xclip: false },
+    commands: { "gtk4-helper": false },
     activeBackend: "generic-clipboard-fallback",
     languageTag: "en-US",
   });
@@ -99,7 +94,7 @@ test("buildClipboardDiagnostics includes a Chinese install command for the GTK4 
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "x11",
-    commands: { "gtk4-helper": false, xclip: true },
+    commands: { "gtk4-helper": false },
     activeBackend: "generic-clipboard-fallback",
     languageTag: "zh-CN",
   });

@@ -95,24 +95,8 @@ async function probeClipboardSupport(
   platformContext: PlatformContext,
 ): Promise<Record<string, boolean>> {
   if (platformContext.platform === "linux") {
-    if (platformContext.linuxSession === "wayland") {
-      return {
-        "gtk4-helper": await probeLinuxGtkSupport(),
-        "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
-      };
-    }
-
-    if (platformContext.linuxSession === "x11") {
-      return {
-        "gtk4-helper": await probeLinuxGtkSupport(),
-        xclip: await clipboardCommandRunner.probeCommand("xclip"),
-      };
-    }
-
     return {
       "gtk4-helper": await probeLinuxGtkSupport(),
-      "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
-      xclip: await clipboardCommandRunner.probeCommand("xclip"),
     };
   }
 
@@ -137,32 +121,8 @@ function getActiveBackendID(
     return commands.osascript ? "macos-osascript-file-list" : "path-text";
   }
 
-  if (platformContext.linuxSession === "wayland") {
-    return commands["gtk4-helper"]
-      ? "linux-gtk4-helper"
-      : commands["wl-copy"]
-        ? "linux-wayland-wl-copy-uri-list"
-        : "generic-clipboard-fallback";
-  }
-
-  if (platformContext.linuxSession === "x11") {
-    return commands["gtk4-helper"]
-      ? "linux-gtk4-helper"
-      : commands.xclip
-        ? "linux-x11-xclip-uri-list"
-        : "generic-clipboard-fallback";
-  }
-
   if (commands["gtk4-helper"]) {
     return "linux-gtk4-helper";
-  }
-
-  if (commands["wl-copy"]) {
-    return "linux-wayland-wl-copy-uri-list";
-  }
-
-  if (commands.xclip) {
-    return "linux-x11-xclip-uri-list";
   }
 
   return "generic-clipboard-fallback";
@@ -184,6 +144,8 @@ function getFallbackReason(
 }
 
 async function probeLinuxGtkSupport(): Promise<boolean> {
-  const result = await clipboardCommandRunner.runCommand(buildLinuxGtkProbeCall());
+  const result = await clipboardCommandRunner.runCommand(
+    buildLinuxGtkProbeCall(),
+  );
   return result.ok;
 }

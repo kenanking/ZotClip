@@ -69,6 +69,7 @@
 ### Task 1: Extract Linux MIME Payload Building
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/linuxPayload.ts`
 - Test: `spec/unit/linux-payload.test.ts`
 - Modify: `src/modules/copy/clipboard/linuxX11GtkBackend.ts`
@@ -103,9 +104,7 @@ test("buildLinuxClipboardPayload creates both Linux MIME payloads", () => {
 
 test("buildLinuxClipboardPayloadInput serializes helper JSON input", () => {
   assert.deepEqual(
-    JSON.parse(
-      buildLinuxClipboardPayloadInput(["file:///home/user/A.pdf"]),
-    ),
+    JSON.parse(buildLinuxClipboardPayloadInput(["file:///home/user/A.pdf"])),
     {
       uri_payload: "file:///home/user/A.pdf\r\n",
       gnome_payload: "copy\nfile:///home/user/A.pdf",
@@ -172,6 +171,7 @@ git commit -m "refactor: extract Linux clipboard payload builder"
 ### Task 2: Add a Standalone GTK4 Helper Backend
 
 **Files:**
+
 - Create: `src/modules/copy/clipboard/linuxGtkBackend.ts`
 - Create: `addon/content/helpers/linux_clipboard_helper.py`
 - Test: `spec/unit/linux-gtk-backend.test.ts`
@@ -217,10 +217,17 @@ test("buildLinuxGtkClipboardCommand targets the packaged helper script", () => {
 test("linux GTK backend starts the helper after a successful probe", async () => {
   const backend = createLinuxGtkBackend({
     runCommand: async () => ({ ok: true, exitCode: 0, stdout: "", stderr: "" }),
-    startCommand: async () => ({ ok: true, exitCode: 0, stdout: "", stderr: "" }),
+    startCommand: async () => ({
+      ok: true,
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    }),
   });
 
-  assert.deepEqual(await backend.isAvailable(samplePayload), { available: true });
+  assert.deepEqual(await backend.isAvailable(samplePayload), {
+    available: true,
+  });
   assert.equal((await backend.write(samplePayload)).ok, true);
 });
 ```
@@ -330,6 +337,7 @@ git commit -m "feat: add Linux GTK4 clipboard helper backend"
 ### Task 3: Promote the GTK4 Helper to the Linux Primary Path
 
 **Files:**
+
 - Modify: `src/modules/copy/clipboardWriter.ts`
 - Modify: `src/utils/prefs.ts`
 - Modify: `src/modules/copy/clipboard/diagnostics.ts`
@@ -345,9 +353,22 @@ test("ClipboardWriter prefers the Linux GTK4 helper before command fallbacks", a
     [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
     "library",
     {
-      detectPlatformContext: () => ({ platform: "linux", linuxSession: "wayland" }),
-      runCommand: async () => ({ ok: true, exitCode: 0, stdout: "", stderr: "" }),
-      startCommand: async () => ({ ok: true, exitCode: 0, stdout: "", stderr: "" }),
+      detectPlatformContext: () => ({
+        platform: "linux",
+        linuxSession: "wayland",
+      }),
+      runCommand: async () => ({
+        ok: true,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+      }),
+      startCommand: async () => ({
+        ok: true,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+      }),
       probeCommand: async () => false,
       writePathText: () => false,
     },
@@ -366,7 +387,10 @@ test("buildClipboardDiagnostics reports the GTK4 helper as the active Linux back
   });
 
   assert.match(diagnostics.lines.join("\n"), /gtk4-helper: available/);
-  assert.match(diagnostics.lines.join("\n"), /Active backend: linux-gtk4-helper/);
+  assert.match(
+    diagnostics.lines.join("\n"),
+    /Active backend: linux-gtk4-helper/,
+  );
 });
 ```
 
@@ -431,6 +455,7 @@ git commit -m "refactor: prefer GTK4 helper for Linux clipboard"
 ### Task 4: Remove Redundant Linux Command Fallbacks After Validation
 
 **Files:**
+
 - Delete: `src/modules/copy/clipboard/linuxX11GtkBackend.ts`
 - Delete: `src/modules/copy/clipboard/linuxCommandBackends.ts`
 - Delete: `spec/unit/linux-x11-gtk-backend.test.ts`
@@ -451,8 +476,18 @@ test("ClipboardWriter uses only the GTK4 helper and path-text on Linux", async (
     "library",
     {
       detectPlatformContext: () => ({ platform: "linux", linuxSession: "x11" }),
-      runCommand: async () => ({ ok: false, exitCode: 1, stdout: "", stderr: "probe failed" }),
-      startCommand: async () => ({ ok: false, exitCode: 1, stdout: "", stderr: "helper failed" }),
+      runCommand: async () => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: "probe failed",
+      }),
+      startCommand: async () => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: "helper failed",
+      }),
       writePathText: () => true,
     },
   );
@@ -469,8 +504,14 @@ test("buildClipboardDiagnostics no longer advertises Linux command backends", ()
     languageTag: "en-US",
   });
 
-  assert.equal(diagnostics.lines.some((line) => line.includes("wl-copy")), false);
-  assert.equal(diagnostics.lines.some((line) => line.includes("xclip")), false);
+  assert.equal(
+    diagnostics.lines.some((line) => line.includes("wl-copy")),
+    false,
+  );
+  assert.equal(
+    diagnostics.lines.some((line) => line.includes("xclip")),
+    false,
+  );
 });
 ```
 
@@ -521,6 +562,7 @@ Run: `npm run lint:check`
 Expected: PASS
 
 Manual verification:
+
 - GNOME X11: Nautilus single-file and multi-file paste
 - GNOME Wayland: Nautilus single-file and multi-file paste
 - Chromium and Firefox file upload or paste target on both sessions

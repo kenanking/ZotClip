@@ -69,7 +69,9 @@ test("ClipboardWriter falls back to path-text when non-Windows backends fail", a
         stdout: "",
         stderr: "helper failed",
       }),
-      probeCommand: async () => false,
+      probeCommand: async () => {
+        throw new Error("Linux command backends should not be probed");
+      },
       writePathText: (value) => {
         fallbackCalled = value === "/home/user/a.pdf";
         return true;

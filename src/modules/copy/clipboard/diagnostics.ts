@@ -88,13 +88,5 @@ function buildInstallCommand(
     return "sudo apt install python3-gi gir1.2-gtk-4.0";
   }
 
-  if (commands.xclip === false) {
-    return "sudo apt install xclip";
-  }
-
-  if (commands["wl-copy"] === false) {
-    return "sudo apt install wl-clipboard";
-  }
-
   return undefined;
 }

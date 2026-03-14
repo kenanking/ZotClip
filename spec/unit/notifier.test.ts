@@ -11,13 +11,14 @@ test("formatCopyMessage prefers the structured fallback message", () => {
         format: "path-text",
         count: 1,
         outcome: "copied-path-text-fallback",
-        message: "Install wl-clipboard to enable file copy on Wayland.",
+        message:
+          "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.",
       },
       {
         getLanguage: () => "en-US",
       },
     ),
-    "Install wl-clipboard to enable file copy on Wayland.",
+    "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.",
   );
 });
 
@@ -104,24 +105,6 @@ test("formatCopyMessage localizes known failure messages in Chinese", () => {
       },
     ),
     "当前没有活动的阅读器附件。",
-  );
-});
-
-test("formatCopyMessage localizes the X11 GTK dependency hint in Chinese", () => {
-  assert.equal(
-    formatCopyMessage(
-      {
-        ok: false,
-        format: "none",
-        count: 0,
-        outcome: "dependency-missing",
-        message: "Install python3-gi to enable file copy on X11.",
-      },
-      {
-        getLanguage: () => "zh-CN",
-      },
-    ),
-    "要在 X11 中启用文件复制，请安装 python3-gi。",
   );
 });
 

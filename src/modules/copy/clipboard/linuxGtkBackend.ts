@@ -96,7 +96,11 @@ function resolveLinuxGtkHelperPath(): string {
   const helperUri = Services.io.newURI(
     `${rootURI}content/helpers/linux_clipboard_helper.py`,
   );
-  return helperUri.QueryInterface(Components.interfaces.nsIFileURL).file.path;
+  const fileUri = (helperUri as any).QueryInterface(
+    Components.interfaces.nsIFileURL,
+  ) as any;
+
+  return fileUri.file.path;
 }
 
 function buildFailureResult(payload: ClipboardPayload): ClipboardResult {

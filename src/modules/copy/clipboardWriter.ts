@@ -6,10 +6,6 @@ import type {
   StartCommandOptions,
 } from "./clipboard/commandRunner";
 import { createCommandRunner } from "./clipboard/commandRunner";
-import {
-  createLinuxWaylandBackend,
-  createLinuxX11Backend,
-} from "./clipboard/linuxCommandBackends";
 import { createLinuxGtkBackend } from "./clipboard/linuxGtkBackend";
 import { createMacosCommandBackend } from "./clipboard/macosCommandBackend";
 import { createPathTextBackend } from "./clipboard/pathTextBackend";
@@ -107,27 +103,13 @@ function buildLinuxFallbackBackends(
 }
 
 function buildLinuxBackends(
-  platformContext: PlatformContext,
+  _platformContext: PlatformContext,
   deps: ClipboardWriterDeps,
 ): ClipboardBackend[] {
-  const linuxBackends =
-    platformContext.linuxSession === "wayland"
-      ? [
-          createLinuxGtkBackend(buildCommandDeps(deps)),
-          createLinuxWaylandBackend(buildCommandDeps(deps)),
-        ]
-      : platformContext.linuxSession === "x11"
-        ? [
-            createLinuxGtkBackend(buildCommandDeps(deps)),
-            createLinuxX11Backend(buildCommandDeps(deps)),
-          ]
-        : [
-            createLinuxGtkBackend(buildCommandDeps(deps)),
-            createLinuxWaylandBackend(buildCommandDeps(deps)),
-            createLinuxX11Backend(buildCommandDeps(deps)),
-          ];
-
-  return [...linuxBackends, ...buildLinuxFallbackBackends(deps)];
+  return [
+    createLinuxGtkBackend(buildCommandDeps(deps)),
+    ...buildLinuxFallbackBackends(deps),
+  ];
 }
 
 function buildMacosBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
