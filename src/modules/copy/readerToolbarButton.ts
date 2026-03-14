@@ -72,7 +72,6 @@ export function mountReaderToolbarButton(
   };
 
   button?.addEventListener("click", onCommand);
-  button?.addEventListener("command", onCommand);
 
   async function refresh(): Promise<void> {
     const currentButton = ensureButton(
@@ -100,7 +99,6 @@ export function mountReaderToolbarButton(
         BUTTON_ID,
       ) as HTMLButtonElement | null;
       currentButton?.removeEventListener("click", onCommand);
-      currentButton?.removeEventListener("command", onCommand);
       currentButton?.remove();
     },
   };

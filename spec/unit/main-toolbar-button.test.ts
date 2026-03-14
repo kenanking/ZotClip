@@ -152,3 +152,22 @@ test("registerMainToolbarButton does not insert duplicates on repeated registrat
 
   assert.equal(doc.preferredAnchor.afterCalls.length, 1);
 });
+
+test("registerMainToolbarButton runs the copy command only once for a single toolbar activation", async () => {
+  const doc = new FakeDocument();
+  let calls = 0;
+
+  const handle = registerMainToolbarButton(doc as unknown as Document, {
+    getLabel: () => "Copy Attachment File(s)",
+    getAvailability: async () => ({ canCopy: true }),
+    onCommand: async () => {
+      calls += 1;
+    },
+  });
+
+  await handle.refresh();
+  doc.button.dispatch("command");
+  doc.button.dispatch("click");
+
+  assert.equal(calls, 1);
+});

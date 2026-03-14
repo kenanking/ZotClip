@@ -168,3 +168,22 @@ test("mountReaderToolbarButton does not append duplicates for the same reader do
 
   assert.equal(doc.appended.length, 1);
 });
+
+test("mountReaderToolbarButton runs the copy command only once for a single toolbar activation", async () => {
+  const doc = new FakeDocument();
+  let calls = 0;
+
+  const handle = mountReaderToolbarButton(makeEvent(doc, 2048), {
+    getLabel: () => "Copy Current Reader Attachment",
+    getAvailability: async () => ({ canCopy: true }),
+    onCommand: async () => {
+      calls += 1;
+    },
+  });
+
+  await handle.refresh();
+  doc.button.dispatch("command");
+  doc.button.dispatch("click");
+
+  assert.equal(calls, 1);
+});

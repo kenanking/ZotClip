@@ -48,7 +48,6 @@ export function registerMainToolbarButton(
   };
 
   button?.addEventListener("command", onCommand);
-  button?.addEventListener("click", onCommand);
 
   async function refresh(): Promise<void> {
     const currentButton = ensureButton(doc, deps.getLabel());
@@ -69,7 +68,6 @@ export function registerMainToolbarButton(
         BUTTON_ID,
       ) as ToolbarButtonElement | null;
       currentButton?.removeEventListener("command", onCommand);
-      currentButton?.removeEventListener("click", onCommand);
       currentButton?.remove?.();
     },
   };
