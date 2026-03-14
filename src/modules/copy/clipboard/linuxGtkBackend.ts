@@ -16,7 +16,7 @@ const GTK_HELPER_START_OPTIONS: StartCommandOptions = {
   startupTimeoutMs: 300,
 };
 const GTK_PROBE_SCRIPT =
-  'import gi; gi.require_version("Gtk", "4.0"); from gi.repository import Gdk; raise SystemExit(0 if Gdk.Display.get_default() is not None else 1)';
+  'import gi; gi.require_version("Gtk", "4.0"); gi.require_version("Gdk", "4.0"); from gi.repository import Gtk, Gdk; initialized = Gtk.init_check(); raise SystemExit(0 if initialized and Gdk.Display.get_default() is not None else 1)';
 
 export interface LinuxGtkBackendDeps {
   runCommand(call: CommandCall): Promise<CommandResult>;

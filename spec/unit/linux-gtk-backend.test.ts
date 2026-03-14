@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -20,7 +21,7 @@ test("buildLinuxGtkProbeCall checks GTK4 availability", () => {
     command: "python3",
     args: [
       "-c",
-      'import gi; gi.require_version("Gtk", "4.0"); from gi.repository import Gdk; raise SystemExit(0 if Gdk.Display.get_default() is not None else 1)',
+      'import gi; gi.require_version("Gtk", "4.0"); gi.require_version("Gdk", "4.0"); from gi.repository import Gtk, Gdk; initialized = Gtk.init_check(); raise SystemExit(0 if initialized and Gdk.Display.get_default() is not None else 1)',
     ],
   });
 });
@@ -53,4 +54,16 @@ test("linux GTK backend starts the helper after a successful probe", async () =>
     available: true,
   });
   assert.equal((await backend.write(samplePayload)).ok, true);
+});
+
+test("linux GTK helper script initializes GTK before reading the display", () => {
+  const helperScript = readFileSync(
+    "addon/content/helpers/linux_clipboard_helper.py",
+    "utf8",
+  );
+
+  assert.match(helperScript, /gi\.require_version\("Gdk", "4\.0"\)/);
+  assert.match(helperScript, /initialized\s*=\s*Gtk\.init_check\(\)/);
+  assert.match(helperScript, /if not initialized:/);
+  assert.match(helperScript, /display = Gdk\.Display\.get_default\(\)/);
 });

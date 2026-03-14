@@ -5,12 +5,17 @@ import sys
 import gi
 
 gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
 
-from gi.repository import Gdk, GLib
+from gi.repository import Gdk, GLib, Gtk
 
 
 def main() -> int:
     payload = json.load(sys.stdin)
+    initialized = Gtk.init_check()
+    if not initialized:
+        raise RuntimeError("Display unavailable")
+
     display = Gdk.Display.get_default()
     if display is None:
         raise RuntimeError("Display unavailable")
