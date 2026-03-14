@@ -10,12 +10,34 @@ export async function runClipboardBackends(input: {
   const orderedBackends = sortClipboardBackends(input.backends);
 
   for (const backend of orderedBackends) {
-    const availability = await backend.isAvailable(input.payload);
+    let availability;
+    try {
+      availability = await backend.isAvailable(input.payload);
+    } catch (error) {
+      logClipboardBackendError(
+        "Clipboard backend availability failed",
+        backend.id,
+        error,
+      );
+      continue;
+    }
+
     if (!availability.available) {
       continue;
     }
 
-    const result = await backend.write(input.payload);
+    let result;
+    try {
+      result = await backend.write(input.payload);
+    } catch (error) {
+      logClipboardBackendError(
+        "Clipboard backend write failed",
+        backend.id,
+        error,
+      );
+      continue;
+    }
+
     if (result.ok) {
       return result;
     }
@@ -28,4 +50,12 @@ export async function runClipboardBackends(input: {
     outcome: "copy-failed",
     message: "Clipboard write failed.",
   };
+}
+
+function logClipboardBackendError(
+  message: string,
+  backendID: string,
+  error: unknown,
+): void {
+  (globalThis as any).ztoolkit?.log?.(message, backendID, error);
 }

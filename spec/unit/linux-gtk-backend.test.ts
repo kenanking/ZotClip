@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -26,11 +25,14 @@ test("buildLinuxGtkProbeCall checks GTK4 availability", () => {
   });
 });
 
-test("buildLinuxGtkClipboardCommand targets the packaged helper script", () => {
+test("buildLinuxGtkClipboardCommand embeds the helper script directly", () => {
   const command = buildLinuxGtkClipboardCommand(samplePayload);
 
   assert.equal(command.command, "python3");
-  assert.match(command.args[0], /linux_clipboard_helper\.py$/);
+  assert.equal(command.args[0], "-u");
+  assert.equal(command.args[1], "-c");
+  assert.match(command.args[2], /Gtk\.init_check\(\)/);
+  assert.match(command.args[2], /Gdk\.ContentProvider\.new_union/);
   assert.match(command.stdinText || "", /"gnome_payload":/);
 });
 
@@ -56,11 +58,9 @@ test("linux GTK backend starts the helper after a successful probe", async () =>
   assert.equal((await backend.write(samplePayload)).ok, true);
 });
 
-test("linux GTK helper script initializes GTK before reading the display", () => {
-  const helperScript = readFileSync(
-    "addon/content/helpers/linux_clipboard_helper.py",
-    "utf8",
-  );
+test("linux GTK helper command initializes GTK before reading the display", () => {
+  const command = buildLinuxGtkClipboardCommand(samplePayload);
+  const helperScript = command.args[2];
 
   assert.match(helperScript, /gi\.require_version\("Gdk", "4\.0"\)/);
   assert.match(helperScript, /initialized\s*=\s*Gtk\.init_check\(\)/);

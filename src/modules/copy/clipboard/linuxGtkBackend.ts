@@ -17,6 +17,60 @@ const GTK_HELPER_START_OPTIONS: StartCommandOptions = {
 };
 const GTK_PROBE_SCRIPT =
   'import gi; gi.require_version("Gtk", "4.0"); gi.require_version("Gdk", "4.0"); from gi.repository import Gtk, Gdk; initialized = Gtk.init_check(); raise SystemExit(0 if initialized and Gdk.Display.get_default() is not None else 1)';
+const GTK_HELPER_SCRIPT = String.raw`import json
+import signal
+import sys
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
+
+from gi.repository import Gdk, GLib, Gtk
+
+
+def main() -> int:
+    payload = json.load(sys.stdin)
+    initialized = Gtk.init_check()
+    if not initialized:
+        raise RuntimeError("Display unavailable")
+
+    display = Gdk.Display.get_default()
+    if display is None:
+        raise RuntimeError("Display unavailable")
+
+    clipboard = display.get_clipboard()
+    uri_bytes = GLib.Bytes.new(payload["uri_payload"].encode("utf-8"))
+    gnome_bytes = GLib.Bytes.new(payload["gnome_payload"].encode("utf-8"))
+    provider = Gdk.ContentProvider.new_union(
+        [
+            Gdk.ContentProvider.new_for_bytes("text/uri-list", uri_bytes),
+            Gdk.ContentProvider.new_for_bytes(
+                "x-special/gnome-copied-files",
+                gnome_bytes,
+            ),
+        ]
+    )
+
+    if not clipboard.set_content(provider):
+        raise RuntimeError("Failed to claim clipboard ownership")
+
+    loop = GLib.MainLoop()
+
+    def stop_loop(*_args):
+        if loop.is_running():
+            loop.quit()
+
+    GLib.timeout_add_seconds(20, lambda: (stop_loop(), False)[1])
+    signal.signal(signal.SIGINT, stop_loop)
+    signal.signal(signal.SIGTERM, stop_loop)
+    loop.run()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+`;
 
 export interface LinuxGtkBackendDeps {
   runCommand(call: CommandCall): Promise<CommandResult>;
@@ -38,7 +92,7 @@ export function buildLinuxGtkClipboardCommand(
 ): CommandCall {
   return {
     command: GTK_HELPER_COMMAND,
-    args: [resolveLinuxGtkHelperPath()],
+    args: ["-u", "-c", GTK_HELPER_SCRIPT],
     stdinText: buildLinuxClipboardPayloadInput(payload.fileUris),
   };
 }
@@ -86,21 +140,6 @@ export function createLinuxGtkBackend(
       };
     },
   };
-}
-
-function resolveLinuxGtkHelperPath(): string {
-  if (typeof Services === "undefined" || typeof rootURI !== "string") {
-    return "addon/content/helpers/linux_clipboard_helper.py";
-  }
-
-  const helperUri = Services.io.newURI(
-    `${rootURI}content/helpers/linux_clipboard_helper.py`,
-  );
-  const fileUri = (helperUri as any).QueryInterface(
-    Components.interfaces.nsIFileURL,
-  ) as any;
-
-  return fileUri.file.path;
 }
 
 function buildFailureResult(payload: ClipboardPayload): ClipboardResult {
