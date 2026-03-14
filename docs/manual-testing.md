@@ -40,6 +40,10 @@
 - [ ] Trigger copy and confirm multiple allowed files are copied.
 - [ ] Paste into Explorer or another file-aware target and confirm all files
       appear as pasted files, not as text.
+- [ ] Select or prepare multiple allowed attachments that share the same file
+      name and extension, trigger copy, then paste and confirm the first file
+      keeps its original name while later duplicates are suffixed as `_1`,
+      `_2`, and so on without an overwrite prompt.
 - [ ] Switch to `Copy only the primary allowed attachment`.
 - [ ] Trigger copy again and confirm only one file is copied.
 
