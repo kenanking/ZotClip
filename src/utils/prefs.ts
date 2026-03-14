@@ -5,7 +5,7 @@ import {
   type ClipboardDiagnostics,
 } from "../modules/copy/clipboard/diagnostics";
 import { createCommandRunner } from "../modules/copy/clipboard/commandRunner";
-import { buildLinuxX11GtkProbeCall } from "../modules/copy/clipboard/linuxX11GtkBackend";
+import { buildLinuxGtkProbeCall } from "../modules/copy/clipboard/linuxGtkBackend";
 import {
   detectCurrentPlatformContext,
   type PlatformContext,
@@ -97,20 +97,21 @@ async function probeClipboardSupport(
   if (platformContext.platform === "linux") {
     if (platformContext.linuxSession === "wayland") {
       return {
+        "gtk4-helper": await probeLinuxGtkSupport(),
         "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
       };
     }
 
     if (platformContext.linuxSession === "x11") {
       return {
-        "python3-gi": await probeLinuxX11GtkSupport(),
+        "gtk4-helper": await probeLinuxGtkSupport(),
         xclip: await clipboardCommandRunner.probeCommand("xclip"),
       };
     }
 
     return {
+      "gtk4-helper": await probeLinuxGtkSupport(),
       "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
-      "python3-gi": await probeLinuxX11GtkSupport(),
       xclip: await clipboardCommandRunner.probeCommand("xclip"),
     };
   }
@@ -137,25 +138,27 @@ function getActiveBackendID(
   }
 
   if (platformContext.linuxSession === "wayland") {
-    return commands["wl-copy"]
-      ? "linux-wayland-wl-copy-uri-list"
-      : "generic-clipboard-fallback";
+    return commands["gtk4-helper"]
+      ? "linux-gtk4-helper"
+      : commands["wl-copy"]
+        ? "linux-wayland-wl-copy-uri-list"
+        : "generic-clipboard-fallback";
   }
 
   if (platformContext.linuxSession === "x11") {
-    return commands["python3-gi"]
-      ? "linux-x11-gtk-file-copy"
+    return commands["gtk4-helper"]
+      ? "linux-gtk4-helper"
       : commands.xclip
         ? "linux-x11-xclip-uri-list"
         : "generic-clipboard-fallback";
   }
 
-  if (commands["wl-copy"]) {
-    return "linux-wayland-wl-copy-uri-list";
+  if (commands["gtk4-helper"]) {
+    return "linux-gtk4-helper";
   }
 
-  if (commands["python3-gi"]) {
-    return "linux-x11-gtk-file-copy";
+  if (commands["wl-copy"]) {
+    return "linux-wayland-wl-copy-uri-list";
   }
 
   if (commands.xclip) {
@@ -169,14 +172,8 @@ function getFallbackReason(
   platformContext: PlatformContext,
   commands: Record<string, boolean>,
 ): string | undefined {
-  if (platformContext.platform === "linux") {
-    if (platformContext.linuxSession === "wayland" && !commands["wl-copy"]) {
-      return "Install wl-clipboard to enable file copy on Wayland.";
-    }
-
-    if (platformContext.linuxSession === "x11" && !commands["python3-gi"]) {
-      return "Install python3-gi to enable file copy on X11.";
-    }
+  if (platformContext.platform === "linux" && !commands["gtk4-helper"]) {
+    return "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.";
   }
 
   if (platformContext.platform === "macos" && !commands.osascript) {
@@ -186,9 +183,7 @@ function getFallbackReason(
   return undefined;
 }
 
-async function probeLinuxX11GtkSupport(): Promise<boolean> {
-  const result = await clipboardCommandRunner.runCommand(
-    buildLinuxX11GtkProbeCall(),
-  );
+async function probeLinuxGtkSupport(): Promise<boolean> {
+  const result = await clipboardCommandRunner.runCommand(buildLinuxGtkProbeCall());
   return result.ok;
 }

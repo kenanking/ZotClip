@@ -65,40 +65,41 @@ test("buildClipboardDiagnostics summarizes detected commands and backend", () =>
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "wayland",
-    commands: { "wl-copy": true, xclip: false },
-    activeBackend: "linux-wayland-wl-copy-uri-list",
+    commands: { "gtk4-helper": true, "wl-copy": false, xclip: false },
+    activeBackend: "linux-gtk4-helper",
     languageTag: "en-US",
   });
 
   assert.equal(diagnostics.lines[0], "Platform: linux (wayland)");
-  assert.match(diagnostics.lines[1], /wl-copy: available/);
-  assert.match(diagnostics.lines[2], /xclip: missing/);
+  assert.match(diagnostics.lines[1], /gtk4-helper: available/);
+  assert.match(diagnostics.lines[2], /wl-copy: missing/);
+  assert.match(diagnostics.lines[3], /xclip: missing/);
   assert.equal(
-    diagnostics.lines[3],
-    "Active backend: linux-wayland-wl-copy-uri-list",
+    diagnostics.lines[4],
+    "Active backend: linux-gtk4-helper",
   );
 });
 
-test("buildClipboardDiagnostics includes a simple install command on Wayland", () => {
+test("buildClipboardDiagnostics includes GTK4 helper install guidance on Wayland", () => {
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "wayland",
-    commands: { "wl-copy": false },
+    commands: { "gtk4-helper": false, "wl-copy": true, xclip: false },
     activeBackend: "generic-clipboard-fallback",
     languageTag: "en-US",
   });
 
   assert.match(
     diagnostics.lines.join("\n"),
-    /Install command: sudo apt install wl-clipboard/,
+    /Install command: sudo apt install python3-gi gir1.2-gtk-4.0/,
   );
 });
 
-test("buildClipboardDiagnostics includes a Chinese install command for the X11 GTK helper", () => {
+test("buildClipboardDiagnostics includes a Chinese install command for the GTK4 helper", () => {
   const diagnostics = buildClipboardDiagnostics({
     platform: "linux",
     linuxSession: "x11",
-    commands: { "python3-gi": false, xclip: true },
+    commands: { "gtk4-helper": false, xclip: true },
     activeBackend: "generic-clipboard-fallback",
     languageTag: "zh-CN",
   });
@@ -106,7 +107,7 @@ test("buildClipboardDiagnostics includes a Chinese install command for the X11 G
   assert.match(diagnostics.lines[0], /平台：linux \(x11\)/);
   assert.match(
     diagnostics.lines.join("\n"),
-    /安装命令：sudo apt install python3-gi/,
+    /安装命令：sudo apt install python3-gi gir1.2-gtk-4.0/,
   );
 });
 

@@ -124,3 +124,22 @@ test("formatCopyMessage localizes the X11 GTK dependency hint in Chinese", () =>
     "要在 X11 中启用文件复制，请安装 python3-gi。",
   );
 });
+
+test("formatCopyMessage localizes the GTK4 helper dependency hint in Chinese", () => {
+  assert.equal(
+    formatCopyMessage(
+      {
+        ok: false,
+        format: "none",
+        count: 0,
+        outcome: "dependency-missing",
+        message:
+          "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.",
+      },
+      {
+        getLanguage: () => "zh-CN",
+      },
+    ),
+    "要在 Linux 中启用文件复制，请安装 python3-gi 和 gir1.2-gtk-4.0。",
+  );
+});

@@ -84,7 +84,7 @@ test("ClipboardWriter falls back to path-text when non-Windows backends fail", a
   assert.equal(result.outcome, "copied-path-text-fallback");
 });
 
-test("ClipboardWriter prefers the Linux X11 GTK helper backend before command fallbacks", async () => {
+test("ClipboardWriter prefers the Linux GTK4 helper backend before command fallbacks", async () => {
   let fallbackCalled = false;
   const probeCalls: any[] = [];
   const helperCalls: any[] = [];
@@ -93,7 +93,10 @@ test("ClipboardWriter prefers the Linux X11 GTK helper backend before command fa
     [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
     "library",
     {
-      detectPlatformContext: () => ({ platform: "linux", linuxSession: "x11" }),
+      detectPlatformContext: () => ({
+        platform: "linux",
+        linuxSession: "wayland",
+      }),
       runCommand: async (call) => {
         probeCalls.push(call);
         return {
@@ -113,7 +116,7 @@ test("ClipboardWriter prefers the Linux X11 GTK helper backend before command fa
         };
       },
       probeCommand: async () => {
-        throw new Error("xclip fallback should not be probed");
+        throw new Error("command fallbacks should not be probed");
       },
       writePathText: () => {
         fallbackCalled = true;
@@ -124,6 +127,7 @@ test("ClipboardWriter prefers the Linux X11 GTK helper backend before command fa
 
   assert.equal(probeCalls.length, 1);
   assert.equal(helperCalls.length, 1);
+  assert.equal(probeCalls[0].args[1].includes('Gtk", "4.0"'), true);
   assert.equal(fallbackCalled, false);
   assert.equal(result.ok, true);
   assert.equal(result.format, "file-uri-list");

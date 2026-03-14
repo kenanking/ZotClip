@@ -10,7 +10,7 @@ import {
   createLinuxWaylandBackend,
   createLinuxX11Backend,
 } from "./clipboard/linuxCommandBackends";
-import { createLinuxX11GtkBackend } from "./clipboard/linuxX11GtkBackend";
+import { createLinuxGtkBackend } from "./clipboard/linuxGtkBackend";
 import { createMacosCommandBackend } from "./clipboard/macosCommandBackend";
 import { createPathTextBackend } from "./clipboard/pathTextBackend";
 import { buildClipboardPayload } from "./clipboard/payload";
@@ -112,13 +112,17 @@ function buildLinuxBackends(
 ): ClipboardBackend[] {
   const linuxBackends =
     platformContext.linuxSession === "wayland"
-      ? [createLinuxWaylandBackend(buildCommandDeps(deps))]
+      ? [
+          createLinuxGtkBackend(buildCommandDeps(deps)),
+          createLinuxWaylandBackend(buildCommandDeps(deps)),
+        ]
       : platformContext.linuxSession === "x11"
         ? [
-            createLinuxX11GtkBackend(buildCommandDeps(deps)),
+            createLinuxGtkBackend(buildCommandDeps(deps)),
             createLinuxX11Backend(buildCommandDeps(deps)),
           ]
         : [
+            createLinuxGtkBackend(buildCommandDeps(deps)),
             createLinuxWaylandBackend(buildCommandDeps(deps)),
             createLinuxX11Backend(buildCommandDeps(deps)),
           ];

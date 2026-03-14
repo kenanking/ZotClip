@@ -57,6 +57,8 @@ const CHINESE_COPY_MESSAGES: Record<string, string> = {
     "要在 Wayland 中启用文件复制，请安装 wl-clipboard。",
   "Install python3-gi to enable file copy on X11.":
     "要在 X11 中启用文件复制，请安装 python3-gi。",
+  "Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.":
+    "要在 Linux 中启用文件复制，请安装 python3-gi 和 gir1.2-gtk-4.0。",
   "Install xclip to enable file copy on X11.":
     "要在 X11 中启用文件复制，请安装 xclip。",
   "macOS osascript is required to copy files.":

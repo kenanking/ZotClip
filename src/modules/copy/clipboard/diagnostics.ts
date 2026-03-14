@@ -84,24 +84,16 @@ function buildInstallCommand(
 
   const commands = input.commands || {};
 
-  if (input.linuxSession === "wayland" && commands["wl-copy"] === false) {
-    return "sudo apt install wl-clipboard";
-  }
-
-  if (input.linuxSession === "x11" && commands["python3-gi"] === false) {
-    return "sudo apt install python3-gi";
-  }
-
-  if (commands["wl-copy"] === false) {
-    return "sudo apt install wl-clipboard";
-  }
-
-  if (commands["python3-gi"] === false) {
-    return "sudo apt install python3-gi";
+  if (commands["gtk4-helper"] === false) {
+    return "sudo apt install python3-gi gir1.2-gtk-4.0";
   }
 
   if (commands.xclip === false) {
     return "sudo apt install xclip";
+  }
+
+  if (commands["wl-copy"] === false) {
+    return "sudo apt install wl-clipboard";
   }
 
   return undefined;

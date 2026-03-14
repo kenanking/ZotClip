@@ -7,8 +7,8 @@
 - At least one reader-openable attachment
 - Platform-specific clipboard dependencies installed where required:
   - Windows: none
-  - Linux X11: `python3-gi`
-  - Linux Wayland: `wl-copy`
+  - Linux X11: `python3-gi`, `gir1.2-gtk-4.0`
+  - Linux Wayland: `python3-gi`, `gir1.2-gtk-4.0`
   - macOS: `osascript`
 
 ## Library Copy Flow
@@ -69,8 +69,9 @@
 
 - [ ] Open `Edit -> Preferences -> ZotClip`.
 - [ ] Confirm the diagnostics section shows platform and active backend.
-- [ ] Confirm Linux X11 reports `python3-gi` availability and the GTK helper backend.
-- [ ] Confirm Linux Wayland reports `wl-copy` availability.
+- [ ] Confirm Linux X11 reports `gtk4-helper` availability and the GTK4 helper backend.
+- [ ] Confirm Linux Wayland reports `gtk4-helper` availability and the GTK4 helper backend.
+- [ ] Confirm temporary Linux fallback tools are only shown when they are actually available as fallbacks.
 - [ ] Confirm macOS reports `osascript` availability.
 - [ ] Remove or hide a required dependency and confirm the diagnostics section
       reports the missing command and fallback reason.
@@ -98,6 +99,7 @@
 - [ ] Paste into Chrome.
 - [ ] Paste into Firefox.
 - [ ] Paste into Telegram.
+- [ ] Confirm GTK4 helper is the active backend before any fallback.
 
 ### Linux Wayland
 
@@ -105,6 +107,7 @@
 - [ ] Paste into Chrome.
 - [ ] Paste into Firefox.
 - [ ] Paste into Telegram.
+- [ ] Confirm GTK4 helper is the active backend before any fallback.
 
 ### macOS
 
