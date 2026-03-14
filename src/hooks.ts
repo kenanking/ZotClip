@@ -7,6 +7,7 @@ import {
   createCopyService,
   type CopyServiceDeps,
 } from "./modules/copy/copyService";
+import { initToolbarIcon } from "./modules/copy/copyUi";
 import {
   resolveAttachmentFromReader,
   resolveAttachmentsFromItems,
@@ -151,6 +152,11 @@ async function onStartup() {
 
   addon.data.ztoolkit = addon.data.ztoolkit || createZToolkit();
   initLocale();
+  try {
+    await initToolbarIcon();
+  } catch (error) {
+    Zotero.logError(error instanceof Error ? error : new Error(String(error)));
+  }
   Zotero.PreferencePanes.register({
     pluginID: addon.data.config.addonID,
     src: `${rootURI}content/preferences.xhtml`,

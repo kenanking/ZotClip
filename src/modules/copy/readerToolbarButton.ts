@@ -1,8 +1,9 @@
 import { config } from "../../../package.json";
-import { TOOLBAR_ICON_URL, getToolbarTooltipText } from "./copyUi";
+import { getToolbarIconDataURL, getToolbarTooltipText } from "./copyUi";
 
 const BUTTON_ID = `${config.addonRef}-reader-copy-button`;
-const VERIFIED_CONTAINER_SELECTOR = ".custom-sections > .section";
+const FALLBACK_SECTION_ID = `${BUTTON_ID}-section`;
+const CUSTOM_SECTIONS_SELECTOR = ".custom-sections";
 
 export interface ReaderButtonAvailability {
   canCopy: boolean;
@@ -139,11 +140,11 @@ export function registerReaderToolbarButton(
         reader,
         doc,
         append: (...nodes) => {
-          const container = doc.querySelector(VERIFIED_CONTAINER_SELECTOR);
-          if (!container) {
+          const section = ensureFallbackSection(doc);
+          if (!section) {
             return;
           }
-          container.append(...nodes);
+          section.append(...nodes);
         },
       },
       deps,
@@ -176,6 +177,7 @@ function ensureButton(
 }
 
 function createButton(doc: Document, label: string): HTMLButtonElement {
+  const iconDataURL = getToolbarIconDataURL();
   const button = doc.createElement("button");
   button.id = BUTTON_ID;
   button.className = "toolbar-button zotclip-reader-toolbar-button";
@@ -186,7 +188,7 @@ function createButton(doc: Document, label: string): HTMLButtonElement {
   button.setAttribute(
     "style",
     [
-      `background-image: url("${TOOLBAR_ICON_URL}")`,
+      `background-image: url("${iconDataURL}")`,
       "background-position: center",
       "background-repeat: no-repeat",
       "background-size: 16px 16px",
@@ -209,4 +211,24 @@ function applyButtonState(
   button.disabled = state.disabled;
   button.title = state.tooltipText;
   button.setAttribute("aria-label", state.tooltipText);
+}
+
+function ensureFallbackSection(doc: Document): HTMLElement | null {
+  const existing = doc.getElementById(
+    FALLBACK_SECTION_ID,
+  ) as HTMLElement | null;
+  if (existing) {
+    return existing;
+  }
+
+  const customSections = doc.querySelector(CUSTOM_SECTIONS_SELECTOR);
+  if (!customSections) {
+    return null;
+  }
+
+  const section = doc.createElement("div");
+  section.id = FALLBACK_SECTION_ID;
+  section.className = "section";
+  customSections.append(section);
+  return section;
 }
