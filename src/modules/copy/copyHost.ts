@@ -1,4 +1,3 @@
-import { getClipboardDiagnostics } from "../../utils/prefs";
 import {
   getAllowedAttachmentTypes,
   getMultiAttachmentMode,
@@ -8,6 +7,7 @@ import {
   resolveAttachmentsFromItems,
 } from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
+import { getClipboardDiagnostics } from "./runtimeDiagnostics";
 import type { CopyServiceDeps } from "./copyService";
 
 export function createDefaultCopyServiceDeps(): CopyServiceDeps {
