@@ -35,6 +35,7 @@ import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
 const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
+const MAIN_TOOLBAR_REFRESH_DEBOUNCE_MS = 100;
 const RUNTIME_SETTINGS_PREF_KEYS = [
   "multiAttachmentMode",
   "libraryShortcut",
@@ -254,16 +255,21 @@ export function registerMainToolbarCopyButton(
   const requestRefresh = () => {
     void buttonHandle.refresh();
   };
+  const debouncedRefresh = createDebouncedCallback(
+    requestRefresh,
+    MAIN_TOOLBAR_REFRESH_DEBOUNCE_MS,
+  );
 
-  win.addEventListener("focus", requestRefresh, true);
-  win.addEventListener("mouseup", requestRefresh, true);
-  win.addEventListener("keyup", requestRefresh, true);
+  win.addEventListener("focus", debouncedRefresh.trigger, true);
+  win.addEventListener("mouseup", debouncedRefresh.trigger, true);
+  win.addEventListener("keyup", debouncedRefresh.trigger, true);
   void buttonHandle.refresh();
 
   return () => {
-    win.removeEventListener("focus", requestRefresh, true);
-    win.removeEventListener("mouseup", requestRefresh, true);
-    win.removeEventListener("keyup", requestRefresh, true);
+    win.removeEventListener("focus", debouncedRefresh.trigger, true);
+    win.removeEventListener("mouseup", debouncedRefresh.trigger, true);
+    win.removeEventListener("keyup", debouncedRefresh.trigger, true);
+    debouncedRefresh.cancel();
     buttonHandle.dispose();
   };
 }
@@ -614,4 +620,35 @@ function buildReaderRefreshKey(
   deps: ReaderToolbarCopyButtonDeps,
 ): string {
   return [itemID || "none", deps.getAllowedTypes().join(",")].join("|");
+}
+
+function createDebouncedCallback(
+  callback: () => void,
+  delayMs: number,
+): {
+  trigger(): void;
+  cancel(): void;
+} {
+  let timeoutID: ReturnType<typeof setTimeout> | undefined;
+
+  return {
+    trigger(): void {
+      if (timeoutID !== undefined) {
+        clearTimeout(timeoutID);
+      }
+
+      timeoutID = setTimeout(() => {
+        timeoutID = undefined;
+        callback();
+      }, delayMs);
+    },
+    cancel(): void {
+      if (timeoutID === undefined) {
+        return;
+      }
+
+      clearTimeout(timeoutID);
+      timeoutID = undefined;
+    },
+  };
 }
