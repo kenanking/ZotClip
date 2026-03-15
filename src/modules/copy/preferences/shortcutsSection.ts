@@ -14,7 +14,7 @@ import {
   createNoopHandle,
 } from "../ui/disposables";
 
-interface ShortcutControls {
+export interface ShortcutControls {
   libraryInput: HTMLInputElement;
   readerInput: HTMLInputElement;
   validationMessage: HTMLElement;
@@ -107,13 +107,27 @@ function syncShortcutControls(controls: ShortcutControls): void {
   syncShortcutValidation(controls);
 }
 
-function persistShortcutPrefs(controls: ShortcutControls): void {
-  controls.libraryInput.value = normalizeShortcutInput(
-    controls.libraryInput.value,
-  );
-  controls.readerInput.value = normalizeShortcutInput(
-    controls.readerInput.value,
-  );
+export function persistShortcutPrefs(
+  controls: ShortcutControls,
+  setPreference: (
+    key: "libraryShortcut" | "readerShortcut",
+    value: string,
+  ) => unknown = setPref,
+): void {
+  const libraryValid = validateShortcutInput(controls.libraryInput.value);
+  const readerValid = validateShortcutInput(controls.readerInput.value);
+
+  if (libraryValid) {
+    controls.libraryInput.value = normalizeShortcutInput(
+      controls.libraryInput.value,
+    );
+  }
+
+  if (readerValid) {
+    controls.readerInput.value = normalizeShortcutInput(
+      controls.readerInput.value,
+    );
+  }
 
   const validation = getShortcutValidationState(controls);
   applyShortcutValidationState(controls, validation);
@@ -121,8 +135,8 @@ function persistShortcutPrefs(controls: ShortcutControls): void {
     return;
   }
 
-  setPref("libraryShortcut", controls.libraryInput.value);
-  setPref("readerShortcut", controls.readerInput.value);
+  setPreference("libraryShortcut", controls.libraryInput.value);
+  setPreference("readerShortcut", controls.readerInput.value);
 }
 
 function syncShortcutValidation(controls: ShortcutControls): void {

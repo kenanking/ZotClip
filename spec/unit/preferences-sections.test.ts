@@ -11,6 +11,7 @@ import { registerPrefsUI } from "../../src/modules/copy/preferences/registerPref
 import {
   areShortcutInputsConflicting,
   normalizeShortcutInput,
+  persistShortcutPrefs,
   validateShortcutInput,
 } from "../../src/modules/copy/preferences/shortcutsSection";
 import {
@@ -37,6 +38,38 @@ test("shortcuts section normalizes and validates shortcut input", () => {
     areShortcutInputsConflicting("Ctrl+Shift+C", "Ctrl+Shift+C"),
     true,
   );
+});
+
+test("persistShortcutPrefs keeps invalid shortcut text visible and skips persistence", () => {
+  const calls: Array<{ key: string; value: string }> = [];
+  const controls = {
+    libraryInput: {
+      value: "Ctrl+",
+      dataset: {},
+    } as HTMLInputElement,
+    readerInput: {
+      value: "Ctrl+Shift+C",
+      dataset: {},
+    } as HTMLInputElement,
+    validationMessage: {
+      hidden: true,
+    } as HTMLElement,
+    conflictMessage: {
+      hidden: true,
+    } as HTMLElement,
+  };
+
+  persistShortcutPrefs(controls, (key, value) => {
+    calls.push({ key, value });
+    return true;
+  });
+
+  assert.equal(controls.libraryInput.value, "Ctrl+");
+  assert.equal(controls.readerInput.value, "Ctrl+Shift+C");
+  assert.equal(controls.libraryInput.dataset.invalid, "true");
+  assert.equal(controls.readerInput.dataset.invalid, "false");
+  assert.equal(controls.validationMessage.hidden, false);
+  assert.deepEqual(calls, []);
 });
 
 test("toolbar buttons section reads and persists visibility values", () => {

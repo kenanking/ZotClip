@@ -12,6 +12,18 @@ export function formatCopyMessage(
   return formatCopyResultMessage(result, deps);
 }
 
+export function getCopyNotificationOptions(result: ClipboardResult): {
+  closeTime: number;
+} {
+  return {
+    closeTime:
+      result.outcome === "copied-path-text-fallback" ||
+      (result.ok && result.format === "path-text")
+        ? 7000
+        : 5000,
+  };
+}
+
 function getCopyResultNotificationIcon(_result: ClipboardResult): string {
   return `chrome://${config.addonRef}/content/icons/favicon.svg`;
 }
@@ -19,8 +31,9 @@ function getCopyResultNotificationIcon(_result: ClipboardResult): string {
 export function notifyCopyResult(result: ClipboardResult): void {
   const message = formatCopyMessage(result);
   const icon = getCopyResultNotificationIcon(result);
+  const options = getCopyNotificationOptions(result);
   new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeTime: 5000,
+    closeTime: options.closeTime,
   })
     .createLine({
       text: message,
