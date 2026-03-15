@@ -55,3 +55,45 @@ test("main toolbar integration registers the button when the preference is enabl
   dispose();
   assert.equal(disposeCalls, 1);
 });
+
+test("main toolbar integration passes controller-backed action state to the toolbar registration", () => {
+  let receivedGetActionState: undefined | (() => Promise<unknown>);
+
+  const dispose = registerMainToolbarCopyButton(
+    {
+      document: {
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      } as unknown as Document,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    } as unknown as Window,
+    {
+      isEnabled: () => true,
+      getActionState: async () => ({
+        source: "library",
+        refreshKey: "library|11",
+        primary: {
+          kind: "copy-files",
+          canExecute: true,
+          run: async () => ({
+            ok: true,
+            format: "file-object",
+            count: 1,
+            outcome: "copied-files",
+          }),
+        },
+      }),
+      mountButton: (_doc, deps) => {
+        receivedGetActionState = deps.getActionState;
+        return {
+          refresh: async () => {},
+          dispose: () => {},
+        };
+      },
+    },
+  );
+
+  assert.equal(typeof receivedGetActionState, "function");
+  dispose();
+});

@@ -99,9 +99,10 @@ export function registerMainToolbarButton(
     if (deps.getActionState) {
       currentActionState = await deps.getActionState();
       currentButton.disabled = !currentActionState.primary.canExecute;
-      currentButton.title = (
-        deps.getActionTooltipText || buildActionTooltip
-      )(deps.getLabel(), currentActionState);
+      currentButton.title = (deps.getActionTooltipText || buildActionTooltip)(
+        deps.getLabel(),
+        currentActionState,
+      );
       currentButton.setAttribute("tooltiptext", currentButton.title);
       return;
     }

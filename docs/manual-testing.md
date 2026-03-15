@@ -32,6 +32,8 @@
 - [ ] Confirm the default text copy behavior is unchanged.
 - [ ] Click the ZotClip toolbar button and confirm the current attachment is
       copied.
+- [ ] Open `Tools` and trigger `Copy Current Reader Path`.
+- [ ] Confirm the current attachment path is copied as plain text and the notification does not describe it as a fallback.
 - [ ] Open a reader state where the current attachment cannot be copied and confirm the button stays visible but disabled with an explanatory tooltip.
 - [ ] Switch between multiple reader tabs and confirm the reader toolbar button state updates without visible lag.
 - [ ] Set a reader shortcut such as `Ctrl+Shift+C` in `Edit -> Preferences -> ZotClip`.
@@ -84,6 +86,7 @@
 - [ ] Trigger copy in a target that does not accept file clipboard data.
 - [ ] Confirm ZotClip falls back to copying attachment paths as plain text.
 - [ ] Confirm the notification explains that a path-text fallback was used.
+- [ ] Trigger explicit `Copy Current Reader Path` and confirm the notification wording differs from the fallback-path message.
 
 ## Platform Smoke Tests
 

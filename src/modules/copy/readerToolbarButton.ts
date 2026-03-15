@@ -31,7 +31,7 @@ export interface ReaderToolbarButtonDeps {
     itemID: number | undefined,
   ): Promise<ReaderButtonAvailability>;
   onCommand?(itemID: number | undefined): Promise<void>;
-  getActionState?(): Promise<CopyActionState>;
+  getActionState?(itemID: number | undefined): Promise<CopyActionState>;
   onActionComplete?(result: ClipboardResult): void;
   getActionTooltipText?(
     label: string,
@@ -132,7 +132,7 @@ export function mountReaderToolbarButton(
     }
 
     if (deps.getActionState) {
-      currentActionState = await deps.getActionState();
+      currentActionState = await deps.getActionState(event.reader.itemID);
       applyButtonState(currentButton, {
         disabled: !currentActionState.primary.canExecute,
         tooltipText: (deps.getActionTooltipText || buildActionTooltip)(

@@ -36,3 +36,43 @@ test("reader toolbar integration registers the button when the preference is ena
   dispose();
   assert.equal(disposeCalls, 1);
 });
+
+test("reader toolbar integration passes controller-backed action state to the toolbar registration", () => {
+  let receivedGetActionState: undefined | (() => Promise<unknown>);
+
+  const dispose = registerReaderToolbarCopyButton({
+    isEnabled: () => true,
+    getActionState: async () => ({
+      source: "reader",
+      refreshKey: "reader|2048",
+      primary: {
+        kind: "copy-files",
+        canExecute: true,
+        run: async () => ({
+          ok: true,
+          format: "file-object",
+          count: 1,
+          outcome: "copied-files",
+        }),
+      },
+      secondary: {
+        kind: "copy-path",
+        canExecute: true,
+        run: async () => ({
+          ok: true,
+          format: "path-text",
+          count: 1,
+          outcome: "copied-path-text-explicit",
+          messageKey: "copy-path-text-explicit",
+        }),
+      },
+    }),
+    registerButton: (deps) => {
+      receivedGetActionState = deps.getActionState;
+      return () => {};
+    },
+  });
+
+  assert.equal(typeof receivedGetActionState, "function");
+  dispose();
+});
