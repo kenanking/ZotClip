@@ -20,3 +20,10 @@ export function isReaderTabSelected(deps: {
 }): boolean {
   return deps.getTabs()?.selectedType === "reader";
 }
+
+export function buildReaderRefreshKey(
+  itemID: number | undefined,
+  allowedTypes: string[],
+): string {
+  return [itemID || "none", allowedTypes.join(",")].join("|");
+}
