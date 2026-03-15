@@ -1,4 +1,5 @@
 import { copyFromSelection } from "./copyCommands";
+import { isReaderTabSelected } from "./interaction/readerContext";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import { parseShortcut, type ParsedShortcut } from "./shortcuts";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
@@ -16,10 +17,12 @@ const DEFAULT_SELECTION_SHORTCUT = parseShortcut("Ctrl+C");
 const DEFAULT_DEPS: SelectionHookDeps = {
   getParsedShortcut: () => DEFAULT_SELECTION_SHORTCUT,
   isLibraryContext: () => {
-    const tabs = ztoolkit.getGlobal("Zotero_Tabs") as
-      | _ZoteroTypes.Zotero_Tabs
-      | undefined;
-    return tabs?.selectedType !== "reader";
+    return !isReaderTabSelected({
+      getTabs: () =>
+        ztoolkit.getGlobal("Zotero_Tabs") as
+          | _ZoteroTypes.Zotero_Tabs
+          | undefined,
+    });
   },
   hasSelectedItems: () => {
     const pane = Zotero.getActiveZoteroPane();

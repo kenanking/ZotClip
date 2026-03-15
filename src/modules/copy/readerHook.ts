@@ -1,4 +1,5 @@
 import { copyFromReader } from "./copyCommands";
+import { isReaderTabSelected } from "./interaction/readerContext";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import type { ParsedShortcut } from "./shortcuts";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
@@ -12,10 +13,12 @@ export interface ReaderHookDeps {
 const DEFAULT_DEPS: ReaderHookDeps = {
   getParsedShortcut: () => undefined,
   isReaderContext: () => {
-    const tabs = ztoolkit.getGlobal("Zotero_Tabs") as
-      | _ZoteroTypes.Zotero_Tabs
-      | undefined;
-    return tabs?.selectedType === "reader";
+    return isReaderTabSelected({
+      getTabs: () =>
+        ztoolkit.getGlobal("Zotero_Tabs") as
+          | _ZoteroTypes.Zotero_Tabs
+          | undefined,
+    });
   },
   triggerCopyFromReader: async () => {
     await copyFromReader(getAllowedAttachmentTypes());
