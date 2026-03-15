@@ -96,6 +96,33 @@ test("CopyService copies the current reader item with current settings", async (
   assert.deepEqual(result, successResult);
 });
 
+test("CopyService returns a failure result when there is no active reader item", async () => {
+  const service = createCopyService({
+    getSettings: () => ({
+      allowedTypes: ["pdf"],
+      multiAttachmentMode: "all",
+    }),
+    getSelectedItems: () => [],
+    getCurrentReaderItemID: () => undefined,
+    resolveFromItems: async () => [],
+    resolveFromReader: async () => [sampleResolvedAttachment],
+    writeClipboard: async () => successResult,
+    getClipboardDiagnostics: async () => ({
+      platform: "windows",
+      commands: {},
+      activeBackend: "windows-native",
+      lines: [],
+    }),
+  });
+
+  assert.deepEqual(await service.copyReader(), {
+    ok: false,
+    format: "none",
+    count: 0,
+    messageKey: "copy-reader-no-active",
+  });
+});
+
 test("CopyService reports reader availability when there is no active reader item", async () => {
   const service = createCopyService({
     getSettings: () => ({

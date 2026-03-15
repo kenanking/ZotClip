@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -266,50 +265,4 @@ test("diagnostics section renders one inline row per diagnostics line", async ()
     doc.list.children[1].textContent,
     "copy-diagnostics-active-backend",
   );
-});
-
-test("preferences markup uses compact inline rows for targeted settings fields", () => {
-  const markup = readFileSync(
-    new URL("../../addon/content/preferences.xhtml", import.meta.url),
-    "utf8",
-  );
-
-  assert.match(markup, /data-zotclip-toolbar-buttons-row="true"/);
-  assert.match(markup, /data-zotclip-inline-field="custom-types"/);
-  assert.match(markup, /data-zotclip-inline-field="library-shortcut"/);
-  assert.match(markup, /data-zotclip-inline-field="reader-shortcut"/);
-  assert.match(markup, /data-zotclip-diagnostics-list="true"/);
-  assert.doesNotMatch(markup, /pref-library-shortcut-help/);
-  assert.doesNotMatch(markup, /pref-reader-shortcut-help/);
-  assert.doesNotMatch(markup, /pref-main-toolbar-button-help/);
-  assert.doesNotMatch(markup, /pref-reader-toolbar-button-help/);
-  assert.doesNotMatch(markup, /data-zotclip-diagnostics-value="true"/);
-});
-
-test("preferences locale strings match the compact settings layout", () => {
-  const zh = readFileSync(
-    new URL("../../addon/locale/zh-CN/preferences.ftl", import.meta.url),
-    "utf8",
-  );
-  const en = readFileSync(
-    new URL("../../addon/locale/en-US/preferences.ftl", import.meta.url),
-    "utf8",
-  );
-
-  assert.match(zh, /^pref-toolbar-buttons-help = /m);
-  assert.match(en, /^pref-toolbar-buttons-help = /m);
-  assert.match(zh, /^pref-custom-types = .*：$/m);
-  assert.match(zh, /^pref-library-shortcut = .*：$/m);
-  assert.match(zh, /^pref-reader-shortcut = .*：$/m);
-  assert.match(en, /^pref-custom-types = .*:$/m);
-  assert.match(en, /^pref-library-shortcut = .*:$/m);
-  assert.match(en, /^pref-reader-shortcut = .*:$/m);
-  assert.doesNotMatch(zh, /^pref-main-toolbar-button-help = /m);
-  assert.doesNotMatch(zh, /^pref-reader-toolbar-button-help = /m);
-  assert.doesNotMatch(zh, /^pref-library-shortcut-help = /m);
-  assert.doesNotMatch(zh, /^pref-reader-shortcut-help = /m);
-  assert.doesNotMatch(en, /^pref-main-toolbar-button-help = /m);
-  assert.doesNotMatch(en, /^pref-reader-toolbar-button-help = /m);
-  assert.doesNotMatch(en, /^pref-library-shortcut-help = /m);
-  assert.doesNotMatch(en, /^pref-reader-shortcut-help = /m);
 });

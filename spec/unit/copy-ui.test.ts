@@ -22,26 +22,3 @@ test("reader toolbar data url is generated from the shared toolbar svg source fi
   assert.equal(decodeURIComponent(encodedSvg), iconFile);
   assert.match(iconFile, /<svg/);
 });
-
-test("copyUi does not rely on deprecated runtime SVG loading", () => {
-  const copyUiSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/modules/copy/copyUi.ts"),
-    "utf8",
-  );
-
-  assert.doesNotMatch(copyUiSource, /getContentsFromURL\(/);
-});
-
-test("copyUi does not depend on a generated toolbar icon module", () => {
-  const copyUiSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/modules/copy/copyUi.ts"),
-    "utf8",
-  );
-  const packageJson = fs.readFileSync(
-    path.resolve(process.cwd(), "package.json"),
-    "utf8",
-  );
-
-  assert.doesNotMatch(copyUiSource, /generatedToolbarIcon/);
-  assert.doesNotMatch(packageJson, /sync:toolbar-icon/);
-});

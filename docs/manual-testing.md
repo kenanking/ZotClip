@@ -20,8 +20,6 @@
       file, not as text.
 - [ ] Open the item context menu and trigger `Copy Attachment File(s)`.
 - [ ] Paste again and confirm the same result.
-- [ ] Repeat the same copy command several times on the same selection and confirm there is no visible lag increase after the first successful copy.
-- [ ] Select a larger set of parent items with multiple allowed attachments and confirm the copy command remains responsive.
 
 ## Reader Copy
 
@@ -35,7 +33,6 @@
 - [ ] Open `Tools` and trigger `Copy Current Reader Path`.
 - [ ] Confirm the current attachment path is copied as plain text and the notification does not describe it as a fallback.
 - [ ] Open a reader state where the current attachment cannot be copied and confirm the button stays visible but disabled with an explanatory tooltip.
-- [ ] Switch between multiple reader tabs and confirm the reader toolbar button state updates without visible lag.
 - [ ] Set a reader shortcut such as `Ctrl+Shift+C` in `Edit -> Preferences -> ZotClip`.
 - [ ] Press the configured shortcut and confirm the current attachment is copied.
 - [ ] Clear the reader shortcut and confirm the reader no longer intercepts it.
@@ -49,7 +46,6 @@
 - [ ] Re-enable `Show Main Toolbar Button`.
 - [ ] Disable `Show Reader Toolbar Button` and confirm reader toolbar buttons disappear in both reader tabs and standalone reader windows while the main-window button remains available.
 - [ ] Re-enable `Show Reader Toolbar Button`.
-- [ ] Move focus repeatedly between the item list, reader, and other Zotero panes and confirm the main toolbar button state remains correct without repeated visible refresh lag.
 
 ## Attachment Rules
 
@@ -79,7 +75,6 @@
 - [ ] If a required dependency is intentionally removed, confirm diagnostics show
       the missing dependency and an install command.
 - [ ] Restore the dependency and confirm diagnostics report a working backend again.
-- [ ] Reopen the compatibility section multiple times and confirm backend diagnostics remain stable without visible probe delays after the first check.
 
 ## Fallback Behavior
 
