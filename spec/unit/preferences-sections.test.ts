@@ -6,6 +6,7 @@ import {
   buildEffectiveAttachmentTypes,
   validateAttachmentTypeSelection,
 } from "../../src/modules/copy/preferences/attachmentTypesSection";
+import { registerDiagnosticsSection } from "../../src/modules/copy/preferences/diagnosticsSection";
 import { registerPrefsUI } from "../../src/modules/copy/preferences/registerPrefsUI";
 import {
   areShortcutInputsConflicting,
@@ -171,6 +172,63 @@ test("registerPrefsUI dispose is idempotent for the same registration handle", a
   assert.equal(disposals, 4);
 });
 
+class FakeDiagnosticsElement {
+  className = "";
+  textContent = "";
+  children: FakeDiagnosticsElement[] = [];
+  hidden = false;
+
+  append(...nodes: FakeDiagnosticsElement[]): void {
+    this.children.push(...nodes);
+  }
+
+  replaceChildren(...nodes: FakeDiagnosticsElement[]): void {
+    this.children = [...nodes];
+  }
+}
+
+class FakeDiagnosticsDocument {
+  readonly list = new FakeDiagnosticsElement();
+
+  querySelector(selector: string): FakeDiagnosticsElement | null {
+    if (selector === "[data-zotclip-diagnostics-list]") {
+      return this.list;
+    }
+
+    return null;
+  }
+
+  createElement(_tagName: string): FakeDiagnosticsElement {
+    return new FakeDiagnosticsElement();
+  }
+}
+
+test("diagnostics section renders one inline row per diagnostics line", async () => {
+  const doc = new FakeDiagnosticsDocument();
+
+  await registerDiagnosticsSection(doc as unknown as Document, {
+    getClipboardDiagnostics: async () => ({
+      platform: "linux",
+      linuxSession: "x11",
+      commands: {},
+      activeBackend: "linux-gtk4",
+      lines: [
+        {
+          key: "copy-diagnostics-platform-linux",
+        },
+        {
+          key: "copy-diagnostics-active-backend",
+        },
+      ],
+    }),
+    renderLine: (line) => line.key,
+  });
+
+  assert.equal(doc.list.children.length, 2);
+  assert.equal(doc.list.children[0].textContent, "copy-diagnostics-platform-linux");
+  assert.equal(doc.list.children[1].textContent, "copy-diagnostics-active-backend");
+});
+
 test("preferences markup uses compact inline rows for targeted settings fields", () => {
   const markup = readFileSync(
     new URL("../../addon/content/preferences.xhtml", import.meta.url),
@@ -181,10 +239,12 @@ test("preferences markup uses compact inline rows for targeted settings fields",
   assert.match(markup, /data-zotclip-inline-field="custom-types"/);
   assert.match(markup, /data-zotclip-inline-field="library-shortcut"/);
   assert.match(markup, /data-zotclip-inline-field="reader-shortcut"/);
+  assert.match(markup, /data-zotclip-diagnostics-list="true"/);
   assert.doesNotMatch(markup, /pref-library-shortcut-help/);
   assert.doesNotMatch(markup, /pref-reader-shortcut-help/);
   assert.doesNotMatch(markup, /pref-main-toolbar-button-help/);
   assert.doesNotMatch(markup, /pref-reader-toolbar-button-help/);
+  assert.doesNotMatch(markup, /data-zotclip-diagnostics-value="true"/);
 });
 
 test("preferences locale strings match the compact settings layout", () => {

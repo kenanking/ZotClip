@@ -1,5 +1,6 @@
 import { renderCopyDiagnosticsLine } from "../copyMessages";
 import { getClipboardDiagnostics } from "../runtimeDiagnostics";
+import { createNoopHandle } from "../ui/disposables";
 
 export interface DiagnosticsSectionDeps {
   getClipboardDiagnostics?(): ReturnType<typeof getClipboardDiagnostics>;
@@ -12,10 +13,10 @@ export async function registerDiagnosticsSection(
   doc: Document,
   deps: DiagnosticsSectionDeps = {},
 ): Promise<{ dispose(): void }> {
-  const diagnosticsValue = doc.querySelector<HTMLElement>(
-    "[data-zotclip-diagnostics-value]",
+  const diagnosticsList = doc.querySelector<HTMLElement>(
+    "[data-zotclip-diagnostics-list]",
   );
-  if (!diagnosticsValue) {
+  if (!diagnosticsList) {
     return createNoopHandle();
   }
 
@@ -23,20 +24,50 @@ export async function registerDiagnosticsSection(
     const diagnostics =
       (await deps.getClipboardDiagnostics?.()) ||
       (await getClipboardDiagnostics());
-    diagnosticsValue.textContent = diagnostics.lines
-      .map((line) => deps.renderLine?.(line) || renderCopyDiagnosticsLine(line))
-      .join("\n");
+    replaceChildren(
+      diagnosticsList,
+      diagnostics.lines.map((line) =>
+        createDiagnosticsRow(
+          doc,
+          deps.renderLine?.(line) || renderCopyDiagnosticsLine(line),
+        ),
+      ),
+    );
   } catch (error) {
-    diagnosticsValue.textContent = `Diagnostics unavailable: ${getErrorMessage(error)}`;
+    replaceChildren(diagnosticsList, [
+      createDiagnosticsRow(
+        doc,
+        `Diagnostics unavailable: ${getErrorMessage(error)}`,
+      ),
+    ]);
   }
 
   return createNoopHandle();
 }
 
-function createNoopHandle(): { dispose(): void } {
-  return {
-    dispose(): void {},
-  };
+function createDiagnosticsRow(doc: Document, value: string): HTMLElement {
+  const row = doc.createElement("div");
+  row.className = "zotclip-pref-diagnostics-row";
+  row.textContent = value;
+  return row;
+}
+
+function replaceChildren(
+  container: HTMLElement,
+  children: HTMLElement[],
+): void {
+  if ("replaceChildren" in container) {
+    container.replaceChildren(...children);
+    return;
+  }
+
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  for (const child of children) {
+    container.appendChild(child);
+  }
 }
 
 function getErrorMessage(error: unknown): string {
