@@ -8,8 +8,7 @@ import { getAllowedAttachmentTypes } from "../../utils/prefs";
 export interface ReaderHookDeps {
   getParsedShortcut(): ParsedShortcut | undefined;
   isReaderContext(event: KeyboardEvent): boolean;
-  triggerCopyFromReader(): Promise<void>;
-  getActionState?(): Promise<CopyActionState>;
+  getActionState(): Promise<CopyActionState>;
 }
 
 const DEFAULT_DEPS: ReaderHookDeps = {
@@ -22,9 +21,17 @@ const DEFAULT_DEPS: ReaderHookDeps = {
           | undefined,
     });
   },
-  triggerCopyFromReader: async () => {
-    await copyFromReader(getAllowedAttachmentTypes());
-  },
+  getActionState: async () => ({
+    source: "reader",
+    refreshKey: "reader|default",
+    primary: {
+      kind: "copy-files",
+      canExecute: true,
+      run: async () => {
+        return copyFromReader(getAllowedAttachmentTypes());
+      },
+    },
+  }),
 };
 
 export async function handleReaderCopyShortcut(
@@ -45,19 +52,13 @@ export async function handleReaderCopyShortcut(
     return false;
   }
 
-  event.preventDefault();
-
-  if (finalDeps.getActionState) {
-    const state = await finalDeps.getActionState();
-    if (!state.primary.canExecute) {
-      return false;
-    }
-
-    await state.primary.run();
-    return true;
+  const state = await finalDeps.getActionState();
+  if (!state.primary.canExecute) {
+    return false;
   }
 
-  await finalDeps.triggerCopyFromReader();
+  event.preventDefault();
+  await state.primary.run();
   return true;
 }
 

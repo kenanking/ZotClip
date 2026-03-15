@@ -1,5 +1,5 @@
 import { config } from "../../../package.json";
-import { getToolbarIconDataURL, getToolbarTooltipText } from "./copyUi";
+import { getToolbarIconDataURL } from "./copyUi";
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 import { buildActionTooltip } from "./interaction/presentation/copyActionMessages";
 import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
@@ -9,11 +9,6 @@ import { createReaderToolbarButtonElement } from "./ui/toolkitDom";
 const BUTTON_ID = `${config.addonRef}-reader-copy-button`;
 const FALLBACK_SECTION_ID = `${BUTTON_ID}-section`;
 const CUSTOM_SECTIONS_SELECTOR = ".custom-sections";
-
-export interface ReaderButtonAvailability {
-  canCopy: boolean;
-  unavailableMessage?: string;
-}
 
 export interface ReaderToolbarRenderEventLike {
   reader: {
@@ -27,11 +22,7 @@ export interface ReaderToolbarRenderEventLike {
 export interface ReaderToolbarButtonDeps {
   getLabel(): string;
   getRefreshKey?(itemID: number | undefined): string;
-  getAvailability?(
-    itemID: number | undefined,
-  ): Promise<ReaderButtonAvailability>;
-  onCommand?(itemID: number | undefined): Promise<void>;
-  getActionState?(itemID: number | undefined): Promise<CopyActionState>;
+  getActionState(itemID: number | undefined): Promise<CopyActionState>;
   onActionComplete?(result: ClipboardResult): void;
   getActionTooltipText?(
     label: string,
@@ -88,21 +79,11 @@ export function mountReaderToolbarButton(
       return;
     }
 
-    if (currentActionState) {
-      void currentActionState.primary.run().then((result) => {
-        deps.onActionComplete?.(result);
-        availabilityCoordinator.notifyReaderCopyCompleted();
-        void refresh();
-      });
-      return;
-    }
-
-    if (deps.onCommand) {
-      void deps.onCommand(event.reader.itemID).then(() => {
-        availabilityCoordinator.notifyReaderCopyCompleted();
-        void refresh();
-      });
-    }
+    void currentActionState?.primary.run().then((result) => {
+      deps.onActionComplete?.(result);
+      availabilityCoordinator.notifyReaderCopyCompleted();
+      void refresh();
+    });
   };
 
   button?.addEventListener("click", onCommand);
@@ -127,27 +108,13 @@ export function mountReaderToolbarButton(
       return;
     }
 
-    if (deps.getActionState) {
-      currentActionState = await deps.getActionState(event.reader.itemID);
-      applyButtonState(currentButton, {
-        disabled: !currentActionState.primary.canExecute,
-        tooltipText: (deps.getActionTooltipText || buildActionTooltip)(
-          deps.getLabel(),
-          currentActionState,
-        ),
-      });
-      return;
-    }
-
-    const availability = await deps.getAvailability?.(event.reader.itemID);
-    if (!availability) {
-      return;
-    }
-
-    currentActionState = undefined;
+    currentActionState = await deps.getActionState(event.reader.itemID);
     applyButtonState(currentButton, {
-      disabled: !availability.canCopy,
-      tooltipText: getToolbarTooltipText(deps.getLabel(), availability),
+      disabled: !currentActionState.primary.canExecute,
+      tooltipText: (deps.getActionTooltipText || buildActionTooltip)(
+        deps.getLabel(),
+        currentActionState,
+      ),
     });
   }
 

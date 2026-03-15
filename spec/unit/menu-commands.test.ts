@@ -19,12 +19,20 @@ test("menu commands register library and tools menu entries with command handler
       key === "menu-copy-selected"
         ? "Copy Attachment File(s)"
         : "Copy Current Reader Attachment",
-    onCopySelection: async () => {
-      selectionCopyCount += 1;
-    },
-    onCopyReader: async () => {
-      readerCopyCount += 1;
-    },
+    getLibraryActionState: async () =>
+      createLibraryActionState({
+        run: async () => {
+          selectionCopyCount += 1;
+          return createCopyFilesResult();
+        },
+      }),
+    getReaderActionState: async () =>
+      createReaderActionState({
+        runPrimary: async () => {
+          readerCopyCount += 1;
+          return createCopyFilesResult();
+        },
+      }),
     registerMenu: (options) => {
       registrations.push(options);
       return options.menuID;
@@ -34,10 +42,11 @@ test("menu commands register library and tools menu entries with command handler
   assert.deepEqual(registeredMenuIDs, [
     "zotclip-copy-selected",
     "zotclip-copy-reader",
+    "zotclip-copy-reader-path",
   ]);
   assert.deepEqual(
     registrations.map((registration) => registration.target),
-    ["main/library/item", "main/menubar/tools"],
+    ["main/library/item", "main/menubar/tools", "main/menubar/tools"],
   );
 
   const itemContext = createMenuContext();
@@ -91,37 +100,18 @@ test("menu commands expose copy file and copy path entries from reader action st
           return "Copy Current Reader Path";
       }
     },
-    getActionState: async () => ({
-      source: "reader",
-      refreshKey: "reader|2048",
-      primary: {
-        kind: "copy-files",
-        canExecute: true,
-        run: async () => {
+    getLibraryActionState: async () => createLibraryActionState(),
+    getReaderActionState: async () =>
+      createReaderActionState({
+        runPrimary: async () => {
           primaryCalls += 1;
-          return {
-            ok: true,
-            format: "file-object",
-            count: 1,
-            outcome: "copied-files",
-          };
+          return createCopyFilesResult();
         },
-      },
-      secondary: {
-        kind: "copy-path",
-        canExecute: true,
-        run: async () => {
+        runSecondary: async () => {
           secondaryCalls += 1;
-          return {
-            ok: true,
-            format: "path-text",
-            count: 1,
-            outcome: "copied-path-text-explicit",
-            messageKey: "copy-path-text-explicit",
-          };
+          return createPathCopyResult();
         },
-      },
-    }),
+      }),
     registerMenu: (options) => {
       registrations.push(options);
       return options.menuID;
@@ -146,6 +136,75 @@ test("menu commands expose copy file and copy path entries from reader action st
   assert.equal(primaryCalls, 1);
   assert.equal(secondaryCalls, 1);
 });
+
+function createLibraryActionState(
+  overrides: {
+    run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
+  } = {},
+) {
+  return {
+    source: "library" as const,
+    refreshKey: "library|11",
+    primary: {
+      kind: "copy-files" as const,
+      canExecute: true,
+      run:
+        overrides.run ||
+        (async () => {
+          return createCopyFilesResult();
+        }),
+    },
+  };
+}
+
+function createReaderActionState(
+  overrides: {
+    runPrimary?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
+    runSecondary?: () => Promise<ReturnType<typeof createPathCopyResult>>;
+  } = {},
+) {
+  return {
+    source: "reader" as const,
+    refreshKey: "reader|2048",
+    primary: {
+      kind: "copy-files" as const,
+      canExecute: true,
+      run:
+        overrides.runPrimary ||
+        (async () => {
+          return createCopyFilesResult();
+        }),
+    },
+    secondary: {
+      kind: "copy-path" as const,
+      canExecute: true,
+      run:
+        overrides.runSecondary ||
+        (async () => {
+          return createPathCopyResult();
+        }),
+    },
+  };
+}
+
+function createCopyFilesResult() {
+  return {
+    ok: true as const,
+    format: "file-object" as const,
+    count: 1,
+    outcome: "copied-files" as const,
+  };
+}
+
+function createPathCopyResult() {
+  return {
+    ok: true as const,
+    format: "path-text" as const,
+    count: 1,
+    outcome: "copied-path-text-explicit" as const,
+    messageKey: "copy-path-text-explicit" as const,
+  };
+}
 
 function createMenuContext() {
   const menuElem = {

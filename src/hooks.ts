@@ -1,13 +1,9 @@
 import {
-  copyFromReader,
   copyFromReaderItem,
   copyFromSelection,
 } from "./modules/copy/copyCommands";
 import { copyFromReaderPath } from "./modules/copy/copyPathCommands";
-import {
-  createCopyService,
-  type CopyServiceDeps,
-} from "./modules/copy/copyService";
+import { createCopyService } from "./modules/copy/copyService";
 import { initToolbarIcon } from "./modules/copy/copyUi";
 import {
   resolveAttachmentFromReader,
@@ -61,7 +57,6 @@ export interface MainToolbarCopyButtonDeps {
   ): MainToolbarButtonHandle;
   getActionState?(): Promise<CopyActionState>;
   getLabel(): string;
-  getUnavailableMessage(): string;
   getSelectedItems(win: Window): Zotero.Item[];
   getMode(): "all" | "primary";
   getAllowedTypes(): string[];
@@ -77,8 +72,6 @@ const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
   isEnabled: () => runtimeSettings.getSnapshot().showMainToolbarButton,
   mountButton: (doc, deps) => registerMainToolbarButton(doc, deps),
   getLabel: () => getString("mainwindow-copy-toolbar"),
-  getUnavailableMessage: () =>
-    getString("mainwindow-copy-selected-unavailable"),
   getSelectedItems: (win) =>
     ((win as _ZoteroTypes.MainWindow).ZoteroPane?.getSelectedItems?.() ||
       []) as Zotero.Item[],
@@ -96,8 +89,6 @@ export interface ReaderToolbarCopyButtonDeps {
   ): () => void;
   getActionState?(itemID: number | undefined): Promise<CopyActionState>;
   getLabel(): string;
-  getNoActiveMessage(): string;
-  getUnavailableMessage(): string;
   getAllowedTypes(): string[];
   resolveFromReader(
     itemID: number,
@@ -117,8 +108,6 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
       pluginID: addon.data.config.addonID,
     }),
   getLabel: () => getString("mainwindow-copy-toolbar"),
-  getNoActiveMessage: () => getString("mainwindow-copy-reader-no-active"),
-  getUnavailableMessage: () => getString("mainwindow-copy-reader-unavailable"),
   getAllowedTypes: () => runtimeSettings.getSnapshot().allowedTypes,
   resolveFromReader: (itemID, allowedTypes) =>
     resolveAttachmentFromReader(itemID, allowedTypes),
@@ -183,13 +172,8 @@ async function onStartup() {
     pluginID: addon.data.config.addonID,
     menuIcon,
     getLabel: (key) => getString(key),
-    onCopySelection: async () => {
-      await executeCopyFromSelection();
-    },
-    onCopyReader: async () => {
-      await executeCopyFromReader();
-    },
-    getActionState: createActiveReaderActionState,
+    getLibraryActionState: createActiveLibraryActionState,
+    getReaderActionState: createActiveReaderActionState,
   });
 
   await Promise.all(
@@ -265,26 +249,6 @@ export function registerMainToolbarCopyButton(
     getActionState: deps.getActionState
       ? deps.getActionState
       : async () => createMainToolbarActionState(win, deps),
-    getAvailability: async () => {
-      const availability = await createSelectionAvailabilityService(
-        win,
-        deps,
-      ).getSelectionAvailability();
-
-      if (!availability.canCopy) {
-        return {
-          canCopy: false,
-          unavailableMessage: deps.getUnavailableMessage(),
-        };
-      }
-
-      return {
-        canCopy: true,
-      };
-    },
-    onCommand: async () => {
-      await deps.executeCopy();
-    },
   });
 
   const requestRefresh = () => {
@@ -317,29 +281,6 @@ export function registerReaderToolbarCopyButton(
     getActionState: deps.getActionState
       ? deps.getActionState
       : async (itemID) => createReaderToolbarActionState(itemID, deps),
-    getAvailability: async (itemID) => {
-      const availability = await createReaderAvailabilityService(
-        itemID,
-        deps,
-      ).getReaderAvailability(itemID);
-
-      if (!availability.canCopy) {
-        return {
-          canCopy: false,
-          unavailableMessage:
-            availability.messageKey === "copy-reader-no-active"
-              ? deps.getNoActiveMessage()
-              : deps.getUnavailableMessage(),
-        };
-      }
-
-      return {
-        canCopy: true,
-      };
-    },
-    onCommand: async (itemID) => {
-      await deps.executeCopy(itemID);
-    },
   });
 }
 
@@ -350,16 +291,6 @@ async function executeCopyFromSelection(): Promise<
   const result = await copyFromSelection(
     settings.multiAttachmentMode,
     settings.allowedTypes,
-  );
-  notifyCopyResult(result);
-  return result;
-}
-
-async function executeCopyFromReader(): Promise<
-  Awaited<ReturnType<typeof copyFromReader>>
-> {
-  const result = await copyFromReader(
-    runtimeSettings.getSnapshot().allowedTypes,
   );
   notifyCopyResult(result);
   return result;
@@ -386,65 +317,6 @@ async function executeCopyPathFromReader(): Promise<
   return result;
 }
 
-function createSelectionAvailabilityService(
-  win: Window,
-  deps: MainToolbarCopyButtonDeps,
-) {
-  return createCopyService({
-    getSettings: () => ({
-      allowedTypes: deps.getAllowedTypes(),
-      multiAttachmentMode: deps.getMode(),
-    }),
-    getSelectedItems: () => deps.getSelectedItems(win),
-    getCurrentReaderItemID: () => undefined,
-    resolveFromItems: (items, mode, allowedTypes) =>
-      deps.resolveFromItems(items, mode, allowedTypes),
-    resolveFromReader: async () => [],
-    writeClipboard: async () => buildAvailabilityClipboardResult(),
-    getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
-  });
-}
-
-function createReaderAvailabilityService(
-  itemID: number | undefined,
-  deps: ReaderToolbarCopyButtonDeps,
-) {
-  return createCopyService({
-    getSettings: () => ({
-      allowedTypes: deps.getAllowedTypes(),
-      multiAttachmentMode: "all",
-    }),
-    getSelectedItems: () => [],
-    getCurrentReaderItemID: () => itemID,
-    resolveFromItems: async () => [],
-    resolveFromReader: (currentItemID, allowedTypes) =>
-      deps.resolveFromReader(currentItemID, allowedTypes),
-    writeClipboard: async () => buildAvailabilityClipboardResult(),
-    getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
-  });
-}
-
-function buildAvailabilityClipboardResult() {
-  return {
-    ok: false,
-    format: "none" as const,
-    count: 0,
-    messageKey: "copy-no-files" as const,
-  };
-}
-
-function buildEmptyDiagnostics(): Awaited<
-  ReturnType<CopyServiceDeps["getClipboardDiagnostics"]>
-> {
-  return {
-    platform: "linux",
-    linuxSession: "unknown",
-    commands: {},
-    activeBackend: "unknown",
-    lines: [],
-  };
-}
-
 async function createActiveLibraryActionState(): Promise<CopyActionState> {
   const settings = runtimeSettings.getSnapshot();
   const getSelectedItems = () =>
@@ -468,8 +340,19 @@ async function createActiveLibraryActionState(): Promise<CopyActionState> {
         resolveFromItems: (items, mode, allowedTypes) =>
           resolveAttachmentsFromItems(items, mode, allowedTypes),
         resolveFromReader: async () => [],
-        writeClipboard: async () => buildAvailabilityClipboardResult(),
-        getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
+        writeClipboard: async () => ({
+          ok: false as const,
+          format: "none" as const,
+          count: 0,
+          messageKey: "copy-no-files" as const,
+        }),
+        getClipboardDiagnostics: async () => ({
+          platform: "linux" as const,
+          linuxSession: "unknown" as const,
+          commands: {},
+          activeBackend: "unknown" as const,
+          lines: [],
+        }),
       }).getSelectionAvailability(),
     getReaderAvailability: async () => ({
       canCopy: false,
@@ -510,7 +393,30 @@ async function createMainToolbarActionState(
     getLibraryItems: () => deps.getSelectedItems(win),
     getReaderItemID: () => undefined,
     getSelectionAvailability: async () =>
-      createSelectionAvailabilityService(win, deps).getSelectionAvailability(),
+      createCopyService({
+        getSettings: () => ({
+          allowedTypes: deps.getAllowedTypes(),
+          multiAttachmentMode: deps.getMode(),
+        }),
+        getSelectedItems: () => deps.getSelectedItems(win),
+        getCurrentReaderItemID: () => undefined,
+        resolveFromItems: (items, mode, allowedTypes) =>
+          deps.resolveFromItems(items, mode, allowedTypes),
+        resolveFromReader: async () => [],
+        writeClipboard: async () => ({
+          ok: false as const,
+          format: "none" as const,
+          count: 0,
+          messageKey: "copy-no-files" as const,
+        }),
+        getClipboardDiagnostics: async () => ({
+          platform: "linux" as const,
+          linuxSession: "unknown" as const,
+          commands: {},
+          activeBackend: "unknown" as const,
+          lines: [],
+        }),
+      }).getSelectionAvailability(),
     getReaderAvailability: async () => ({
       canCopy: false,
       messageKey: "copy-reader-no-active",
@@ -549,8 +455,19 @@ async function createActiveReaderActionState(): Promise<CopyActionState> {
         resolveFromItems: async () => [],
         resolveFromReader: (currentItemID, allowedTypes) =>
           resolveAttachmentFromReader(currentItemID, allowedTypes),
-        writeClipboard: async () => buildAvailabilityClipboardResult(),
-        getClipboardDiagnostics: async () => buildEmptyDiagnostics(),
+        writeClipboard: async () => ({
+          ok: false as const,
+          format: "none" as const,
+          count: 0,
+          messageKey: "copy-no-files" as const,
+        }),
+        getClipboardDiagnostics: async () => ({
+          platform: "linux" as const,
+          linuxSession: "unknown" as const,
+          commands: {},
+          activeBackend: "unknown" as const,
+          lines: [],
+        }),
       }).getReaderAvailability(itemID),
     executePrimaryLibraryCopy: async () => ({
       ok: false,
@@ -583,9 +500,30 @@ async function createReaderToolbarActionState(
       messageKey: "copy-no-files",
     }),
     getReaderAvailability: async () =>
-      createReaderAvailabilityService(itemID, deps).getReaderAvailability(
-        itemID,
-      ),
+      createCopyService({
+        getSettings: () => ({
+          allowedTypes: deps.getAllowedTypes(),
+          multiAttachmentMode: "all",
+        }),
+        getSelectedItems: () => [],
+        getCurrentReaderItemID: () => itemID,
+        resolveFromItems: async () => [],
+        resolveFromReader: (currentItemID, allowedTypes) =>
+          deps.resolveFromReader(currentItemID, allowedTypes),
+        writeClipboard: async () => ({
+          ok: false as const,
+          format: "none" as const,
+          count: 0,
+          messageKey: "copy-no-files" as const,
+        }),
+        getClipboardDiagnostics: async () => ({
+          platform: "linux" as const,
+          linuxSession: "unknown" as const,
+          commands: {},
+          activeBackend: "unknown" as const,
+          lines: [],
+        }),
+      }).getReaderAvailability(itemID),
     executePrimaryLibraryCopy: async () =>
       buildUnavailableActionResult("copy-no-files"),
     executePrimaryReaderCopy: async () => deps.executeCopy(itemID),

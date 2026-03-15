@@ -10,8 +10,7 @@ export interface SelectionHookDeps {
   isLibraryContext(event: KeyboardEvent): boolean;
   hasSelectedItems(): boolean;
   isEditableTarget(event: KeyboardEvent): boolean;
-  triggerCopyFromSelection(): Promise<void>;
-  getActionState?(): Promise<CopyActionState>;
+  getActionState(): Promise<CopyActionState>;
 }
 
 const DEFAULT_SELECTION_SHORTCUT = parseShortcut("Ctrl+C");
@@ -31,9 +30,17 @@ const DEFAULT_DEPS: SelectionHookDeps = {
     return ((pane?.getSelectedItems?.() || []) as Zotero.Item[]).length > 0;
   },
   isEditableTarget: (event) => isEditableNode(event.target),
-  triggerCopyFromSelection: async () => {
-    await copyFromSelection("all", getAllowedAttachmentTypes());
-  },
+  getActionState: async () => ({
+    source: "library",
+    refreshKey: "library|default",
+    primary: {
+      kind: "copy-files",
+      canExecute: true,
+      run: async () => {
+        return copyFromSelection("all", getAllowedAttachmentTypes());
+      },
+    },
+  }),
 };
 
 export async function handleSelectionCopyShortcut(
@@ -58,19 +65,13 @@ export async function handleSelectionCopyShortcut(
     return false;
   }
 
-  event.preventDefault();
-
-  if (finalDeps.getActionState) {
-    const state = await finalDeps.getActionState();
-    if (!state.primary.canExecute) {
-      return false;
-    }
-
-    await state.primary.run();
-    return true;
+  const state = await finalDeps.getActionState();
+  if (!state.primary.canExecute) {
+    return false;
   }
 
-  await finalDeps.triggerCopyFromSelection();
+  event.preventDefault();
+  await state.primary.run();
   return true;
 }
 

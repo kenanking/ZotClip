@@ -10,9 +10,8 @@ export interface CopyMenuRegistrationDeps {
   pluginID: string;
   menuIcon: string;
   getLabel(key: CopyMenuLabelKey): string;
-  onCopySelection?(): Promise<void>;
-  onCopyReader?(): Promise<void>;
-  getActionState?(): Promise<CopyActionState>;
+  getLibraryActionState(): Promise<CopyActionState>;
+  getReaderActionState(): Promise<CopyActionState>;
   registerMenu?(
     options: _ZoteroTypes.MenuManager.AllMenuOptions,
   ): string | false;
@@ -59,7 +58,14 @@ function buildCopyMenuOptions(
         createMenuItem(
           deps.getLabel("menu-copy-selected"),
           deps.menuIcon,
-          deps.onCopySelection || (async () => {}),
+          async () => {
+            const state = await deps.getLibraryActionState();
+            if (!state.primary.canExecute) {
+              return;
+            }
+
+            await state.primary.run();
+          },
         ),
       ],
     },
@@ -71,19 +77,18 @@ function buildCopyMenuOptions(
         createMenuItem(
           deps.getLabel("menu-copy-reader"),
           deps.menuIcon,
-          deps.getActionState
-            ? async () => {
-                const state = await deps.getActionState?.();
-                await state?.primary.run();
-              }
-            : deps.onCopyReader || (async () => {}),
+          async () => {
+            const state = await deps.getReaderActionState();
+            if (!state.primary.canExecute) {
+              return;
+            }
+
+            await state.primary.run();
+          },
         ),
       ],
     },
-  ];
-
-  if (deps.getActionState) {
-    options.push({
+    {
       menuID: `${deps.addonRef}-copy-reader-path`,
       pluginID: deps.pluginID,
       target: "main/menubar/tools",
@@ -92,13 +97,17 @@ function buildCopyMenuOptions(
           deps.getLabel("menu-copy-reader-path"),
           deps.menuIcon,
           async () => {
-            const state = await deps.getActionState?.();
-            await state?.secondary?.run();
+            const state = await deps.getReaderActionState();
+            if (!state.secondary?.canExecute) {
+              return;
+            }
+
+            await state.secondary.run();
           },
         ),
       ],
-    });
-  }
+    },
+  ];
 
   return options;
 }

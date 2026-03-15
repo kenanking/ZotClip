@@ -51,9 +51,13 @@ test("keyboard shortcuts: library copy intercepts the configured shortcut when i
     isLibraryContext: () => true,
     hasSelectedItems: () => true,
     isEditableTarget: () => false,
-    triggerCopyFromSelection: async () => {
-      copyCalled = true;
-    },
+    getActionState: async () =>
+      createLibraryActionState({
+        run: async () => {
+          copyCalled = true;
+          return createCopyFilesResult();
+        },
+      }),
   });
 
   assert.equal(intercepted, true);
@@ -72,7 +76,7 @@ test("keyboard shortcuts: library copy skips editable targets and empty selectio
       isLibraryContext: () => true,
       hasSelectedItems: () => true,
       isEditableTarget: () => true,
-      triggerCopyFromSelection: async () => undefined,
+      getActionState: async () => createLibraryActionState(),
     },
   );
   const emptyIntercepted = await handleSelectionCopyShortcut(empty.event, {
@@ -80,7 +84,7 @@ test("keyboard shortcuts: library copy skips editable targets and empty selectio
     isLibraryContext: () => true,
     hasSelectedItems: () => false,
     isEditableTarget: () => false,
-    triggerCopyFromSelection: async () => undefined,
+    getActionState: async () => createLibraryActionState(),
   });
 
   assert.equal(editableIntercepted, false);
@@ -91,14 +95,12 @@ test("keyboard shortcuts: library copy skips editable targets and empty selectio
 
 test("keyboard shortcuts: reader keeps native copy when no shortcut is configured", async () => {
   const mock = makeKeyEvent({ ctrl: true, key: "c" });
-  let copyCalled = false;
+  const copyCalled = false;
 
   const intercepted = await handleReaderCopyShortcut(mock.event, {
     getParsedShortcut: () => undefined,
     isReaderContext: () => true,
-    triggerCopyFromReader: async () => {
-      copyCalled = true;
-    },
+    getActionState: async () => createReaderActionState(),
   });
 
   assert.equal(intercepted, false);
@@ -113,9 +115,13 @@ test("keyboard shortcuts: reader intercepts the configured shortcut", async () =
   const intercepted = await handleReaderCopyShortcut(mock.event, {
     getParsedShortcut: () => CTRL_SHIFT_C,
     isReaderContext: () => true,
-    triggerCopyFromReader: async () => {
-      copyCalled = true;
-    },
+    getActionState: async () =>
+      createReaderActionState({
+        run: async () => {
+          copyCalled = true;
+          return createCopyFilesResult();
+        },
+      }),
   });
 
   assert.equal(intercepted, true);
@@ -140,7 +146,7 @@ test("keyboard shortcuts: already handled events are ignored", async () => {
   const readerIntercepted = await handleReaderCopyShortcut(reader.event, {
     getParsedShortcut: () => CTRL_SHIFT_C,
     isReaderContext: () => true,
-    triggerCopyFromReader: async () => undefined,
+    getActionState: async () => createReaderActionState(),
   });
   const selectionIntercepted = await handleSelectionCopyShortcut(
     selection.event,
@@ -149,7 +155,7 @@ test("keyboard shortcuts: already handled events are ignored", async () => {
       isLibraryContext: () => true,
       hasSelectedItems: () => true,
       isEditableTarget: () => false,
-      triggerCopyFromSelection: async () => undefined,
+      getActionState: async () => createLibraryActionState(),
     },
   );
 
@@ -166,18 +172,26 @@ test("keyboard shortcuts: the same event is not handled twice", async () => {
   const readerDeps = {
     getParsedShortcut: () => CTRL_SHIFT_C,
     isReaderContext: () => true,
-    triggerCopyFromReader: async () => {
-      readerCount += 1;
-    },
+    getActionState: async () =>
+      createReaderActionState({
+        run: async () => {
+          readerCount += 1;
+          return createCopyFilesResult();
+        },
+      }),
   };
   const selectionDeps = {
     getParsedShortcut: () => CTRL_SHIFT_C,
     isLibraryContext: () => true,
     hasSelectedItems: () => true,
     isEditableTarget: () => false,
-    triggerCopyFromSelection: async () => {
-      selectionCount += 1;
-    },
+    getActionState: async () =>
+      createLibraryActionState({
+        run: async () => {
+          selectionCount += 1;
+          return createCopyFilesResult();
+        },
+      }),
   };
 
   const firstReaderIntercept = await handleReaderCopyShortcut(
@@ -218,7 +232,7 @@ test("keyboard shortcuts: handlers can reuse one parsed shortcut across repeated
     isLibraryContext: () => true,
     hasSelectedItems: () => true,
     isEditableTarget: () => false,
-    triggerCopyFromSelection: async () => undefined,
+    getActionState: async () => createLibraryActionState(),
   };
 
   await handleSelectionCopyShortcut(first.event, deps);
@@ -244,12 +258,7 @@ test("keyboard shortcuts: library copy can execute the primary action from actio
         canExecute: true,
         run: async () => {
           runCalls += 1;
-          return {
-            ok: true,
-            format: "file-object",
-            count: 1,
-            outcome: "copied-files",
-          };
+          return createCopyFilesResult();
         },
       },
     }),
@@ -259,3 +268,54 @@ test("keyboard shortcuts: library copy can execute the primary action from actio
   assert.equal(runCalls, 1);
   assert.equal(mock.wasPrevented(), true);
 });
+
+function createLibraryActionState(
+  overrides: {
+    canExecute?: boolean;
+    run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
+  } = {},
+) {
+  return {
+    source: "library" as const,
+    refreshKey: "library|11",
+    primary: {
+      kind: "copy-files" as const,
+      canExecute: overrides.canExecute ?? true,
+      run:
+        overrides.run ||
+        (async () => {
+          return createCopyFilesResult();
+        }),
+    },
+  };
+}
+
+function createReaderActionState(
+  overrides: {
+    canExecute?: boolean;
+    run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
+  } = {},
+) {
+  return {
+    source: "reader" as const,
+    refreshKey: "reader|2048",
+    primary: {
+      kind: "copy-files" as const,
+      canExecute: overrides.canExecute ?? true,
+      run:
+        overrides.run ||
+        (async () => {
+          return createCopyFilesResult();
+        }),
+    },
+  };
+}
+
+function createCopyFilesResult() {
+  return {
+    ok: true as const,
+    format: "file-object" as const,
+    count: 1,
+    outcome: "copied-files" as const,
+  };
+}

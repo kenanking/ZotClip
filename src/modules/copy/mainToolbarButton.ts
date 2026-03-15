@@ -1,5 +1,5 @@
 import { config } from "../../../package.json";
-import { TOOLBAR_ICON_URL, getToolbarTooltipText } from "./copyUi";
+import { TOOLBAR_ICON_URL } from "./copyUi";
 import { buildActionTooltip } from "./interaction/presentation/copyActionMessages";
 import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
 import type { ClipboardResult } from "./types";
@@ -15,17 +15,10 @@ type ToolbarButtonElement = XULElement & {
   remove(): void;
 };
 
-export interface MainToolbarButtonAvailability {
-  canCopy: boolean;
-  unavailableMessage?: string;
-}
-
 export interface MainToolbarButtonDeps {
   getLabel(): string;
   getRefreshKey?(): string;
-  getAvailability?(): Promise<MainToolbarButtonAvailability>;
-  onCommand?(): Promise<void>;
-  getActionState?(): Promise<CopyActionState>;
+  getActionState(): Promise<CopyActionState>;
   onActionComplete?(result: ClipboardResult): void;
   getActionTooltipText?(
     label: string,
@@ -59,21 +52,11 @@ export function registerMainToolbarButton(
       return;
     }
 
-    if (currentActionState) {
-      void currentActionState.primary.run().then((result) => {
-        deps.onActionComplete?.(result);
-        availabilityCoordinator.notifySelectionCopyCompleted();
-        void refresh();
-      });
-      return;
-    }
-
-    if (deps.onCommand) {
-      void deps.onCommand().then(() => {
-        availabilityCoordinator.notifySelectionCopyCompleted();
-        void refresh();
-      });
-    }
+    void currentActionState?.primary.run().then((result) => {
+      deps.onActionComplete?.(result);
+      availabilityCoordinator.notifySelectionCopyCompleted();
+      void refresh();
+    });
   };
 
   button?.addEventListener("command", onCommand);
@@ -96,25 +79,12 @@ export function registerMainToolbarButton(
       return;
     }
 
-    if (deps.getActionState) {
-      currentActionState = await deps.getActionState();
-      currentButton.disabled = !currentActionState.primary.canExecute;
-      currentButton.title = (deps.getActionTooltipText || buildActionTooltip)(
-        deps.getLabel(),
-        currentActionState,
-      );
-      currentButton.setAttribute("tooltiptext", currentButton.title);
-      return;
-    }
-
-    const availability = await deps.getAvailability?.();
-    if (!availability) {
-      return;
-    }
-
-    currentActionState = undefined;
-    currentButton.disabled = !availability.canCopy;
-    currentButton.title = getToolbarTooltipText(deps.getLabel(), availability);
+    currentActionState = await deps.getActionState();
+    currentButton.disabled = !currentActionState.primary.canExecute;
+    currentButton.title = (deps.getActionTooltipText || buildActionTooltip)(
+      deps.getLabel(),
+      currentActionState,
+    );
     currentButton.setAttribute("tooltiptext", currentButton.title);
   }
 
