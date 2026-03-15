@@ -1,7 +1,10 @@
 import { config } from "../../../package.json";
 import { TOOLBAR_ICON_URL, getToolbarTooltipText } from "./copyUi";
+import { buildActionTooltip } from "./interaction/presentation/copyActionMessages";
 import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
+import type { ClipboardResult } from "./types";
 import { createToolbarButtonElement } from "./ui/toolkitDom";
+import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 
 const BUTTON_ID = `${config.addonRef}-main-toolbar-button`;
 const TOOLBAR_ANCHOR_IDS = ["zotero-tb-note-add"];
@@ -20,8 +23,14 @@ export interface MainToolbarButtonAvailability {
 export interface MainToolbarButtonDeps {
   getLabel(): string;
   getRefreshKey?(): string;
-  getAvailability(): Promise<MainToolbarButtonAvailability>;
-  onCommand(): Promise<void>;
+  getAvailability?(): Promise<MainToolbarButtonAvailability>;
+  onCommand?(): Promise<void>;
+  getActionState?(): Promise<CopyActionState>;
+  onActionComplete?(result: ClipboardResult): void;
+  getActionTooltipText?(
+    label: string,
+    state: Pick<CopyActionState, "primary">,
+  ): string;
   createToolbarButton?(input: {
     doc: Document;
     id: string;
@@ -42,6 +51,7 @@ export function registerMainToolbarButton(
 ): MainToolbarButtonHandle {
   const button = ensureButton(doc, deps);
   const availabilityCoordinator = createAvailabilityCoordinator();
+  let currentActionState: CopyActionState | undefined;
 
   const onCommand = (event: Event) => {
     const currentButton = event.currentTarget as ToolbarButtonElement | null;
@@ -49,10 +59,21 @@ export function registerMainToolbarButton(
       return;
     }
 
-    void deps.onCommand().then(() => {
-      availabilityCoordinator.notifySelectionCopyCompleted();
-      void refresh();
-    });
+    if (currentActionState) {
+      void currentActionState.primary.run().then((result) => {
+        deps.onActionComplete?.(result);
+        availabilityCoordinator.notifySelectionCopyCompleted();
+        void refresh();
+      });
+      return;
+    }
+
+    if (deps.onCommand) {
+      void deps.onCommand().then(() => {
+        availabilityCoordinator.notifySelectionCopyCompleted();
+        void refresh();
+      });
+    }
   };
 
   button?.addEventListener("command", onCommand);
@@ -75,7 +96,22 @@ export function registerMainToolbarButton(
       return;
     }
 
-    const availability = await deps.getAvailability();
+    if (deps.getActionState) {
+      currentActionState = await deps.getActionState();
+      currentButton.disabled = !currentActionState.primary.canExecute;
+      currentButton.title = (
+        deps.getActionTooltipText || buildActionTooltip
+      )(deps.getLabel(), currentActionState);
+      currentButton.setAttribute("tooltiptext", currentButton.title);
+      return;
+    }
+
+    const availability = await deps.getAvailability?.();
+    if (!availability) {
+      return;
+    }
+
+    currentActionState = undefined;
     currentButton.disabled = !availability.canCopy;
     currentButton.title = getToolbarTooltipText(deps.getLabel(), availability);
     currentButton.setAttribute("tooltiptext", currentButton.title);

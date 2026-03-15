@@ -250,3 +250,30 @@ test("registerMainToolbarButton delegates element creation through a shared help
 
   assert.equal(helperCalls, 1);
 });
+
+test("registerMainToolbarButton reads disabled state and tooltip from action state", async () => {
+  const doc = new FakeDocument();
+
+  const handle = registerMainToolbarButton(doc as unknown as Document, {
+    getLabel: () => "Copy File",
+    getActionState: async () => ({
+      source: "library",
+      refreshKey: "library|11",
+      primary: {
+        kind: "copy-files",
+        canExecute: false,
+        reasonKey: "copy-no-files",
+        run: async () => {
+          throw new Error("Disabled action should not run.");
+        },
+      },
+    }),
+    getActionTooltipText: (_label, state) =>
+      state.primary.canExecute ? "Copy File" : "No files to copy.",
+  });
+
+  await handle.refresh();
+
+  assert.equal(doc.button.disabled, true);
+  assert.equal(doc.button.title, "No files to copy.");
+});

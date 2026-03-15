@@ -1,6 +1,9 @@
 import { config } from "../../../package.json";
 import { getToolbarIconDataURL, getToolbarTooltipText } from "./copyUi";
+import type { CopyActionState } from "./interaction/actions/copyActionTypes";
+import { buildActionTooltip } from "./interaction/presentation/copyActionMessages";
 import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
+import type { ClipboardResult } from "./types";
 import { createReaderToolbarButtonElement } from "./ui/toolkitDom";
 
 const BUTTON_ID = `${config.addonRef}-reader-copy-button`;
@@ -24,10 +27,16 @@ export interface ReaderToolbarRenderEventLike {
 export interface ReaderToolbarButtonDeps {
   getLabel(): string;
   getRefreshKey?(itemID: number | undefined): string;
-  getAvailability(
+  getAvailability?(
     itemID: number | undefined,
   ): Promise<ReaderButtonAvailability>;
-  onCommand(itemID: number | undefined): Promise<void>;
+  onCommand?(itemID: number | undefined): Promise<void>;
+  getActionState?(): Promise<CopyActionState>;
+  onActionComplete?(result: ClipboardResult): void;
+  getActionTooltipText?(
+    label: string,
+    state: Pick<CopyActionState, "primary">,
+  ): string;
   createButton?(input: {
     doc: Document;
     id: string;
@@ -71,6 +80,7 @@ export function mountReaderToolbarButton(
     event.append(...nodes);
   });
   const availabilityCoordinator = createAvailabilityCoordinator();
+  let currentActionState: CopyActionState | undefined;
 
   const onCommand = (clickEvent: Event) => {
     const currentButton = clickEvent.currentTarget as HTMLButtonElement | null;
@@ -78,10 +88,21 @@ export function mountReaderToolbarButton(
       return;
     }
 
-    void deps.onCommand(event.reader.itemID).then(() => {
-      availabilityCoordinator.notifyReaderCopyCompleted();
-      void refresh();
-    });
+    if (currentActionState) {
+      void currentActionState.primary.run().then((result) => {
+        deps.onActionComplete?.(result);
+        availabilityCoordinator.notifyReaderCopyCompleted();
+        void refresh();
+      });
+      return;
+    }
+
+    if (deps.onCommand) {
+      void deps.onCommand(event.reader.itemID).then(() => {
+        availabilityCoordinator.notifyReaderCopyCompleted();
+        void refresh();
+      });
+    }
   };
 
   button?.addEventListener("click", onCommand);
@@ -110,7 +131,24 @@ export function mountReaderToolbarButton(
       return;
     }
 
-    const availability = await deps.getAvailability(event.reader.itemID);
+    if (deps.getActionState) {
+      currentActionState = await deps.getActionState();
+      applyButtonState(currentButton, {
+        disabled: !currentActionState.primary.canExecute,
+        tooltipText: (deps.getActionTooltipText || buildActionTooltip)(
+          deps.getLabel(),
+          currentActionState,
+        ),
+      });
+      return;
+    }
+
+    const availability = await deps.getAvailability?.(event.reader.itemID);
+    if (!availability) {
+      return;
+    }
+
+    currentActionState = undefined;
     applyButtonState(currentButton, {
       disabled: !availability.canCopy,
       tooltipText: getToolbarTooltipText(deps.getLabel(), availability),

@@ -391,3 +391,38 @@ test("mountReaderToolbarButton uses a shared helper to build the button node", a
 
   assert.equal(helperCalls, 1);
 });
+
+test("mountReaderToolbarButton reads reader action state and keeps disabled tooltip in sync", async () => {
+  await primeToolbarIcon();
+  const doc = new FakeDocument();
+  const handle = mountReaderToolbarButton(makeEvent(doc, 2048), {
+    getLabel: () => "Copy File",
+    getActionState: async () => ({
+      source: "reader",
+      refreshKey: "2048|pdf",
+      primary: {
+        kind: "copy-files",
+        canExecute: false,
+        reasonKey: "copy-reader-no-active",
+        run: async () => {
+          throw new Error("Disabled action should not run.");
+        },
+      },
+      secondary: {
+        kind: "copy-path",
+        canExecute: false,
+        reasonKey: "copy-reader-no-active",
+        run: async () => {
+          throw new Error("Disabled action should not run.");
+        },
+      },
+    }),
+    getActionTooltipText: (_label, state) =>
+      state.primary.canExecute ? "Copy File" : "No active reader attachment",
+  });
+
+  await handle.refresh();
+
+  assert.equal(doc.button.disabled, true);
+  assert.equal(doc.button.title, "No active reader attachment");
+});
