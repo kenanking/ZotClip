@@ -171,3 +171,43 @@ test("registerMainToolbarButton runs the copy command only once for a single too
 
   assert.equal(calls, 1);
 });
+
+test("registerMainToolbarButton coalesces repeated refresh calls for the same refresh key", async () => {
+  const doc = new FakeDocument();
+  let availabilityCalls = 0;
+
+  const handle = registerMainToolbarButton(doc as unknown as Document, {
+    getLabel: () => "Copy Attachment File(s)",
+    getRefreshKey: () => "selection:1",
+    getAvailability: async () => {
+      availabilityCalls += 1;
+      return { canCopy: true };
+    },
+    onCommand: async () => {},
+  });
+
+  await Promise.all([handle.refresh(), handle.refresh()]);
+
+  assert.equal(availabilityCalls, 1);
+});
+
+test("registerMainToolbarButton refreshes once after command completion for the same refresh key", async () => {
+  const doc = new FakeDocument();
+  let availabilityCalls = 0;
+
+  const handle = registerMainToolbarButton(doc as unknown as Document, {
+    getLabel: () => "Copy Attachment File(s)",
+    getRefreshKey: () => "selection:1",
+    getAvailability: async () => {
+      availabilityCalls += 1;
+      return { canCopy: true };
+    },
+    onCommand: async () => {},
+  });
+
+  await handle.refresh();
+  doc.button.dispatch("command");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(availabilityCalls, 2);
+});

@@ -1,20 +1,19 @@
 import {
-  getAllowedAttachmentTypes,
-  getMultiAttachmentMode,
-} from "../../utils/prefs";
-import {
   resolveAttachmentFromReader,
   resolveAttachmentsFromItems,
 } from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
+import { getRuntimeSettingsStore } from "./runtime/runtimeSettings";
 import { getClipboardDiagnostics } from "./runtimeDiagnostics";
 import type { CopyServiceDeps } from "./copyService";
 
 export function createDefaultCopyServiceDeps(): CopyServiceDeps {
+  const runtimeSettings = getRuntimeSettingsStore();
+
   return {
     getSettings: () => ({
-      allowedTypes: getAllowedAttachmentTypes(),
-      multiAttachmentMode: getMultiAttachmentMode(),
+      allowedTypes: runtimeSettings.getSnapshot().allowedTypes,
+      multiAttachmentMode: runtimeSettings.getSnapshot().multiAttachmentMode,
     }),
     getSelectedItems: () => {
       const pane = Zotero.getActiveZoteroPane();

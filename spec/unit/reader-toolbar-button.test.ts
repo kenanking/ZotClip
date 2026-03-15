@@ -238,6 +238,26 @@ test("mountReaderToolbarButton does not append duplicates for the same reader do
   assert.equal(doc.appended.length, 1);
 });
 
+test("mountReaderToolbarButton coalesces repeated refresh calls for the same reader item", async () => {
+  await primeToolbarIcon();
+  const doc = new FakeDocument();
+  let availabilityCalls = 0;
+
+  const handle = mountReaderToolbarButton(makeEvent(doc, 2048), {
+    getLabel: () => "Copy Current Reader Attachment",
+    getRefreshKey: (itemID) => `reader:${itemID || "none"}`,
+    getAvailability: async () => {
+      availabilityCalls += 1;
+      return { canCopy: true };
+    },
+    onCommand: async () => {},
+  });
+
+  await Promise.all([handle.refresh(), handle.refresh()]);
+
+  assert.equal(availabilityCalls, 1);
+});
+
 test("mountReaderToolbarButton runs the copy command only once for a single toolbar activation", async () => {
   await primeToolbarIcon();
   const doc = new FakeDocument();
@@ -300,5 +320,39 @@ test("registerReaderToolbarButton creates a dedicated fallback section for exist
     "zotclip-reader-copy-button",
   );
 
+  dispose();
+});
+
+test("registerReaderToolbarButton reuses reader availability for repeated render events", async () => {
+  await primeToolbarIcon();
+  const doc = new FakeDocument();
+  let availabilityCalls = 0;
+  let registerHandler:
+    | ((event: ReaderToolbarRenderEventLike) => void)
+    | undefined;
+
+  const dispose = registerReaderToolbarButton({
+    getLabel: () => "Copy Current Reader Attachment",
+    getRefreshKey: (itemID) => `reader:${itemID || "none"}`,
+    getAvailability: async () => {
+      availabilityCalls += 1;
+      return { canCopy: true };
+    },
+    onCommand: async () => {},
+    readerAPI: {
+      registerEventListener: (_type, handler) => {
+        registerHandler = handler;
+      },
+      unregisterEventListener: () => {},
+      _readers: [],
+    },
+  });
+
+  assert.ok(registerHandler, "Expected renderToolbar registration.");
+  registerHandler!(makeEvent(doc, 2048));
+  registerHandler!(makeEvent(doc, 2048));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(availabilityCalls, 1);
   dispose();
 });

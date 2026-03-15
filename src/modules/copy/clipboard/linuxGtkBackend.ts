@@ -72,6 +72,7 @@ if __name__ == "__main__":
 `;
 
 export interface LinuxGtkBackendDeps {
+  probeGtkSupport?(): Promise<boolean>;
   runCommand(call: CommandCall): Promise<CommandResult>;
   startCommand(
     call: CommandCall,
@@ -110,8 +111,10 @@ export function createLinuxGtkBackend(
         };
       }
 
-      const probeResult = await deps.runCommand(buildLinuxGtkProbeCall());
-      if (!probeResult.ok) {
+      const probeResult =
+        (await deps.probeGtkSupport?.()) ??
+        (await deps.runCommand(buildLinuxGtkProbeCall())).ok;
+      if (!probeResult) {
         return {
           available: false,
           dependency: GTK_HELPER_DEPENDENCY,

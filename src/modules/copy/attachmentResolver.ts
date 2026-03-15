@@ -4,6 +4,9 @@ import {
 } from "./attachmentTypes";
 import type { MultiAttachmentMode, ResolvedAttachment } from "./types";
 
+const ITEM_RESOLUTION_CONCURRENCY = 4;
+const ATTACHMENT_PATH_CONCURRENCY = 8;
+
 export interface AttachmentResolverDeps {
   getItemsByIDs(ids: number[]): Zotero.Item[];
   getItemByID?(id: number): Zotero.Item | false | undefined;
@@ -25,19 +28,13 @@ export async function resolveAttachmentsFromItems(
     return [];
   }
 
-  const results: ResolvedAttachment[] = [];
+  const results = await mapWithConcurrencyLimit(
+    items,
+    ITEM_RESOLUTION_CONCURRENCY,
+    async (item) => resolveCandidateAttachments(item, mode, allowedSet, deps),
+  );
 
-  for (const item of items) {
-    const candidates = await resolveCandidateAttachments(
-      item,
-      mode,
-      allowedSet,
-      deps,
-    );
-    results.push(...candidates);
-  }
-
-  return dedupeByPath(results);
+  return dedupeByPath(results.flat());
 }
 
 export async function resolveAttachmentFromReader(
@@ -110,31 +107,33 @@ async function resolveAllowedAttachments(
   itemID: number,
   allowedSet: Set<string>,
 ): Promise<ResolvedAttachment[]> {
-  const results: ResolvedAttachment[] = [];
+  const results = await mapWithConcurrencyLimit(
+    attachments,
+    ATTACHMENT_PATH_CONCURRENCY,
+    async (attachment) => {
+      if (!attachment?.isAttachment?.()) {
+        return undefined;
+      }
 
-  for (const attachment of attachments) {
-    if (!attachment?.isAttachment?.()) {
-      continue;
-    }
+      const path = await attachment.getFilePathAsync();
+      if (!path || typeof path !== "string") {
+        return undefined;
+      }
 
-    const path = await attachment.getFilePathAsync();
-    if (!path || typeof path !== "string") {
-      continue;
-    }
+      const extension = extractExtensionFromPath(path);
+      if (!extension || !allowedSet.has(extension)) {
+        return undefined;
+      }
 
-    const extension = extractExtensionFromPath(path);
-    if (!extension || !allowedSet.has(extension)) {
-      continue;
-    }
+      return {
+        itemID,
+        attachmentID: attachment.id,
+        path,
+      };
+    },
+  );
 
-    results.push({
-      itemID,
-      attachmentID: attachment.id,
-      path,
-    });
-  }
-
-  return results;
+  return results.filter((result): result is ResolvedAttachment => !!result);
 }
 
 async function resolveBestAttachmentCandidate(
@@ -158,4 +157,31 @@ function dedupeByPath(input: ResolvedAttachment[]): ResolvedAttachment[] {
     seen.add(result.path);
     return true;
   });
+}
+
+async function mapWithConcurrencyLimit<Input, Output>(
+  input: Input[],
+  concurrency: number,
+  map: (value: Input, index: number) => Promise<Output>,
+): Promise<Output[]> {
+  if (!input.length) {
+    return [];
+  }
+
+  const results = new Array<Output>(input.length);
+  let nextIndex = 0;
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, input.length) },
+    async () => {
+      while (nextIndex < input.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await map(input[currentIndex], currentIndex);
+      }
+    },
+  );
+
+  await Promise.all(workers);
+  return results;
 }

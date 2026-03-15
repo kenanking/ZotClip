@@ -1,15 +1,16 @@
 import { copyFromReader } from "./copyCommands";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
+import type { ParsedShortcut } from "./shortcuts";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export interface ReaderHookDeps {
-  getShortcut(): string;
+  getParsedShortcut(): ParsedShortcut | undefined;
   isReaderContext(event: KeyboardEvent): boolean;
   triggerCopyFromReader(): Promise<void>;
 }
 
 const DEFAULT_DEPS: ReaderHookDeps = {
-  getShortcut: () => "",
+  getParsedShortcut: () => undefined,
   isReaderContext: () => {
     const tabs = ztoolkit.getGlobal("Zotero_Tabs") as
       | _ZoteroTypes.Zotero_Tabs
@@ -32,7 +33,7 @@ export async function handleReaderCopyShortcut(
 
   if (
     !shouldHandleConfiguredShortcut(event, {
-      getShortcut: () => finalDeps.getShortcut(),
+      getParsedShortcut: () => finalDeps.getParsedShortcut(),
       matchesContext: (nextEvent) => finalDeps.isReaderContext(nextEvent),
     })
   ) {
@@ -46,13 +47,13 @@ export async function handleReaderCopyShortcut(
 
 export function registerReaderShortcutHandler(
   win: Window,
-  shortcutProvider: () => string,
+  shortcutProvider: () => ParsedShortcut | undefined,
   deps: Partial<ReaderHookDeps> = {},
 ): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
     void handleReaderCopyShortcut(event, {
       ...deps,
-      getShortcut: shortcutProvider,
+      getParsedShortcut: shortcutProvider,
     });
   };
 

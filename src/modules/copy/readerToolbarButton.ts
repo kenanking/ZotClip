@@ -1,5 +1,6 @@
 import { config } from "../../../package.json";
 import { getToolbarIconDataURL, getToolbarTooltipText } from "./copyUi";
+import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
 
 const BUTTON_ID = `${config.addonRef}-reader-copy-button`;
 const FALLBACK_SECTION_ID = `${BUTTON_ID}-section`;
@@ -21,6 +22,7 @@ export interface ReaderToolbarRenderEventLike {
 
 export interface ReaderToolbarButtonDeps {
   getLabel(): string;
+  getRefreshKey?(itemID: number | undefined): string;
   getAvailability(
     itemID: number | undefined,
   ): Promise<ReaderButtonAvailability>;
@@ -60,6 +62,7 @@ export function mountReaderToolbarButton(
   const button = ensureButton(event.doc, deps.getLabel(), (...nodes) => {
     event.append(...nodes);
   });
+  const availabilityCoordinator = createAvailabilityCoordinator();
 
   const onCommand = (clickEvent: Event) => {
     const currentButton = clickEvent.currentTarget as HTMLButtonElement | null;
@@ -68,6 +71,7 @@ export function mountReaderToolbarButton(
     }
 
     void deps.onCommand(event.reader.itemID).then(() => {
+      availabilityCoordinator.notifyReaderCopyCompleted();
       void refresh();
     });
   };
@@ -75,6 +79,18 @@ export function mountReaderToolbarButton(
   button?.addEventListener("click", onCommand);
 
   async function refresh(): Promise<void> {
+    const refreshKey = deps.getRefreshKey?.(event.reader.itemID);
+    if (refreshKey) {
+      return availabilityCoordinator.requestReaderRefresh(
+        refreshKey,
+        refreshCurrentAvailability,
+      );
+    }
+
+    return refreshCurrentAvailability();
+  }
+
+  async function refreshCurrentAvailability(): Promise<void> {
     const currentButton = ensureButton(
       event.doc,
       deps.getLabel(),

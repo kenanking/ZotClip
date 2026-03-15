@@ -6,7 +6,10 @@ import type {
   StartCommandOptions,
 } from "./clipboard/commandRunner";
 import { createCommandRunner } from "./clipboard/commandRunner";
-import { createLinuxGtkBackend } from "./clipboard/linuxGtkBackend";
+import {
+  buildLinuxGtkProbeCall,
+  createLinuxGtkBackend,
+} from "./clipboard/linuxGtkBackend";
 import { createLinuxWaylandBackend } from "./clipboard/linuxWaylandBackend";
 import { createMacosCommandBackend } from "./clipboard/macosCommandBackend";
 import { createPathTextBackend } from "./clipboard/pathTextBackend";
@@ -15,6 +18,10 @@ import {
   detectCurrentPlatformContext,
   type PlatformContext,
 } from "./clipboard/platformDetection";
+import {
+  getClipboardRuntimeCache,
+  type ClipboardRuntimeCache,
+} from "./clipboard/runtimeCache";
 import { createWindowsBackend } from "./clipboard/windowsBackend";
 import { prepareResolvedAttachments } from "./preparedAttachments";
 import type { ClipboardResult, ResolvedAttachment } from "./types";
@@ -27,6 +34,7 @@ export interface ClipboardWriterDeps {
   prepareResolvedAttachments?(
     files: ResolvedAttachment[],
   ): Promise<ResolvedAttachment[]>;
+  runtimeCache?: ClipboardRuntimeCache;
   probeCommand?(name: string): Promise<boolean>;
   runCommand?(call: CommandCall): Promise<CommandResult>;
   startCommand?(
@@ -66,6 +74,7 @@ export async function writeClipboard(
   source: "library" | "reader" = "library",
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
+  const runtimeCache = deps.runtimeCache || getClipboardRuntimeCache();
   const preparedFiles =
     (await deps.prepareResolvedAttachments?.(files)) || files;
   const payload = buildClipboardPayload(preparedFiles, source);
@@ -79,19 +88,22 @@ export async function writeClipboard(
     };
   }
 
-  const platformContext = getPlatformContext(deps);
+  const platformContext = getPlatformContext(deps, runtimeCache);
 
   const backends =
     platformContext.platform === "windows"
       ? buildWindowsBackends(deps)
       : platformContext.platform === "linux"
-        ? buildLinuxBackends(platformContext, deps)
-        : buildMacosBackends(deps);
+        ? buildLinuxBackends(platformContext, deps, runtimeCache)
+        : buildMacosBackends(deps, runtimeCache);
 
-  return runClipboardBackends({
+  const result = await runClipboardBackends({
     payload,
     backends,
   });
+
+  invalidateRuntimeCacheOnBackendFailure(runtimeCache, platformContext, result);
+  return result;
 }
 
 function buildWindowsBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
@@ -113,8 +125,9 @@ function buildLinuxFallbackBackends(
 function buildLinuxBackends(
   platformContext: PlatformContext,
   deps: ClipboardWriterDeps,
+  runtimeCache: ClipboardRuntimeCache,
 ): ClipboardBackend[] {
-  const commandDeps = buildCommandDeps(deps);
+  const commandDeps = buildCommandDeps(deps, runtimeCache);
   const linuxBackends =
     platformContext.linuxSession === "wayland"
       ? [createLinuxWaylandBackend(commandDeps)]
@@ -128,14 +141,21 @@ function buildLinuxBackends(
   return [...linuxBackends, ...buildLinuxFallbackBackends(deps)];
 }
 
-function buildMacosBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
+function buildMacosBackends(
+  deps: ClipboardWriterDeps,
+  runtimeCache: ClipboardRuntimeCache,
+): ClipboardBackend[] {
   return [
-    createMacosCommandBackend(buildCommandDeps(deps)),
+    createMacosCommandBackend(buildCommandDeps(deps, runtimeCache)),
     buildPathTextBackend(deps),
   ];
 }
 
-function buildCommandDeps(deps: ClipboardWriterDeps): {
+function buildCommandDeps(
+  deps: ClipboardWriterDeps,
+  runtimeCache: ClipboardRuntimeCache,
+): {
+  probeGtkSupport(): Promise<boolean>;
   probeCommand(name: string): Promise<boolean>;
   runCommand(call: CommandCall): Promise<CommandResult>;
   startCommand(
@@ -144,7 +164,16 @@ function buildCommandDeps(deps: ClipboardWriterDeps): {
   ): Promise<CommandResult>;
 } {
   return {
-    probeCommand: async (name) => (await deps.probeCommand?.(name)) ?? false,
+    probeGtkSupport: async () =>
+      runtimeCache.getLinuxGtkAvailability(async () => {
+        const result = await deps.runCommand?.(buildLinuxGtkProbeCall());
+        return result?.ok ?? false;
+      }),
+    probeCommand: async (name) =>
+      runtimeCache.getCommandAvailability(
+        name,
+        async () => (await deps.probeCommand?.(name)) ?? false,
+      ),
     runCommand: async (call) =>
       (await deps.runCommand?.(call)) || buildUnavailableCommandResult(),
     startCommand: async (call, options) =>
@@ -153,12 +182,16 @@ function buildCommandDeps(deps: ClipboardWriterDeps): {
   };
 }
 
-function getPlatformContext(deps: ClipboardWriterDeps): PlatformContext {
-  return (
-    deps.detectPlatformContext?.() || {
-      platform: "linux" as const,
-      linuxSession: "unknown" as const,
-    }
+function getPlatformContext(
+  deps: ClipboardWriterDeps,
+  runtimeCache: ClipboardRuntimeCache,
+): PlatformContext {
+  return runtimeCache.getPlatformContext(
+    () =>
+      deps.detectPlatformContext?.() || {
+        platform: "linux" as const,
+        linuxSession: "unknown" as const,
+      },
   );
 }
 
@@ -175,4 +208,30 @@ function buildUnavailableCommandResult(): CommandResult {
     stdout: "",
     stderr: COMMAND_RUNNER_UNAVAILABLE_MESSAGE,
   };
+}
+
+function invalidateRuntimeCacheOnBackendFailure(
+  runtimeCache: ClipboardRuntimeCache,
+  platformContext: PlatformContext,
+  result: ClipboardResult,
+): void {
+  if (result.ok && result.format !== "path-text") {
+    return;
+  }
+
+  if (platformContext.platform === "linux") {
+    if (platformContext.linuxSession !== "wayland") {
+      runtimeCache.invalidateLinuxGtkAvailability();
+    }
+
+    if (platformContext.linuxSession !== "x11") {
+      runtimeCache.invalidateCommandAvailability("wl-copy");
+    }
+
+    return;
+  }
+
+  if (platformContext.platform === "macos") {
+    runtimeCache.invalidateCommandAvailability("osascript");
+  }
 }

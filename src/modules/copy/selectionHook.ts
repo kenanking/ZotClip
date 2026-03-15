@@ -1,17 +1,20 @@
 import { copyFromSelection } from "./copyCommands";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
+import { parseShortcut, type ParsedShortcut } from "./shortcuts";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export interface SelectionHookDeps {
-  getShortcut(): string;
+  getParsedShortcut(): ParsedShortcut | undefined;
   isLibraryContext(event: KeyboardEvent): boolean;
   hasSelectedItems(): boolean;
   isEditableTarget(event: KeyboardEvent): boolean;
   triggerCopyFromSelection(): Promise<void>;
 }
 
+const DEFAULT_SELECTION_SHORTCUT = parseShortcut("Ctrl+C");
+
 const DEFAULT_DEPS: SelectionHookDeps = {
-  getShortcut: () => "Ctrl+C",
+  getParsedShortcut: () => DEFAULT_SELECTION_SHORTCUT,
   isLibraryContext: () => {
     const tabs = ztoolkit.getGlobal("Zotero_Tabs") as
       | _ZoteroTypes.Zotero_Tabs
@@ -39,7 +42,7 @@ export async function handleSelectionCopyShortcut(
 
   if (
     !shouldHandleConfiguredShortcut(event, {
-      getShortcut: () => finalDeps.getShortcut(),
+      getParsedShortcut: () => finalDeps.getParsedShortcut(),
       matchesContext: (nextEvent) => finalDeps.isLibraryContext(nextEvent),
     })
   ) {

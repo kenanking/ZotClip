@@ -1,5 +1,7 @@
 import type { ResolvedAttachment } from "./types";
 
+const DUPLICATE_COPY_CONCURRENCY = 4;
+
 export interface PreparedAttachmentDeps {
   createOperationTempDir(): Promise<string>;
   copyFile(sourcePath: string, destinationPath: string): Promise<void>;
@@ -29,6 +31,7 @@ export async function prepareResolvedAttachments(
 
   const seenCounts = new Map<string, number>();
   let operationTempDir: string | undefined;
+  const copyJobs: Array<() => Promise<void>> = [];
 
   const prepared: ResolvedAttachment[] = [];
   for (const file of files) {
@@ -50,7 +53,9 @@ export async function prepareResolvedAttachments(
       operationTempDir,
       buildSuffixedName(baseName, seenCount),
     );
-    await deps.copyFile(file.path, clipboardPath);
+    copyJobs.push(async () => {
+      await deps.copyFile(file.path, clipboardPath);
+    });
 
     prepared.push({
       ...file,
@@ -58,6 +63,7 @@ export async function prepareResolvedAttachments(
     });
   }
 
+  await runWithConcurrencyLimit(copyJobs, DUPLICATE_COPY_CONCURRENCY);
   return prepared;
 }
 
@@ -68,4 +74,27 @@ function buildSuffixedName(baseName: string, suffix: number): string {
   }
 
   return `${baseName.slice(0, extensionStart)}_${suffix}${baseName.slice(extensionStart)}`;
+}
+
+async function runWithConcurrencyLimit(
+  jobs: Array<() => Promise<void>>,
+  concurrency: number,
+): Promise<void> {
+  if (!jobs.length) {
+    return;
+  }
+
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(concurrency, jobs.length) },
+    async () => {
+      while (nextIndex < jobs.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        await jobs[currentIndex]();
+      }
+    },
+  );
+
+  await Promise.all(workers);
 }

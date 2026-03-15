@@ -33,6 +33,14 @@ function makeRegular(
   } as unknown as Zotero.Item;
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
+
 test("AttachmentResolver: collects all allowed children in all mode", async () => {
   const a1 = makeAttachment(11, "C:/papers/a.pdf", { parentID: 1 });
   const a2 = makeAttachment(12, "C:/books/b.epub", { parentID: 1 });
@@ -117,6 +125,75 @@ test("AttachmentResolver: resolves current reader attachment when type is allowe
   assert.equal(resolved[0].itemID, 90);
   assert.equal(resolved[0].attachmentID, 1001);
   assert.equal(resolved[0].path, "C:/papers/reader.pdf");
+});
+
+test("AttachmentResolver: resolves allowed attachment paths concurrently while preserving attachment order", async () => {
+  let started = 0;
+  const first = createDeferred<string | false>();
+  const second = createDeferred<string | false>();
+  const third = createDeferred<string | false>();
+  const waits = [first, second, third];
+
+  const attachments = waits.map((wait, index) => ({
+    id: index + 1,
+    parentID: 10,
+    isAttachment: () => true,
+    getFilePathAsync: async () => {
+      started += 1;
+      return wait.promise;
+    },
+  })) as Zotero.Item[];
+  const regular = makeRegular(10, [1, 2, 3]);
+
+  const resolvedPromise = resolveAttachmentsFromItems(
+    [regular],
+    "all",
+    ["pdf"],
+    {
+      getItemsByIDs: () => attachments,
+    },
+  );
+
+  await Promise.resolve();
+  assert.equal(started, 3);
+
+  third.resolve("C:/papers/c.pdf");
+  second.resolve("C:/papers/b.pdf");
+  first.resolve("C:/papers/a.pdf");
+
+  const resolved = await resolvedPromise;
+
+  assert.deepEqual(
+    resolved.map((entry) => entry.path),
+    ["C:/papers/a.pdf", "C:/papers/b.pdf", "C:/papers/c.pdf"],
+  );
+});
+
+test("AttachmentResolver: primary mode does not scan child attachments when the best attachment is already allowed", async () => {
+  const bestAllowed = makeAttachment(31, "C:/papers/best.pdf", {
+    parentID: 3,
+  });
+  const regular = makeRegular(3, [31], {
+    bestMany: [bestAllowed],
+    bestOne: bestAllowed,
+  });
+  let childLookupCalls = 0;
+
+  const resolved = await resolveAttachmentsFromItems(
+    [regular],
+    "primary",
+    ["pdf"],
+    {
+      getItemsByIDs: () => {
+        childLookupCalls += 1;
+        return [bestAllowed];
+      },
+    },
+  );
+
+  assert.equal(childLookupCalls, 0);
+  assert.equal(resolved.length, 1);
+  assert.equal(resolved[0].attachmentID, 31);
 });
 
 test("AttachmentResolver: rejects current reader attachment when type is not allowed", async () => {

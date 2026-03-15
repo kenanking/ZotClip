@@ -1,5 +1,6 @@
 import { config } from "../../../package.json";
 import { TOOLBAR_ICON_URL, getToolbarTooltipText } from "./copyUi";
+import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
 
 const BUTTON_ID = `${config.addonRef}-main-toolbar-button`;
 const TOOLBAR_ANCHOR_IDS = ["zotero-tb-note-add"];
@@ -21,6 +22,7 @@ export interface MainToolbarButtonAvailability {
 
 export interface MainToolbarButtonDeps {
   getLabel(): string;
+  getRefreshKey?(): string;
   getAvailability(): Promise<MainToolbarButtonAvailability>;
   onCommand(): Promise<void>;
 }
@@ -35,6 +37,7 @@ export function registerMainToolbarButton(
   deps: MainToolbarButtonDeps,
 ): MainToolbarButtonHandle {
   const button = ensureButton(doc, deps.getLabel());
+  const availabilityCoordinator = createAvailabilityCoordinator();
 
   const onCommand = (event: Event) => {
     const currentButton = event.currentTarget as ToolbarButtonElement | null;
@@ -43,6 +46,7 @@ export function registerMainToolbarButton(
     }
 
     void deps.onCommand().then(() => {
+      availabilityCoordinator.notifySelectionCopyCompleted();
       void refresh();
     });
   };
@@ -50,6 +54,18 @@ export function registerMainToolbarButton(
   button?.addEventListener("command", onCommand);
 
   async function refresh(): Promise<void> {
+    const refreshKey = deps.getRefreshKey?.();
+    if (refreshKey) {
+      return availabilityCoordinator.requestSelectionRefresh(
+        refreshKey,
+        refreshCurrentAvailability,
+      );
+    }
+
+    return refreshCurrentAvailability();
+  }
+
+  async function refreshCurrentAvailability(): Promise<void> {
     const currentButton = ensureButton(doc, deps.getLabel());
     if (!currentButton) {
       return;

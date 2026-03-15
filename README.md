@@ -20,18 +20,21 @@ not appear immediately.
 
 ## System Support
 
-| System        | Status                         | Clipboard backend                    | What to install                                 |
-| ------------- | ------------------------------ | ------------------------------------ | ----------------------------------------------- |
-| Windows 10/11 | Supported                      | Native `CF_HDROP` file copy          | Nothing extra                                   |
-| Linux X11     | Supported with system packages | GTK4 helper backend                  | `python3-gi` and `gir1.2-gtk-4.0`               |
-| Linux Wayland | Supported with system packages | `wl-copy` `text/uri-list` backend    | `wl-clipboard`                                  |
-| macOS         | Supported                      | `osascript` Finder clipboard backend | Nothing extra; `osascript` is provided by macOS |
+| System        | Status                                   | Clipboard backend                    | What to install                                 |
+| ------------- | ---------------------------------------- | ------------------------------------ | ----------------------------------------------- |
+| Windows 10/11 | Supported and validated                  | Native `CF_HDROP` file copy          | Nothing extra                                   |
+| Linux X11     | Supported and validated with packages    | GTK4 helper backend                  | `python3-gi` and `gir1.2-gtk-4.0`               |
+| Linux Wayland | Supported and validated with packages    | `wl-copy` `text/uri-list` backend    | `wl-clipboard`                                  |
+| macOS         | Implemented but not yet runtime-verified | `osascript` Finder clipboard backend | Nothing extra; `osascript` is provided by macOS |
 
 After installation, open `Edit -> Preferences -> ZotClip` and check the
 `Compatibility` section. Confirm that `Backend diagnostics` reports the
 expected backend for your system and does not show a missing dependency. If the
 compatibility check does not pass, install the required system package before
 retesting.
+
+The current runtime optimization pass is validated on Windows and Linux. macOS
+support remains implemented in code, but it has not been manually verified yet.
 
 ## Usage
 

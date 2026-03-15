@@ -9,11 +9,15 @@ import {
   detectCurrentPlatformContext,
   type PlatformContext,
 } from "./clipboard/platformDetection";
+import { getClipboardRuntimeCache } from "./clipboard/runtimeCache";
 
 const clipboardCommandRunner = createCommandRunner();
+const clipboardRuntimeCache = getClipboardRuntimeCache();
 
 export async function getClipboardDiagnostics(): Promise<ClipboardDiagnostics> {
-  const platformContext = detectCurrentPlatformContext();
+  const platformContext = clipboardRuntimeCache.getPlatformContext(() =>
+    detectCurrentPlatformContext(),
+  );
   const commands = await probeClipboardSupport(platformContext);
   const backendStatus = resolveClipboardBackendStatus(
     platformContext,
@@ -35,19 +39,28 @@ async function probeClipboardSupport(
   if (platformContext.platform === "linux") {
     if (platformContext.linuxSession === "wayland") {
       return {
-        "wl-copy": await clipboardCommandRunner.probeCommand("wl-copy"),
+        "wl-copy": await clipboardRuntimeCache.getCommandAvailability(
+          "wl-copy",
+          async () => clipboardCommandRunner.probeCommand("wl-copy"),
+        ),
       };
     }
 
     if (platformContext.linuxSession === "x11") {
       return {
-        "gtk4-helper": await probeLinuxGtkSupport(),
+        "gtk4-helper": await clipboardRuntimeCache.getLinuxGtkAvailability(
+          async () => probeLinuxGtkSupport(),
+        ),
       };
     }
 
     const [gtk4Helper, wlCopy] = await Promise.all([
-      probeLinuxGtkSupport(),
-      clipboardCommandRunner.probeCommand("wl-copy"),
+      clipboardRuntimeCache.getLinuxGtkAvailability(async () =>
+        probeLinuxGtkSupport(),
+      ),
+      clipboardRuntimeCache.getCommandAvailability("wl-copy", async () =>
+        clipboardCommandRunner.probeCommand("wl-copy"),
+      ),
     ]);
 
     return {
@@ -58,7 +71,10 @@ async function probeClipboardSupport(
 
   if (platformContext.platform === "macos") {
     return {
-      osascript: await clipboardCommandRunner.probeCommand("osascript"),
+      osascript: await clipboardRuntimeCache.getCommandAvailability(
+        "osascript",
+        async () => clipboardCommandRunner.probeCommand("osascript"),
+      ),
     };
   }
 

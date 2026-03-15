@@ -25,24 +25,26 @@ import { notifyCopyResult } from "./modules/copy/notifier";
 import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
 import { registerReaderToolbarButton } from "./modules/copy/readerToolbarButton";
 import { createReaderToolbarController } from "./modules/copy/readerToolbarController";
+import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
 import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
-import {
-  getAllowedAttachmentTypes,
-  getLibraryShortcut,
-  getMainToolbarButtonEnabled,
-  getMultiAttachmentMode,
-  getReaderShortcut,
-  getReaderToolbarButtonEnabled,
-} from "./utils/prefs";
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
 const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
+const RUNTIME_SETTINGS_PREF_KEYS = [
+  "multiAttachmentMode",
+  "libraryShortcut",
+  "readerShortcut",
+  "showMainToolbarButton",
+  "showReaderToolbarButton",
+  "enabledAttachmentTypes",
+  "customAttachmentTypes",
+] as const;
 let registeredCopyMenuIDs: string[] = [];
-let mainToolbarPrefObserver: symbol | null = null;
-let readerToolbarPrefObserver: symbol | null = null;
+let runtimeSettingsPrefObservers: symbol[] = [];
+const runtimeSettings = getRuntimeSettingsStore();
 
 export interface MainToolbarCopyButtonDeps {
   isEnabled(): boolean;
@@ -64,7 +66,7 @@ export interface MainToolbarCopyButtonDeps {
 }
 
 const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
-  isEnabled: () => getMainToolbarButtonEnabled(),
+  isEnabled: () => runtimeSettings.getSnapshot().showMainToolbarButton,
   mountButton: (doc, deps) => registerMainToolbarButton(doc, deps),
   getLabel: () => getString("mainwindow-copy-toolbar"),
   getUnavailableMessage: () =>
@@ -72,8 +74,8 @@ const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
   getSelectedItems: (win) =>
     ((win as _ZoteroTypes.MainWindow).ZoteroPane?.getSelectedItems?.() ||
       []) as Zotero.Item[],
-  getMode: () => getMultiAttachmentMode(),
-  getAllowedTypes: () => getAllowedAttachmentTypes(),
+  getMode: () => runtimeSettings.getSnapshot().multiAttachmentMode,
+  getAllowedTypes: () => runtimeSettings.getSnapshot().allowedTypes,
   resolveFromItems: (items, mode, allowedTypes) =>
     resolveAttachmentsFromItems(items, mode, allowedTypes),
   executeCopy: async () => {
@@ -98,7 +100,7 @@ export interface ReaderToolbarCopyButtonDeps {
 }
 
 const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
-  isEnabled: () => getReaderToolbarButtonEnabled(),
+  isEnabled: () => runtimeSettings.getSnapshot().showReaderToolbarButton,
   registerButton: (deps) =>
     registerReaderToolbarButton({
       ...deps,
@@ -107,7 +109,7 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
   getLabel: () => getString("mainwindow-copy-toolbar"),
   getNoActiveMessage: () => getString("mainwindow-copy-reader-no-active"),
   getUnavailableMessage: () => getString("mainwindow-copy-reader-unavailable"),
-  getAllowedTypes: () => getAllowedAttachmentTypes(),
+  getAllowedTypes: () => runtimeSettings.getSnapshot().allowedTypes,
   resolveFromReader: (itemID, allowedTypes) =>
     resolveAttachmentFromReader(itemID, allowedTypes),
   executeCopy: async (itemID) => {
@@ -121,16 +123,22 @@ const mainWindowController = createMainWindowController({
       `${addon.data.config.addonRef}-mainWindow.ftl`,
     );
   },
-  isMainToolbarButtonEnabled: () => getMainToolbarButtonEnabled(),
+  isMainToolbarButtonEnabled: () =>
+    runtimeSettings.getSnapshot().showMainToolbarButton,
   registerReaderShortcutHandler: (win) =>
-    registerReaderShortcutHandler(win, () => getReaderShortcut(), {
-      triggerCopyFromReader: async () => {
-        await executeCopyFromReader();
+    registerReaderShortcutHandler(
+      win,
+      () => runtimeSettings.getSnapshot().parsedReaderShortcut,
+      {
+        triggerCopyFromReader: async () => {
+          await executeCopyFromReader();
+        },
       },
-    }),
+    ),
   registerSelectionShortcutHandler: (win) =>
     registerSelectionShortcutHandler(win, {
-      getShortcut: () => getLibraryShortcut(),
+      getParsedShortcut: () =>
+        runtimeSettings.getSnapshot().parsedLibraryShortcut,
       triggerCopyFromSelection: async () => {
         await executeCopyFromSelection();
       },
@@ -139,7 +147,7 @@ const mainWindowController = createMainWindowController({
 });
 
 const readerToolbarController = createReaderToolbarController({
-  isEnabled: () => getReaderToolbarButtonEnabled(),
+  isEnabled: () => runtimeSettings.getSnapshot().showReaderToolbarButton,
   registerReaderToolbarCopyButton: () => registerReaderToolbarCopyButton(),
 });
 
@@ -239,6 +247,7 @@ export function registerMainToolbarCopyButton(
 
   const buttonHandle = deps.mountButton(win.document, {
     getLabel: () => deps.getLabel(),
+    getRefreshKey: () => buildSelectionRefreshKey(win, deps),
     getAvailability: async () => {
       const availability = await createSelectionAvailabilityService(
         win,
@@ -261,19 +270,19 @@ export function registerMainToolbarCopyButton(
     },
   });
 
-  const refresh = () => {
+  const requestRefresh = () => {
     void buttonHandle.refresh();
   };
 
-  win.addEventListener("focus", refresh, true);
-  win.addEventListener("pageshow", refresh, true);
-  win.document.addEventListener("focusin", refresh, true);
+  win.addEventListener("focus", requestRefresh, true);
+  win.addEventListener("mouseup", requestRefresh, true);
+  win.addEventListener("keyup", requestRefresh, true);
   void buttonHandle.refresh();
 
   return () => {
-    win.removeEventListener("focus", refresh, true);
-    win.removeEventListener("pageshow", refresh, true);
-    win.document.removeEventListener("focusin", refresh, true);
+    win.removeEventListener("focus", requestRefresh, true);
+    win.removeEventListener("mouseup", requestRefresh, true);
+    win.removeEventListener("keyup", requestRefresh, true);
     buttonHandle.dispose();
   };
 }
@@ -287,6 +296,7 @@ export function registerReaderToolbarCopyButton(
 
   return deps.registerButton({
     getLabel: () => deps.getLabel(),
+    getRefreshKey: (itemID) => buildReaderRefreshKey(itemID, deps),
     getAvailability: async (itemID) => {
       const availability = await createReaderAvailabilityService(
         itemID,
@@ -314,22 +324,28 @@ export function registerReaderToolbarCopyButton(
 }
 
 async function executeCopyFromSelection(): Promise<void> {
+  const settings = runtimeSettings.getSnapshot();
   const result = await copyFromSelection(
-    getMultiAttachmentMode(),
-    getAllowedAttachmentTypes(),
+    settings.multiAttachmentMode,
+    settings.allowedTypes,
   );
   notifyCopyResult(result);
 }
 
 async function executeCopyFromReader(): Promise<void> {
-  const result = await copyFromReader(getAllowedAttachmentTypes());
+  const result = await copyFromReader(
+    runtimeSettings.getSnapshot().allowedTypes,
+  );
   notifyCopyResult(result);
 }
 
 async function executeCopyFromReaderItem(
   itemID: number | undefined,
 ): Promise<void> {
-  const result = await copyFromReaderItem(itemID, getAllowedAttachmentTypes());
+  const result = await copyFromReaderItem(
+    itemID,
+    runtimeSettings.getSnapshot().allowedTypes,
+  );
   notifyCopyResult(result);
 }
 
@@ -401,32 +417,24 @@ function syncReaderToolbarButton(): void {
 }
 
 function registerToolbarPreferenceObservers(): void {
-  mainToolbarPrefObserver = Zotero.Prefs.registerObserver(
-    `${config.prefsPrefix}.showMainToolbarButton`,
-    () => {
-      syncMainToolbarButtons();
-    },
-    true,
-  );
-  readerToolbarPrefObserver = Zotero.Prefs.registerObserver(
-    `${config.prefsPrefix}.showReaderToolbarButton`,
-    () => {
-      syncReaderToolbarButton();
-    },
-    true,
+  runtimeSettingsPrefObservers = RUNTIME_SETTINGS_PREF_KEYS.map((key) =>
+    Zotero.Prefs.registerObserver(
+      `${config.prefsPrefix}.${key}`,
+      () => {
+        runtimeSettings.invalidate();
+        syncMainToolbarButtons();
+        syncReaderToolbarButton();
+      },
+      true,
+    ),
   );
 }
 
 function unregisterToolbarPreferenceObservers(): void {
-  if (mainToolbarPrefObserver) {
-    Zotero.Prefs.unregisterObserver(mainToolbarPrefObserver);
-    mainToolbarPrefObserver = null;
+  for (const observer of runtimeSettingsPrefObservers) {
+    Zotero.Prefs.unregisterObserver(observer);
   }
-
-  if (readerToolbarPrefObserver) {
-    Zotero.Prefs.unregisterObserver(readerToolbarPrefObserver);
-    readerToolbarPrefObserver = null;
-  }
+  runtimeSettingsPrefObservers = [];
 }
 
 export default {
@@ -439,3 +447,22 @@ export default {
   onShortcuts,
   onDialogEvents,
 };
+
+function buildSelectionRefreshKey(
+  win: Window,
+  deps: MainToolbarCopyButtonDeps,
+): string {
+  const itemIDs = deps
+    .getSelectedItems(win)
+    .map((item) => item.id)
+    .join(",");
+
+  return [deps.getMode(), deps.getAllowedTypes().join(","), itemIDs].join("|");
+}
+
+function buildReaderRefreshKey(
+  itemID: number | undefined,
+  deps: ReaderToolbarCopyButtonDeps,
+): string {
+  return [itemID || "none", deps.getAllowedTypes().join(",")].join("|");
+}

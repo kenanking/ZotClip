@@ -1,7 +1,7 @@
-import { matchesShortcut, parseShortcut } from "./shortcuts";
+import { matchesShortcut, type ParsedShortcut } from "./shortcuts";
 
 export interface ConfiguredShortcutGuardDeps {
-  getShortcut(): string;
+  getParsedShortcut(): ParsedShortcut | undefined;
   matchesContext(event: KeyboardEvent): boolean;
 }
 
@@ -17,5 +17,5 @@ export function shouldHandleConfiguredShortcut(
     return false;
   }
 
-  return matchesShortcut(parseShortcut(deps.getShortcut()), event);
+  return matchesShortcut(deps.getParsedShortcut(), event);
 }

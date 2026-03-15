@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { createClipboardRuntimeCache } from "../../src/modules/copy/clipboard/runtimeCache";
 import { writeClipboard } from "../../src/modules/copy/clipboardWriter";
 
 test("ClipboardWriter returns backend-unavailable when there are no files to copy", async () => {
   const result = await writeClipboard([], "library", {
     detectPlatformContext: () => ({ platform: "windows" }),
+    runtimeCache: createClipboardRuntimeCache(),
     writePathText: () => false,
   });
 
@@ -30,6 +32,7 @@ test("ClipboardWriter uses the Windows-native backend before other backends", as
     "library",
     {
       detectPlatformContext: () => ({ platform: "windows" }),
+      runtimeCache: createClipboardRuntimeCache(),
       writeWindowsFileDrop: async () => {
         windowsCalled = true;
         return true;
@@ -60,6 +63,7 @@ test("ClipboardWriter writes prepared clipboard paths when duplicate filenames e
     "library",
     {
       detectPlatformContext: () => ({ platform: "windows" }),
+      runtimeCache: createClipboardRuntimeCache(),
       prepareResolvedAttachments: async () => [
         {
           attachmentID: 1,
@@ -98,6 +102,7 @@ test("ClipboardWriter falls back to path-text when non-Windows backends fail", a
     "reader",
     {
       detectPlatformContext: () => ({ platform: "linux", linuxSession: "x11" }),
+      runtimeCache: createClipboardRuntimeCache(),
       runCommand: async () => ({
         ok: false,
         exitCode: 1,
@@ -140,6 +145,7 @@ test("ClipboardWriter prefers wl-copy on Wayland before path-text fallback", asy
         platform: "linux",
         linuxSession: "wayland",
       }),
+      runtimeCache: createClipboardRuntimeCache(),
       runCommand: async (call) => {
         commandCalls.push(call);
         return {
@@ -194,6 +200,7 @@ test("ClipboardWriter prefers the Linux GTK4 helper backend on X11", async () =>
         platform: "linux",
         linuxSession: "x11",
       }),
+      runtimeCache: createClipboardRuntimeCache(),
       runCommand: async (call) => {
         probeCalls.push(call);
         return {
@@ -231,6 +238,91 @@ test("ClipboardWriter prefers the Linux GTK4 helper backend on X11", async () =>
   assert.equal(result.outcome, "copied-files");
 });
 
+test("ClipboardWriter reuses wl-copy availability across repeated Wayland writes", async () => {
+  let probeCalls = 0;
+
+  const deps = {
+    detectPlatformContext: () => ({
+      platform: "linux" as const,
+      linuxSession: "wayland" as const,
+    }),
+    runtimeCache: createClipboardRuntimeCache(),
+    probeCommand: async (name: string) => {
+      assert.equal(name, "wl-copy");
+      probeCalls += 1;
+      return true;
+    },
+    runCommand: async () => ({
+      ok: true,
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    }),
+    startCommand: async () => ({
+      ok: true,
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    }),
+    writePathText: () => false,
+  };
+
+  await writeClipboard(
+    [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
+    "library",
+    deps,
+  );
+  await writeClipboard(
+    [{ attachmentID: 2, itemID: 1, path: "/home/user/b.pdf" }],
+    "library",
+    deps,
+  );
+
+  assert.equal(probeCalls, 1);
+});
+
+test("ClipboardWriter reuses GTK helper availability across repeated X11 writes", async () => {
+  let gtkProbeCalls = 0;
+
+  const deps = {
+    detectPlatformContext: () => ({
+      platform: "linux" as const,
+      linuxSession: "x11" as const,
+    }),
+    runtimeCache: createClipboardRuntimeCache(),
+    runCommand: async () => {
+      gtkProbeCalls += 1;
+      return {
+        ok: true,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+      };
+    },
+    startCommand: async () => ({
+      ok: true,
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    }),
+    probeCommand: async () => false,
+    writePathText: () => false,
+  };
+
+  await writeClipboard(
+    [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
+    "library",
+    deps,
+  );
+  await writeClipboard(
+    [{ attachmentID: 2, itemID: 1, path: "/home/user/b.pdf" }],
+    "library",
+    deps,
+  );
+
+  assert.equal(gtkProbeCalls, 1);
+});
+
 test("ClipboardWriter prefers the macOS command backend before path-text fallback", async () => {
   let fallbackCalled = false;
   const commands: any[] = [];
@@ -240,6 +332,7 @@ test("ClipboardWriter prefers the macOS command backend before path-text fallbac
     "reader",
     {
       detectPlatformContext: () => ({ platform: "macos" }),
+      runtimeCache: createClipboardRuntimeCache(),
       probeCommand: async (name) => name === "osascript",
       runCommand: async (call) => {
         commands.push(call);

@@ -69,18 +69,30 @@ export function createCommandRunner(
   const isExecutablePath = deps.isExecutablePath || defaultIsExecutablePath;
   const runProcess = deps.runProcess || defaultRunProcess;
   const startProcess = deps.startProcess || defaultStartProcess;
+  const resolvedCommandPathCache = new Map<string, string | undefined>();
+
+  const getResolvedCommandPath = (name: string): string | undefined => {
+    if (!resolvedCommandPathCache.has(name)) {
+      resolvedCommandPathCache.set(
+        name,
+        resolveCommandPath(name, getEnv, isExecutablePath),
+      );
+    }
+
+    return resolvedCommandPathCache.get(name);
+  };
 
   return {
     async probeCommand(name: string): Promise<boolean> {
       try {
-        return resolveCommandPath(name, getEnv, isExecutablePath) !== undefined;
+        return getResolvedCommandPath(name) !== undefined;
       } catch {
         return false;
       }
     },
     async runCommand(call: CommandCall): Promise<CommandResult> {
       try {
-        const resolvedCall = resolveCommandCall(call, getEnv, isExecutablePath);
+        const resolvedCall = resolveCommandCall(call, getResolvedCommandPath);
         const result = await runProcess(resolvedCall);
         return buildCommandResult(
           result.exitCode === 0,
@@ -97,7 +109,7 @@ export function createCommandRunner(
       options: StartCommandOptions = {},
     ): Promise<CommandResult> {
       try {
-        const resolvedCall = resolveCommandCall(call, getEnv, isExecutablePath);
+        const resolvedCall = resolveCommandCall(call, getResolvedCommandPath);
         const process = await startProcess(resolvedCall);
         return await startRunningProcess(process, resolvedCall, options);
       } catch (error) {
@@ -109,14 +121,9 @@ export function createCommandRunner(
 
 function resolveCommandCall(
   call: CommandCall,
-  getEnv: (name: string) => string | undefined,
-  isExecutablePath: (path: string) => boolean,
+  resolveCommandPathCached: (name: string) => string | undefined,
 ): CommandCall {
-  const resolvedCommand = resolveCommandPath(
-    call.command,
-    getEnv,
-    isExecutablePath,
-  );
+  const resolvedCommand = resolveCommandPathCached(call.command);
   if (!resolvedCommand) {
     throw new Error(`Command not found: ${call.command}`);
   }
