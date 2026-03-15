@@ -1,4 +1,5 @@
 import { copyFromReader } from "./copyCommands";
+import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 import { isReaderTabSelected } from "./interaction/readerContext";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import type { ParsedShortcut } from "./shortcuts";
@@ -8,6 +9,7 @@ export interface ReaderHookDeps {
   getParsedShortcut(): ParsedShortcut | undefined;
   isReaderContext(event: KeyboardEvent): boolean;
   triggerCopyFromReader(): Promise<void>;
+  getActionState?(): Promise<CopyActionState>;
 }
 
 const DEFAULT_DEPS: ReaderHookDeps = {
@@ -44,6 +46,17 @@ export async function handleReaderCopyShortcut(
   }
 
   event.preventDefault();
+
+  if (finalDeps.getActionState) {
+    const state = await finalDeps.getActionState();
+    if (!state.primary.canExecute) {
+      return false;
+    }
+
+    await state.primary.run();
+    return true;
+  }
+
   await finalDeps.triggerCopyFromReader();
   return true;
 }

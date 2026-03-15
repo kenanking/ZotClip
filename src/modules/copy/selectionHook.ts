@@ -1,4 +1,5 @@
 import { copyFromSelection } from "./copyCommands";
+import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 import { isReaderTabSelected } from "./interaction/readerContext";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import { parseShortcut, type ParsedShortcut } from "./shortcuts";
@@ -10,6 +11,7 @@ export interface SelectionHookDeps {
   hasSelectedItems(): boolean;
   isEditableTarget(event: KeyboardEvent): boolean;
   triggerCopyFromSelection(): Promise<void>;
+  getActionState?(): Promise<CopyActionState>;
 }
 
 const DEFAULT_SELECTION_SHORTCUT = parseShortcut("Ctrl+C");
@@ -57,6 +59,17 @@ export async function handleSelectionCopyShortcut(
   }
 
   event.preventDefault();
+
+  if (finalDeps.getActionState) {
+    const state = await finalDeps.getActionState();
+    if (!state.primary.canExecute) {
+      return false;
+    }
+
+    await state.primary.run();
+    return true;
+  }
+
   await finalDeps.triggerCopyFromSelection();
   return true;
 }

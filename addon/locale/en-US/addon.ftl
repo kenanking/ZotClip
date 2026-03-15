@@ -5,6 +5,7 @@ mainwindow-copy-reader-no-active = No active reader attachment
 mainwindow-copy-reader-unavailable = No eligible reader attachment
 menu-copy-selected = Copy Attachment File(s)
 menu-copy-reader = Copy Current Reader Attachment
+menu-copy-reader-path = Copy Current Reader Path
 menu-copy-reader-shortcut = Copy Current Reader Attachment (Ctrl+Shift+C)
 notify-copy-failed = Copy failed
 copy-notify-files = Copied { $count } attachment file(s) to clipboard.

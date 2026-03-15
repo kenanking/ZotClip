@@ -5,6 +5,7 @@ mainwindow-copy-reader-no-active = 当前没有活动的阅读器附件
 mainwindow-copy-reader-unavailable = 当前附件不可复制
 menu-copy-selected = 复制附件文件
 menu-copy-reader = 复制当前阅读器附件
+menu-copy-reader-path = 复制当前阅读器路径
 menu-copy-reader-shortcut = 复制当前阅读器附件（Ctrl+Shift+C）
 notify-copy-failed = 复制失败
 copy-notify-files = 已复制 { $count } 个附件文件到剪贴板。

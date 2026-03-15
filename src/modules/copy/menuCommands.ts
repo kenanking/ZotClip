@@ -1,12 +1,18 @@
-type CopyMenuLabelKey = "menu-copy-selected" | "menu-copy-reader";
+import type { CopyActionState } from "./interaction/actions/copyActionTypes";
+
+type CopyMenuLabelKey =
+  | "menu-copy-selected"
+  | "menu-copy-reader"
+  | "menu-copy-reader-path";
 
 export interface CopyMenuRegistrationDeps {
   addonRef: string;
   pluginID: string;
   menuIcon: string;
   getLabel(key: CopyMenuLabelKey): string;
-  onCopySelection(): Promise<void>;
-  onCopyReader(): Promise<void>;
+  onCopySelection?(): Promise<void>;
+  onCopyReader?(): Promise<void>;
+  getActionState?(): Promise<CopyActionState>;
   registerMenu?(
     options: _ZoteroTypes.MenuManager.AllMenuOptions,
   ): string | false;
@@ -44,7 +50,7 @@ export function unregisterCopyMenuCommands(
 function buildCopyMenuOptions(
   deps: CopyMenuRegistrationDeps,
 ): _ZoteroTypes.MenuManager.AllMenuOptions[] {
-  return [
+  const options: _ZoteroTypes.MenuManager.AllMenuOptions[] = [
     {
       menuID: `${deps.addonRef}-copy-selected`,
       pluginID: deps.pluginID,
@@ -53,7 +59,7 @@ function buildCopyMenuOptions(
         createMenuItem(
           deps.getLabel("menu-copy-selected"),
           deps.menuIcon,
-          deps.onCopySelection,
+          deps.onCopySelection || (async () => {}),
         ),
       ],
     },
@@ -65,11 +71,36 @@ function buildCopyMenuOptions(
         createMenuItem(
           deps.getLabel("menu-copy-reader"),
           deps.menuIcon,
-          deps.onCopyReader,
+          deps.getActionState
+            ? async () => {
+                const state = await deps.getActionState?.();
+                await state?.primary.run();
+              }
+            : deps.onCopyReader || (async () => {}),
         ),
       ],
     },
   ];
+
+  if (deps.getActionState) {
+    options.push({
+      menuID: `${deps.addonRef}-copy-reader-path`,
+      pluginID: deps.pluginID,
+      target: "main/menubar/tools",
+      menus: [
+        createMenuItem(
+          deps.getLabel("menu-copy-reader-path"),
+          deps.menuIcon,
+          async () => {
+            const state = await deps.getActionState?.();
+            await state?.secondary?.run();
+          },
+        ),
+      ],
+    });
+  }
+
+  return options;
 }
 
 function createMenuItem(

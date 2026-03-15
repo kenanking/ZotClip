@@ -72,6 +72,81 @@ test("menu commands unregister every registered menu id", () => {
   ]);
 });
 
+test("menu commands expose copy file and copy path entries from reader action state", async () => {
+  const registrations: Array<_ZoteroTypes.MenuManager.AllMenuOptions> = [];
+  let primaryCalls = 0;
+  let secondaryCalls = 0;
+
+  const registeredMenuIDs = registerCopyMenuCommands({
+    addonRef: "zotclip",
+    pluginID: "zotclip@cvrsg.dev",
+    menuIcon: "chrome://zotclip/content/icons/favicon.svg",
+    getLabel: (key) => {
+      switch (key) {
+        case "menu-copy-selected":
+          return "Copy Attachment File(s)";
+        case "menu-copy-reader":
+          return "Copy Current Reader Attachment";
+        default:
+          return "Copy Current Reader Path";
+      }
+    },
+    getActionState: async () => ({
+      source: "reader",
+      refreshKey: "reader|2048",
+      primary: {
+        kind: "copy-files",
+        canExecute: true,
+        run: async () => {
+          primaryCalls += 1;
+          return {
+            ok: true,
+            format: "file-object",
+            count: 1,
+            outcome: "copied-files",
+          };
+        },
+      },
+      secondary: {
+        kind: "copy-path",
+        canExecute: true,
+        run: async () => {
+          secondaryCalls += 1;
+          return {
+            ok: true,
+            format: "path-text",
+            count: 1,
+            outcome: "copied-path-text-explicit",
+            messageKey: "copy-path-text-explicit",
+          };
+        },
+      },
+    }),
+    registerMenu: (options) => {
+      registrations.push(options);
+      return options.menuID;
+    },
+  });
+
+  assert.deepEqual(registeredMenuIDs, [
+    "zotclip-copy-selected",
+    "zotclip-copy-reader",
+    "zotclip-copy-reader-path",
+  ]);
+
+  await registrations[1].menus[0].onCommand?.(
+    {} as Event,
+    createMenuContext() as any,
+  );
+  await registrations[2].menus[0].onCommand?.(
+    {} as Event,
+    createMenuContext() as any,
+  );
+
+  assert.equal(primaryCalls, 1);
+  assert.equal(secondaryCalls, 1);
+});
+
 function createMenuContext() {
   const menuElem = {
     attributes: new Map<string, string>(),

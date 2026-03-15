@@ -226,3 +226,36 @@ test("keyboard shortcuts: handlers can reuse one parsed shortcut across repeated
 
   assert.equal(parsedShortcutCalls, 2);
 });
+
+test("keyboard shortcuts: library copy can execute the primary action from action state", async () => {
+  const mock = makeKeyEvent({ ctrl: true, shift: true, key: "c" });
+  let runCalls = 0;
+
+  const intercepted = await handleSelectionCopyShortcut(mock.event, {
+    getParsedShortcut: () => CTRL_SHIFT_C,
+    isLibraryContext: () => true,
+    hasSelectedItems: () => true,
+    isEditableTarget: () => false,
+    getActionState: async () => ({
+      source: "library",
+      refreshKey: "library|11",
+      primary: {
+        kind: "copy-files",
+        canExecute: true,
+        run: async () => {
+          runCalls += 1;
+          return {
+            ok: true,
+            format: "file-object",
+            count: 1,
+            outcome: "copied-files",
+          };
+        },
+      },
+    }),
+  });
+
+  assert.equal(intercepted, true);
+  assert.equal(runCalls, 1);
+  assert.equal(mock.wasPrevented(), true);
+});
