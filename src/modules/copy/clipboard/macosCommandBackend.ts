@@ -12,11 +12,22 @@ export interface MacosCommandBackendDeps {
 const OSASCRIPT_PATH = "/usr/bin/osascript";
 
 export function buildMacClipboardScript(paths: string[]): string {
-  const items = paths
-    .map((path) => `POSIX file "${escapeAppleScriptString(path)}"`)
-    .join(", ");
+  const addUrlLines = paths.map(
+    (path) =>
+      `(fileURLs's addObject:(current application's NSURL's fileURLWithPath:"${escapeAppleScriptString(path)}"))`,
+  );
 
-  return `tell application "Finder" to set the clipboard to {${items}}`;
+  return [
+    'use framework "AppKit"',
+    'use framework "Foundation"',
+    "",
+    "set pasteboard to current application's NSPasteboard's generalPasteboard()",
+    "pasteboard's clearContents()",
+    "set fileURLs to current application's NSMutableArray's array()",
+    ...addUrlLines,
+    "set didWrite to (pasteboard's writeObjects:fileURLs) as boolean",
+    'if not didWrite then error "Failed to write file URLs to NSPasteboard"',
+  ].join("\n");
 }
 
 export function createMacosCommandBackend(

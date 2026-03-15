@@ -89,3 +89,42 @@ test("unknown Linux session keeps a Linux fallback reason only when no file back
     lastFallbackMessageKey: "copy-linux-gtk4-missing",
   });
 });
+
+test("macOS reports the native backend when osascript is available", async () => {
+  const resolveClipboardBackendStatus = await loadResolver();
+
+  assert.equal(typeof resolveClipboardBackendStatus, "function");
+
+  const result = resolveClipboardBackendStatus!(
+    {
+      platform: "macos",
+    },
+    {
+      osascript: true,
+    },
+  );
+
+  assert.deepEqual(result, {
+    activeBackend: BACKEND_IDS.MACOS_OSASCRIPT,
+  });
+});
+
+test("macOS reports the path-text fallback reason only when osascript is unavailable", async () => {
+  const resolveClipboardBackendStatus = await loadResolver();
+
+  assert.equal(typeof resolveClipboardBackendStatus, "function");
+
+  const result = resolveClipboardBackendStatus!(
+    {
+      platform: "macos",
+    },
+    {
+      osascript: false,
+    },
+  );
+
+  assert.deepEqual(result, {
+    activeBackend: BACKEND_IDS.PATH_TEXT,
+    lastFallbackMessageKey: "copy-macos-osascript-missing",
+  });
+});
