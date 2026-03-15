@@ -16,6 +16,7 @@ copy-no-files = No files to copy.
 copy-no-file-uris = No file URIs to copy.
 copy-reader-no-active = No active reader attachment.
 copy-clipboard-write-failed = Clipboard write failed.
+copy-path-text-explicit = Copied { $count } attachment path(s) to clipboard.
 copy-path-text-fallback = Attachment file copy failed. Copied { $count } attachment path(s) instead.
 copy-linux-gtk4-missing = Install python3-gi and gir1.2-gtk-4.0 to enable Linux file copy.
 copy-linux-wl-copy-missing = Install wl-clipboard to enable file copy on Wayland.

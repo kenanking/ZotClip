@@ -1,26 +1,20 @@
 import { config } from "../../../package.json";
+import type { CopyMessageRenderDeps } from "./copyMessages";
+import { formatActionExecutionMessage } from "./interaction/presentation/copyActionMessages";
 import type { ClipboardResult } from "./types";
-import {
-  formatCopyResultMessage,
-  type CopyMessageRenderDeps,
-} from "./copyMessages";
 
 export function formatCopyMessage(
   result: ClipboardResult,
   deps: CopyMessageRenderDeps = {},
 ): string {
-  return formatCopyResultMessage(result, deps);
+  return formatActionExecutionMessage(result, deps);
 }
 
 export function getCopyNotificationOptions(result: ClipboardResult): {
   closeTime: number;
 } {
   return {
-    closeTime:
-      result.outcome === "copied-path-text-fallback" ||
-      (result.ok && result.format === "path-text")
-        ? 7000
-        : 5000,
+    closeTime: result.outcome === "copied-path-text-fallback" ? 7000 : 5000,
   };
 }
 

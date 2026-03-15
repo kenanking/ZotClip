@@ -31,3 +31,18 @@ test("copy notifier uses the default duration for regular file-copy success", ()
     },
   );
 });
+
+test("copy notifier uses the default duration for explicit path copy", () => {
+  assert.deepEqual(
+    getCopyNotificationOptions({
+      ok: true,
+      format: "path-text",
+      count: 1,
+      outcome: "copied-path-text-explicit",
+      messageKey: "copy-path-text-explicit",
+    }),
+    {
+      closeTime: 5000,
+    },
+  );
+});

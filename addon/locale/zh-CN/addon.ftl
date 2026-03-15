@@ -16,6 +16,7 @@ copy-no-files = 没有可复制的文件。
 copy-no-file-uris = 没有可复制的文件 URI。
 copy-reader-no-active = 当前没有活动的阅读器附件。
 copy-clipboard-write-failed = 写入剪贴板失败。
+copy-path-text-explicit = 已将 { $count } 个附件路径复制到剪贴板。
 copy-path-text-fallback = 附件文件复制失败，已改为复制 { $count } 个附件路径。
 copy-linux-gtk4-missing = 要在 Linux 中启用文件复制，请安装 python3-gi 和 gir1.2-gtk-4.0。
 copy-linux-wl-copy-missing = 要在 Wayland 中启用文件复制，请安装 wl-clipboard。
