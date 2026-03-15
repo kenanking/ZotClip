@@ -41,7 +41,7 @@
     "prettier": "3.8.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "zotero-plugin-scaffold": "0.8.4",
+    "zotero-plugin-scaffold": "0.8.3",
     "zotero-types": "4.1.2"
   },
   "prettier": {
