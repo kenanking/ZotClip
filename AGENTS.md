@@ -58,6 +58,8 @@ $env:ZOTERO_PLUGIN_ZOTERO_BIN_PATH='C:\Program Files\Zotero\zotero.exe'
   `npm run lint:check`.
 - Bump the version with `npm version patch`, `npm version minor`, or
   `npm version major`. This creates a version commit and a matching Git tag.
+- Release version bumps must use the commit message format
+  `chore(release): publish vX.Y.Z`. Prefer `npm version ... -m "chore(release): publish v%s"` so the commit message and tag stay aligned.
 - Push commits and tags with `git push origin main --follow-tags`.
 - The GitHub Actions release workflow then runs `npm run build` and
   `npm run release`.
