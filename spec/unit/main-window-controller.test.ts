@@ -18,40 +18,16 @@ function createWindowStub(): _ZoteroTypes.MainWindow {
   } as unknown as _ZoteroTypes.MainWindow;
 }
 
-test("main window controller registers per-window handlers and disposes only the target window", () => {
+test("main window controller registers toolbar state per window and disposes only the target window", () => {
   const firstWindow = createWindowStub();
   const secondWindow = createWindowStub();
-  let readerHookRegistrations = 0;
-  let selectionHookRegistrations = 0;
   let toolbarRegistrations = 0;
   let disposedFirst = 0;
   let disposedSecond = 0;
 
   const controller = createMainWindowController({
     insertLocale: () => {},
-    getReaderShortcut: () => "Ctrl+Shift+C",
-    getLibraryShortcut: () => "Ctrl+C",
     isMainToolbarButtonEnabled: () => true,
-    registerReaderShortcutHandler: (win) => {
-      readerHookRegistrations += 1;
-      return () => {
-        if (win === firstWindow) {
-          disposedFirst += 1;
-        } else {
-          disposedSecond += 1;
-        }
-      };
-    },
-    registerSelectionShortcutHandler: (win) => {
-      selectionHookRegistrations += 1;
-      return () => {
-        if (win === firstWindow) {
-          disposedFirst += 1;
-        } else {
-          disposedSecond += 1;
-        }
-      };
-    },
     registerMainToolbarCopyButton: (win) => {
       toolbarRegistrations += 1;
       return () => {
@@ -68,10 +44,8 @@ test("main window controller registers per-window handlers and disposes only the
   controller.load(secondWindow);
   controller.unload(firstWindow);
 
-  assert.equal(readerHookRegistrations, 2);
-  assert.equal(selectionHookRegistrations, 2);
   assert.equal(toolbarRegistrations, 2);
-  assert.equal(disposedFirst, 3);
+  assert.equal(disposedFirst, 1);
   assert.equal(disposedSecond, 0);
 });
 

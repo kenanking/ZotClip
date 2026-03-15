@@ -20,13 +20,14 @@ import {
   registerCopyMenuCommands,
   unregisterCopyMenuCommands,
 } from "./modules/copy/menuCommands";
+import { createKeyboardRegistry } from "./modules/copy/interaction/keyboardRegistry";
 import { createMainWindowController } from "./modules/copy/mainWindowController";
 import { notifyCopyResult } from "./modules/copy/notifier";
-import { registerReaderShortcutHandler } from "./modules/copy/readerHook";
+import { handleReaderCopyShortcut } from "./modules/copy/readerHook";
 import { registerReaderToolbarButton } from "./modules/copy/readerToolbarButton";
 import { createReaderToolbarController } from "./modules/copy/readerToolbarController";
 import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
-import { registerSelectionShortcutHandler } from "./modules/copy/selectionHook";
+import { handleSelectionCopyShortcut } from "./modules/copy/selectionHook";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
@@ -44,6 +45,7 @@ const RUNTIME_SETTINGS_PREF_KEYS = [
 ] as const;
 let registeredCopyMenuIDs: string[] = [];
 let runtimeSettingsPrefObservers: symbol[] = [];
+let keyboardRegistryHandle: { dispose(): void } | undefined;
 const runtimeSettings = getRuntimeSettingsStore();
 
 export interface MainToolbarCopyButtonDeps {
@@ -125,24 +127,6 @@ const mainWindowController = createMainWindowController({
   },
   isMainToolbarButtonEnabled: () =>
     runtimeSettings.getSnapshot().showMainToolbarButton,
-  registerReaderShortcutHandler: (win) =>
-    registerReaderShortcutHandler(
-      win,
-      () => runtimeSettings.getSnapshot().parsedReaderShortcut,
-      {
-        triggerCopyFromReader: async () => {
-          await executeCopyFromReader();
-        },
-      },
-    ),
-  registerSelectionShortcutHandler: (win) =>
-    registerSelectionShortcutHandler(win, {
-      getParsedShortcut: () =>
-        runtimeSettings.getSnapshot().parsedLibraryShortcut,
-      triggerCopyFromSelection: async () => {
-        await executeCopyFromSelection();
-      },
-    }),
   registerMainToolbarCopyButton: (win) => registerMainToolbarCopyButton(win),
 });
 
@@ -159,6 +143,25 @@ async function onStartup() {
   ]);
 
   addon.data.ztoolkit = addon.data.ztoolkit || createZToolkit();
+  keyboardRegistryHandle = createKeyboardRegistry({
+    register: (callback) => ztoolkit.Keyboard.register(callback),
+    unregister: (callback) => ztoolkit.Keyboard.unregister(callback),
+    onLibraryShortcut: (event) =>
+      handleSelectionCopyShortcut(event, {
+        getParsedShortcut: () =>
+          runtimeSettings.getSnapshot().parsedLibraryShortcut,
+        triggerCopyFromSelection: async () => {
+          await executeCopyFromSelection();
+        },
+      }),
+    onReaderShortcut: (event) =>
+      handleReaderCopyShortcut(event, {
+        getParsedShortcut: () => runtimeSettings.getSnapshot().parsedReaderShortcut,
+        triggerCopyFromReader: async () => {
+          await executeCopyFromReader();
+        },
+      }),
+  }).start();
   initLocale();
   try {
     await initToolbarIcon();
@@ -200,6 +203,8 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 
 function onShutdown(): void {
   unregisterToolbarPreferenceObservers();
+  keyboardRegistryHandle?.dispose();
+  keyboardRegistryHandle = undefined;
   readerToolbarController.dispose();
   mainWindowController.disposeAll(Zotero.getMainWindows());
   unregisterCopyMenuCommands(registeredCopyMenuIDs);
