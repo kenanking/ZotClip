@@ -4,6 +4,10 @@
 
 # ZotClip
 
+[![zotero target version](https://img.shields.io/badge/Zotero-8%20%7C%209-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
+[![Latest release](https://img.shields.io/github/v/release/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/releases)
+[![License](https://img.shields.io/github/license/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/blob/main/LICENSE)
+
 ZotClip is a plugin for Zotero 8 and 9 that copies attachment files from the
 library view or reader into the system clipboard. When the target app accepts
 file pastes, attachments are pasted as files. When file-oriented clipboard
