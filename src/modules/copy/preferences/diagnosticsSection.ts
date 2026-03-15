@@ -56,7 +56,7 @@ function replaceChildren(
   container: HTMLElement,
   children: HTMLElement[],
 ): void {
-  if ("replaceChildren" in container) {
+  if (typeof container.replaceChildren === "function") {
     container.replaceChildren(...children);
     return;
   }

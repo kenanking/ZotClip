@@ -120,13 +120,9 @@ export function mountReaderToolbarButton(
   }
 
   async function refreshCurrentAvailability(): Promise<void> {
-    const currentButton = ensureButton(
-      event.doc,
-      deps,
-      (...nodes) => {
-        event.append(...nodes);
-      },
-    );
+    const currentButton = ensureButton(event.doc, deps, (...nodes) => {
+      event.append(...nodes);
+    });
     if (!currentButton) {
       return;
     }
@@ -241,14 +237,10 @@ function ensureButton(
 function createButton(
   doc: Document,
   label: string,
-  createSharedButton:
-    | ReaderToolbarButtonDeps["createButton"]
-    | undefined,
+  createSharedButton: ReaderToolbarButtonDeps["createButton"] | undefined,
 ): HTMLButtonElement {
   const iconDataURL = getToolbarIconDataURL();
-  return (
-    createSharedButton || createReaderToolbarButtonElement
-  )({
+  return (createSharedButton || createReaderToolbarButtonElement)({
     doc,
     id: BUTTON_ID,
     className: "toolbar-button zotclip-reader-toolbar-button",

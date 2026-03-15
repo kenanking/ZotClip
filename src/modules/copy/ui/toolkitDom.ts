@@ -15,9 +15,11 @@ export function createToolbarButtonElement(input: {
   iconURL: string;
 }): XULToolbarButton {
   const xulDoc = input.doc as XULDocumentLike;
-  const button = (xulDoc.createXULElement
-    ? xulDoc.createXULElement("toolbarbutton")
-    : input.doc.createElement("toolbarbutton")) as XULToolbarButton;
+  const button = (
+    xulDoc.createXULElement
+      ? xulDoc.createXULElement("toolbarbutton")
+      : input.doc.createElement("toolbarbutton")
+  ) as XULToolbarButton;
   button.id = input.id;
   button.className = input.className;
   button.setAttribute("tooltiptext", input.title);

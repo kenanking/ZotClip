@@ -258,8 +258,14 @@ test("diagnostics section renders one inline row per diagnostics line", async ()
   });
 
   assert.equal(doc.list.children.length, 2);
-  assert.equal(doc.list.children[0].textContent, "copy-diagnostics-platform-linux");
-  assert.equal(doc.list.children[1].textContent, "copy-diagnostics-active-backend");
+  assert.equal(
+    doc.list.children[0].textContent,
+    "copy-diagnostics-platform-linux",
+  );
+  assert.equal(
+    doc.list.children[1].textContent,
+    "copy-diagnostics-active-backend",
+  );
 });
 
 test("preferences markup uses compact inline rows for targeted settings fields", () => {

@@ -3,10 +3,7 @@ import { registerAttachmentTypesSection } from "./attachmentTypesSection";
 import { registerDiagnosticsSection } from "./diagnosticsSection";
 import { registerShortcutsSection } from "./shortcutsSection";
 import { registerToolbarButtonsSection } from "./toolbarButtonsSection";
-import {
-  composeDisposables,
-  createNoopHandle,
-} from "../ui/disposables";
+import { composeDisposables, createNoopHandle } from "../ui/disposables";
 
 interface MenuitemLike {
   value?: string;

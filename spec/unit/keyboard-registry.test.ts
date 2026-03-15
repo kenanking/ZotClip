@@ -28,10 +28,7 @@ test("keyboard registry registers one toolkit callback and disposes it", () => {
 test("keyboard registry only routes keydown events", async () => {
   const calls: string[] = [];
   let registeredCallback:
-    | ((
-        event: KeyboardEvent,
-        options: { type: "keydown" | "keyup" },
-      ) => void)
+    | ((event: KeyboardEvent, options: { type: "keydown" | "keyup" }) => void)
     | undefined;
 
   const registry = createKeyboardRegistry({
