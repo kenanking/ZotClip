@@ -6,6 +6,7 @@ import {
   copyFromReader,
   copyFromSelection,
 } from "../../src/modules/copy/copyCommands";
+import { copyFromReaderPath } from "../../src/modules/copy/copyPathCommands";
 
 const sampleFiles = [
   {
@@ -150,5 +151,27 @@ test("copyFromReaderItem returns a failure result when no reader item id is prov
     format: "none",
     count: 0,
     messageKey: "copy-reader-no-active",
+  });
+});
+
+test("copyFromReaderPath returns an explicit path-copy result instead of fallback wording", async () => {
+  const result = await copyFromReaderPath(["pdf"], {
+    getCurrentReaderItemID: () => 2048,
+    resolveFromReader: async () => [
+      {
+        itemID: 2048,
+        attachmentID: 99,
+        path: "/tmp/file.pdf",
+      },
+    ],
+    writePathText: (value) => value === "/tmp/file.pdf",
+  });
+
+  assert.deepEqual(result, {
+    ok: true,
+    format: "path-text",
+    count: 1,
+    outcome: "copied-path-text-explicit",
+    messageKey: "copy-path-text-explicit",
   });
 });

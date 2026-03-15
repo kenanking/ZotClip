@@ -59,6 +59,16 @@ export function formatCopyResultMessage(
     );
   }
 
+  if (result.outcome === "copied-path-text-explicit") {
+    return renderCopyMessage(
+      result.messageKey || "copy-path-text-explicit",
+      buildMessageArgs(result, {
+        count: result.count,
+      }),
+      deps,
+    );
+  }
+
   if (result.messageKey && !result.ok) {
     return renderCopyMessage(result.messageKey, result.messageArgs, deps);
   }

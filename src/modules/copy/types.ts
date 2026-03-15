@@ -6,6 +6,7 @@ export type ClipboardFormat =
 
 export type ClipboardOutcome =
   | "copied-files"
+  | "copied-path-text-explicit"
   | "copied-path-text-fallback"
   | "backend-unavailable"
   | "dependency-missing"
@@ -16,6 +17,7 @@ export type CopyMessageKey =
   | "copy-no-file-uris"
   | "copy-reader-no-active"
   | "copy-clipboard-write-failed"
+  | "copy-path-text-explicit"
   | "copy-path-text-fallback"
   | "copy-linux-gtk4-missing"
   | "copy-linux-wl-copy-missing"
