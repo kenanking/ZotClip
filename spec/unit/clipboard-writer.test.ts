@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { buildMacClipboardScript } from "../../src/modules/copy/clipboard/macosCommandBackend";
 import { createClipboardRuntimeCache } from "../../src/modules/copy/clipboard/runtimeCache";
 import { writeClipboard } from "../../src/modules/copy/clipboardWriter";
 
@@ -351,14 +352,76 @@ test("ClipboardWriter prefers the macOS command backend before path-text fallbac
   );
 
   assert.equal(fallbackCalled, false);
-  assert.deepEqual(commands[0], {
-    command: "/usr/bin/osascript",
-    args: [
-      "-e",
-      'tell application "Finder" to set the clipboard to {POSIX file "/Users/me/A.pdf"}',
-    ],
-  });
+  assert.equal(commands[0].command, "/usr/bin/osascript");
+  assert.equal(commands[0].args[0], "-e");
+  assert.equal(commands[0].args[1].includes('use framework "AppKit"'), true);
+  assert.equal(
+    commands[0].args[1].includes('use framework "Foundation"'),
+    true,
+  );
+  assert.equal(
+    commands[0].args[1].includes(
+      "current application's NSPasteboard's generalPasteboard()",
+    ),
+    true,
+  );
+  assert.equal(
+    commands[0].args[1].includes(
+      "current application's NSURL's fileURLWithPath:",
+    ),
+    true,
+  );
+  assert.equal(commands[0].args[1].includes("writeObjects:"), true);
+  assert.equal(
+    commands[0].args[1].includes('tell application "Finder"'),
+    false,
+  );
   assert.equal(result.ok, true);
   assert.equal(result.format, "file-object");
   assert.equal(result.outcome, "copied-files");
+});
+
+test("buildMacClipboardScript escapes macOS paths for AppKit file URLs", () => {
+  const script = buildMacClipboardScript([
+    '/Users/me/Quote "A" \\\\ sample.pdf',
+  ]);
+
+  assert.equal(script.includes('use framework "AppKit"'), true);
+  assert.equal(script.includes('use framework "Foundation"'), true);
+  assert.equal(
+    script.includes(
+      `current application's NSURL's fileURLWithPath:"/Users/me/Quote \\"A\\" \\\\\\\\ sample.pdf"`,
+    ),
+    true,
+  );
+  assert.equal(script.includes("writeObjects:"), true);
+});
+
+test("ClipboardWriter falls back to path-text when the macOS pasteboard write fails", async () => {
+  let fallbackValue = "";
+
+  const result = await writeClipboard(
+    [{ attachmentID: 1, itemID: 1, path: "/Users/me/A.pdf" }],
+    "library",
+    {
+      detectPlatformContext: () => ({ platform: "macos" }),
+      runtimeCache: createClipboardRuntimeCache(),
+      probeCommand: async (name) => name === "osascript",
+      runCommand: async () => ({
+        ok: false,
+        exitCode: 1,
+        stdout: "",
+        stderr: "pasteboard write failed",
+      }),
+      writePathText: (value) => {
+        fallbackValue = value;
+        return true;
+      },
+    },
+  );
+
+  assert.equal(fallbackValue, "/Users/me/A.pdf");
+  assert.equal(result.ok, true);
+  assert.equal(result.format, "path-text");
+  assert.equal(result.outcome, "copied-path-text-fallback");
 });

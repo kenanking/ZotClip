@@ -9,7 +9,7 @@
   - Windows: nothing extra
   - Linux X11: `python3-gi` and `gir1.2-gtk-4.0`
   - Linux Wayland: `wl-clipboard`
-  - macOS: implementation exists, but this checklist does not currently claim validation
+  - macOS: no extra package, but validate both single-file and multi-file pasteboard copy on a real device before release
 
 ## Library Copy
 
@@ -88,4 +88,6 @@
 - [ ] Windows: paste into Explorer and one chat or browser target that accepts files.
 - [ ] Linux X11: paste into a file manager and one browser or chat target.
 - [ ] Linux Wayland: paste into a file manager and one browser or chat target.
-- [ ] macOS: not currently part of the validated runtime smoke test matrix.
+- [ ] macOS: paste a single copied attachment into Finder and one file-aware chat or browser target.
+- [ ] macOS: paste multiple copied attachments into Finder and confirm every file is preserved.
+- [ ] macOS: force native file copy failure if possible and confirm ZotClip falls back to plain-text paths with the fallback notification.
