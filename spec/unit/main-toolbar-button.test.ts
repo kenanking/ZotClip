@@ -211,3 +211,42 @@ test("registerMainToolbarButton refreshes once after command completion for the 
 
   assert.equal(availabilityCalls, 2);
 });
+
+test("registerMainToolbarButton delegates element creation through a shared helper", async () => {
+  const doc = new FakeDocument();
+  let helperCalls = 0;
+
+  const handle = registerMainToolbarButton(doc as unknown as Document, {
+    getLabel: () => "Copy Attachment File(s)",
+    getAvailability: async () => ({ canCopy: true }),
+    onCommand: async () => {},
+    createToolbarButton: ({
+      doc: targetDoc,
+      id,
+      className,
+      title,
+      iconURL,
+    }) => {
+      helperCalls += 1;
+      const xulDoc = targetDoc as Document & {
+        createXULElement?: (tagName: string) => Element;
+      };
+      const button = xulDoc.createXULElement?.("toolbarbutton") as never as {
+        id: string;
+        className: string;
+        title: string;
+        setAttribute(name: string, value: string): void;
+      };
+      button.id = id;
+      button.className = className;
+      button.title = title;
+      button.setAttribute("tooltiptext", title);
+      button.setAttribute("style", `list-style-image: url(${iconURL})`);
+      return button as never;
+    },
+  });
+
+  await handle.refresh();
+
+  assert.equal(helperCalls, 1);
+});

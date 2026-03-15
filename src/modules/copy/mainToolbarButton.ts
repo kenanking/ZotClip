@@ -1,6 +1,7 @@
 import { config } from "../../../package.json";
 import { TOOLBAR_ICON_URL, getToolbarTooltipText } from "./copyUi";
 import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
+import { createToolbarButtonElement } from "./ui/toolkitDom";
 
 const BUTTON_ID = `${config.addonRef}-main-toolbar-button`;
 const TOOLBAR_ANCHOR_IDS = ["zotero-tb-note-add"];
@@ -9,10 +10,6 @@ type ToolbarButtonElement = XULElement & {
   disabled: boolean;
   title: string;
   remove(): void;
-};
-
-type XULDocumentLike = Document & {
-  createXULElement?: (tagName: string) => Element;
 };
 
 export interface MainToolbarButtonAvailability {
@@ -25,6 +22,13 @@ export interface MainToolbarButtonDeps {
   getRefreshKey?(): string;
   getAvailability(): Promise<MainToolbarButtonAvailability>;
   onCommand(): Promise<void>;
+  createToolbarButton?(input: {
+    doc: Document;
+    id: string;
+    className: string;
+    title: string;
+    iconURL: string;
+  }): ToolbarButtonElement;
 }
 
 export interface MainToolbarButtonHandle {
@@ -36,7 +40,7 @@ export function registerMainToolbarButton(
   doc: Document,
   deps: MainToolbarButtonDeps,
 ): MainToolbarButtonHandle {
-  const button = ensureButton(doc, deps.getLabel());
+  const button = ensureButton(doc, deps);
   const availabilityCoordinator = createAvailabilityCoordinator();
 
   const onCommand = (event: Event) => {
@@ -66,7 +70,7 @@ export function registerMainToolbarButton(
   }
 
   async function refreshCurrentAvailability(): Promise<void> {
-    const currentButton = ensureButton(doc, deps.getLabel());
+    const currentButton = ensureButton(doc, deps);
     if (!currentButton) {
       return;
     }
@@ -91,7 +95,7 @@ export function registerMainToolbarButton(
 
 function ensureButton(
   doc: Document,
-  label: string,
+  deps: MainToolbarButtonDeps,
 ): ToolbarButtonElement | null {
   const existing = doc.getElementById(BUTTON_ID) as ToolbarButtonElement | null;
   if (existing) {
@@ -103,7 +107,7 @@ function ensureButton(
     return null;
   }
 
-  const button = createButton(doc, label);
+  const button = createButton(doc, deps);
   anchor.after(button);
   return button;
 }
@@ -119,15 +123,15 @@ function findToolbarAnchor(doc: Document): Element | null {
   return null;
 }
 
-function createButton(doc: Document, label: string): ToolbarButtonElement {
-  const xulDoc = doc as XULDocumentLike;
-  const button = (xulDoc.createXULElement
-    ? xulDoc.createXULElement("toolbarbutton")
-    : doc.createElement("toolbarbutton")) as unknown as ToolbarButtonElement;
-  button.id = BUTTON_ID;
-  button.className = "zotero-tb-button";
-  button.setAttribute("tooltiptext", label);
-  button.title = label;
-  button.setAttribute("style", `list-style-image: url(${TOOLBAR_ICON_URL})`);
-  return button;
+function createButton(
+  doc: Document,
+  deps: MainToolbarButtonDeps,
+): ToolbarButtonElement {
+  return (deps.createToolbarButton || createToolbarButtonElement)({
+    doc,
+    id: BUTTON_ID,
+    className: "zotero-tb-button",
+    title: deps.getLabel(),
+    iconURL: TOOLBAR_ICON_URL,
+  }) as ToolbarButtonElement;
 }

@@ -1,6 +1,7 @@
 import { config } from "../../../package.json";
 import { getToolbarIconDataURL, getToolbarTooltipText } from "./copyUi";
 import { createAvailabilityCoordinator } from "./runtime/availabilityCoordinator";
+import { createReaderToolbarButtonElement } from "./ui/toolkitDom";
 
 const BUTTON_ID = `${config.addonRef}-reader-copy-button`;
 const FALLBACK_SECTION_ID = `${BUTTON_ID}-section`;
@@ -27,6 +28,13 @@ export interface ReaderToolbarButtonDeps {
     itemID: number | undefined,
   ): Promise<ReaderButtonAvailability>;
   onCommand(itemID: number | undefined): Promise<void>;
+  createButton?(input: {
+    doc: Document;
+    id: string;
+    className: string;
+    title: string;
+    iconDataURL: string;
+  }): HTMLButtonElement;
 }
 
 export interface ReaderToolbarButtonHandle {
@@ -59,7 +67,7 @@ export function mountReaderToolbarButton(
   event: ReaderToolbarRenderEventLike,
   deps: ReaderToolbarButtonDeps,
 ): ReaderToolbarButtonHandle {
-  const button = ensureButton(event.doc, deps.getLabel(), (...nodes) => {
+  const button = ensureButton(event.doc, deps, (...nodes) => {
     event.append(...nodes);
   });
   const availabilityCoordinator = createAvailabilityCoordinator();
@@ -93,7 +101,7 @@ export function mountReaderToolbarButton(
   async function refreshCurrentAvailability(): Promise<void> {
     const currentButton = ensureButton(
       event.doc,
-      deps.getLabel(),
+      deps,
       (...nodes) => {
         event.append(...nodes);
       },
@@ -179,7 +187,7 @@ export function registerReaderToolbarButton(
 
 function ensureButton(
   doc: Document,
-  label: string,
+  deps: ReaderToolbarButtonDeps,
   append: (...nodes: Node[]) => void,
 ): HTMLButtonElement | null {
   const existing = doc.getElementById(BUTTON_ID) as HTMLButtonElement | null;
@@ -187,34 +195,28 @@ function ensureButton(
     return existing;
   }
 
-  const button = createButton(doc, label);
+  const button = createButton(doc, deps.getLabel(), deps.createButton);
   append(button);
   return button;
 }
 
-function createButton(doc: Document, label: string): HTMLButtonElement {
+function createButton(
+  doc: Document,
+  label: string,
+  createSharedButton:
+    | ReaderToolbarButtonDeps["createButton"]
+    | undefined,
+): HTMLButtonElement {
   const iconDataURL = getToolbarIconDataURL();
-  const button = doc.createElement("button");
-  button.id = BUTTON_ID;
-  button.className = "toolbar-button zotclip-reader-toolbar-button";
-  button.setAttribute("type", "button");
-  button.setAttribute("aria-label", label);
-  button.title = label;
-  button.textContent = "";
-  button.setAttribute(
-    "style",
-    [
-      `background-image: url("${iconDataURL}")`,
-      "background-position: center",
-      "background-repeat: no-repeat",
-      "background-size: 16px 16px",
-      "width: 28px",
-      "height: 28px",
-      "min-width: 28px",
-      "padding: 0",
-    ].join("; "),
-  );
-  return button;
+  return (
+    createSharedButton || createReaderToolbarButtonElement
+  )({
+    doc,
+    id: BUTTON_ID,
+    className: "toolbar-button zotclip-reader-toolbar-button",
+    title: label,
+    iconDataURL,
+  });
 }
 
 function applyButtonState(

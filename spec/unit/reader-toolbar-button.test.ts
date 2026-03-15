@@ -356,3 +356,38 @@ test("registerReaderToolbarButton reuses reader availability for repeated render
   assert.equal(availabilityCalls, 1);
   dispose();
 });
+
+test("mountReaderToolbarButton uses a shared helper to build the button node", async () => {
+  await primeToolbarIcon();
+  const doc = new FakeDocument();
+  let helperCalls = 0;
+
+  const handle = mountReaderToolbarButton(makeEvent(doc), {
+    getLabel: () => "Copy Current Reader Attachment",
+    getAvailability: async () => ({ canCopy: true }),
+    onCommand: async () => {},
+    createButton: ({
+      doc: targetDoc,
+      id,
+      className,
+      title,
+      iconDataURL,
+    }) => {
+      helperCalls += 1;
+      const button = targetDoc.createElement("button");
+      button.id = id;
+      button.className = className;
+      button.title = title;
+      button.setAttribute("aria-label", title);
+      button.setAttribute(
+        "style",
+        `background-image: url("${iconDataURL}")`,
+      );
+      return button;
+    },
+  });
+
+  await handle.refresh();
+
+  assert.equal(helperCalls, 1);
+});
