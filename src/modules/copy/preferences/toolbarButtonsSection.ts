@@ -3,6 +3,11 @@ import {
   getReaderToolbarButtonEnabled,
   setPref,
 } from "../../../utils/prefs";
+import {
+  composeDisposables,
+  createListenerDisposer,
+  createNoopHandle,
+} from "../ui/disposables";
 
 export interface ToolbarButtonControls {
   mainToolbarCheckbox: HTMLInputElement;
@@ -42,17 +47,11 @@ export async function registerToolbarButtonsSection(doc: Document): Promise<{
   syncToolbarButtonControls(controls);
   const persist = () => persistToolbarButtonPrefs(controls);
   const disposers = [
-    addEventListener(controls.mainToolbarCheckbox, "change", persist),
-    addEventListener(controls.readerToolbarCheckbox, "change", persist),
+    createListenerDisposer(controls.mainToolbarCheckbox, "change", persist),
+    createListenerDisposer(controls.readerToolbarCheckbox, "change", persist),
   ];
 
-  return {
-    dispose(): void {
-      for (const dispose of disposers) {
-        dispose();
-      }
-    },
-  };
+  return composeDisposables(...disposers);
 }
 
 function getToolbarButtonControls(
@@ -78,21 +77,4 @@ function getToolbarButtonControls(
 function syncToolbarButtonControls(controls: ToolbarButtonControls): void {
   controls.mainToolbarCheckbox.checked = getMainToolbarButtonEnabled();
   controls.readerToolbarCheckbox.checked = getReaderToolbarButtonEnabled();
-}
-
-function createNoopHandle(): { dispose(): void } {
-  return {
-    dispose(): void {},
-  };
-}
-
-function addEventListener<T extends EventTarget>(
-  target: T,
-  type: string,
-  listener: EventListener,
-): () => void {
-  target.addEventListener(type, listener);
-  return () => {
-    target.removeEventListener(type, listener);
-  };
 }

@@ -8,6 +8,11 @@ import {
   parseShortcut,
   type ParsedShortcut,
 } from "../shortcuts";
+import {
+  composeDisposables,
+  createListenerDisposer,
+  createNoopHandle,
+} from "../ui/disposables";
 
 interface ShortcutControls {
   libraryInput: HTMLInputElement;
@@ -49,7 +54,7 @@ export async function registerShortcutsSection(doc: Document): Promise<{
   const persist = () => persistShortcutPrefs(controls);
   const disposers = [controls.libraryInput, controls.readerInput].flatMap(
     (input) => [
-      addEventListener(input, "keydown", (event: Event) => {
+      createListenerDisposer(input, "keydown", (event: Event) => {
         const shortcut = buildShortcutFromEvent(event as KeyboardEvent);
         if (shortcut === undefined) {
           return;
@@ -59,21 +64,15 @@ export async function registerShortcutsSection(doc: Document): Promise<{
         input.value = shortcut;
         syncShortcutValidation(controls);
       }),
-      addEventListener(input, "input", () => {
+      createListenerDisposer(input, "input", () => {
         syncShortcutValidation(controls);
       }),
-      addEventListener(input, "change", persist),
-      addEventListener(input, "blur", persist),
+      createListenerDisposer(input, "change", persist),
+      createListenerDisposer(input, "blur", persist),
     ],
   );
 
-  return {
-    dispose(): void {
-      for (const dispose of disposers) {
-        dispose();
-      }
-    },
-  };
+  return composeDisposables(...disposers);
 }
 
 function getShortcutControls(doc: Document): ShortcutControls | undefined {
@@ -193,21 +192,4 @@ function isModifierKey(key: string): boolean {
   return (
     key === "control" || key === "shift" || key === "alt" || key === "meta"
   );
-}
-
-function createNoopHandle(): { dispose(): void } {
-  return {
-    dispose(): void {},
-  };
-}
-
-function addEventListener<T extends EventTarget>(
-  target: T,
-  type: string,
-  listener: EventListener,
-): () => void {
-  target.addEventListener(type, listener);
-  return () => {
-    target.removeEventListener(type, listener);
-  };
 }

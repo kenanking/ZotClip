@@ -135,6 +135,42 @@ test("registerPrefsUI disposes an earlier registration before re-registering the
   second.dispose();
 });
 
+test("registerPrefsUI dispose is idempotent for the same registration handle", async () => {
+  const windowStub = {
+    document: {} as Document,
+  } as Window;
+  let disposals = 0;
+
+  const handle = await registerPrefsUI(windowStub, {
+    syncPreferenceMenulists: () => {},
+    registerAttachmentTypesSection: async () => ({
+      dispose: () => {
+        disposals += 1;
+      },
+    }),
+    registerToolbarButtonsSection: async () => ({
+      dispose: () => {
+        disposals += 1;
+      },
+    }),
+    registerShortcutsSection: async () => ({
+      dispose: () => {
+        disposals += 1;
+      },
+    }),
+    registerDiagnosticsSection: async () => ({
+      dispose: () => {
+        disposals += 1;
+      },
+    }),
+  });
+
+  handle.dispose();
+  handle.dispose();
+
+  assert.equal(disposals, 4);
+});
+
 test("preferences markup uses compact inline rows for targeted settings fields", () => {
   const markup = readFileSync(
     new URL("../../addon/content/preferences.xhtml", import.meta.url),

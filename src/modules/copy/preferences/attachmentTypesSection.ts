@@ -7,6 +7,11 @@ import {
   getEnabledAttachmentTypes,
   setPref,
 } from "../../../utils/prefs";
+import {
+  composeDisposables,
+  createListenerDisposer,
+  createNoopHandle,
+} from "../ui/disposables";
 
 interface AttachmentTypeControls {
   panel: HTMLElement;
@@ -45,28 +50,22 @@ export async function registerAttachmentTypesSection(doc: Document): Promise<{
   syncAttachmentTypeControls(controls);
   const disposers = [
     ...controls.presetCheckboxes.map((checkbox) =>
-      addEventListener(checkbox, "change", () => {
+      createListenerDisposer(checkbox, "change", () => {
         persistAttachmentTypePrefs(controls);
       }),
     ),
-    addEventListener(controls.customInput, "input", () => {
+    createListenerDisposer(controls.customInput, "input", () => {
       syncAttachmentTypeValidation(controls);
     }),
-    addEventListener(controls.customInput, "change", () => {
+    createListenerDisposer(controls.customInput, "change", () => {
       persistAttachmentTypePrefs(controls);
     }),
-    addEventListener(controls.customInput, "blur", () => {
+    createListenerDisposer(controls.customInput, "blur", () => {
       persistAttachmentTypePrefs(controls);
     }),
   ];
 
-  return {
-    dispose(): void {
-      for (const dispose of disposers) {
-        dispose();
-      }
-    },
-  };
+  return composeDisposables(...disposers);
 }
 
 function getAttachmentTypeControls(
@@ -161,21 +160,4 @@ function getSelectedPresetTypes(checkboxes: HTMLInputElement[]): string[] {
 
 function getCheckboxType(checkbox: HTMLInputElement): string {
   return checkbox.dataset.zotclipAttachmentType || "";
-}
-
-function createNoopHandle(): { dispose(): void } {
-  return {
-    dispose(): void {},
-  };
-}
-
-function addEventListener<T extends EventTarget>(
-  target: T,
-  type: string,
-  listener: EventListener,
-): () => void {
-  target.addEventListener(type, listener);
-  return () => {
-    target.removeEventListener(type, listener);
-  };
 }

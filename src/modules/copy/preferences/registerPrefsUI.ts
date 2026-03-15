@@ -3,6 +3,10 @@ import { registerAttachmentTypesSection } from "./attachmentTypesSection";
 import { registerDiagnosticsSection } from "./diagnosticsSection";
 import { registerShortcutsSection } from "./shortcutsSection";
 import { registerToolbarButtonsSection } from "./toolbarButtonsSection";
+import {
+  composeDisposables,
+  createNoopHandle,
+} from "../ui/disposables";
 
 interface MenuitemLike {
   value?: string;
@@ -69,17 +73,14 @@ export async function registerPrefsUI(
     deps.registerDiagnosticsSection?.(window.document) || createNoopHandle(),
   ]);
 
-  const handle: PrefsUIHandle = {
-    dispose(): void {
-      for (const sectionHandle of sectionHandles) {
-        sectionHandle.dispose();
-      }
-
+  const handle = composeDisposables(
+    ...sectionHandles.map((sectionHandle) => () => sectionHandle.dispose()),
+    () => {
       if (windowHandles.get(window) === handle) {
         windowHandles.delete(window);
       }
     },
-  };
+  ) as PrefsUIHandle;
 
   windowHandles.set(window, handle);
   return handle;
@@ -129,10 +130,4 @@ function getMenulistCurrentValue(menulist: MenulistLike): string {
 
 function getMenuitemValue(item: MenuitemLike | null): string {
   return item?.value || item?.getAttribute?.("value") || "";
-}
-
-function createNoopHandle(): PrefsUIHandle {
-  return {
-    dispose(): void {},
-  };
 }
