@@ -1,6 +1,6 @@
 import { resolveAttachmentFromReader } from "./attachmentResolver";
-import { getCurrentReaderItemID } from "./interaction/readerContext";
 import type { ClipboardResult, ResolvedAttachment } from "./types";
+import { getActiveReaderItemID } from "./zoteroReaderAccess";
 
 export interface CopyPathCommandDeps {
   getCurrentReaderItemID(): number | undefined;
@@ -12,18 +12,7 @@ export interface CopyPathCommandDeps {
 }
 
 const DEFAULT_DEPS: CopyPathCommandDeps = {
-  getCurrentReaderItemID: () => {
-    return getCurrentReaderItemID({
-      getTabs: () =>
-        ztoolkit.getGlobal("Zotero_Tabs") as
-          | {
-              selectedID?: string;
-              selectedType?: string;
-            }
-          | undefined,
-      getReaderByTabID: (tabID) => Zotero.Reader.getByTabID(tabID),
-    });
-  },
+  getCurrentReaderItemID: () => getActiveReaderItemID(),
   resolveFromReader: (itemID, allowedTypes) =>
     resolveAttachmentFromReader(itemID, allowedTypes),
   writePathText: (value) => {

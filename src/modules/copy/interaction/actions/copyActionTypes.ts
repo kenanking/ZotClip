@@ -1,3 +1,4 @@
+import type { ClipboardSource } from "../../clipboard/types";
 import type { ClipboardResult, CopyMessageKey } from "../../types";
 
 export interface CopyPrimaryAction {
@@ -15,7 +16,7 @@ export interface CopySecondaryAction {
 }
 
 export interface CopyActionState {
-  source: "library" | "reader";
+  source: ClipboardSource;
   refreshKey: string;
   primary: CopyPrimaryAction;
   secondary?: CopySecondaryAction;

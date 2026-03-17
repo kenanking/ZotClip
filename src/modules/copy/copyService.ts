@@ -1,4 +1,5 @@
 import type { ClipboardDiagnostics } from "./clipboard/diagnostics";
+import type { ClipboardSource } from "./clipboard/types";
 import type {
   ClipboardResult,
   CopyMessageKey,
@@ -31,9 +32,45 @@ export interface CopyServiceDeps {
   ): Promise<ResolvedAttachment[]>;
   writeClipboard(
     files: ResolvedAttachment[],
-    source: "library" | "reader",
+    source: ClipboardSource,
   ): Promise<ClipboardResult>;
   getClipboardDiagnostics(): Promise<ClipboardDiagnostics>;
+}
+
+export async function checkSelectionAvailability(
+  settings: CopySettings,
+  items: Zotero.Item[],
+  resolveFromItems: (
+    items: Zotero.Item[],
+    mode: MultiAttachmentMode,
+    allowedTypes: string[],
+  ) => Promise<ResolvedAttachment[]>,
+): Promise<CopyAvailability> {
+  const files = await resolveFromItems(
+    items,
+    settings.multiAttachmentMode,
+    settings.allowedTypes,
+  );
+  return files.length
+    ? { canCopy: true }
+    : { canCopy: false, messageKey: "copy-no-files" };
+}
+
+export async function checkReaderAvailability(
+  itemID: number | undefined,
+  allowedTypes: string[],
+  resolveFromReader: (
+    itemID: number,
+    allowedTypes: string[],
+  ) => Promise<ResolvedAttachment[]>,
+): Promise<CopyAvailability> {
+  if (!itemID) {
+    return { canCopy: false, messageKey: "copy-reader-no-active" };
+  }
+  const files = await resolveFromReader(itemID, allowedTypes);
+  return files.length
+    ? { canCopy: true }
+    : { canCopy: false, messageKey: "copy-no-files" };
 }
 
 export interface CopyService {
@@ -59,7 +96,7 @@ export function createCopyService(deps: CopyServiceDeps): CopyService {
     async copyReader(itemID?: number): Promise<ClipboardResult> {
       const activeItemID = itemID ?? deps.getCurrentReaderItemID();
       if (!activeItemID) {
-        return buildNoActiveReaderResult();
+        return buildUnavailableResult("copy-reader-no-active");
       }
 
       const settings = deps.getSettings();
@@ -70,43 +107,23 @@ export function createCopyService(deps: CopyServiceDeps): CopyService {
       return deps.writeClipboard(files, "reader");
     },
 
-    async getSelectionAvailability(): Promise<CopyAvailability> {
+    getSelectionAvailability(): Promise<CopyAvailability> {
       const settings = deps.getSettings();
-      const files = await deps.resolveFromItems(
+      return checkSelectionAvailability(
+        settings,
         deps.getSelectedItems(),
-        settings.multiAttachmentMode,
-        settings.allowedTypes,
+        deps.resolveFromItems,
       );
-
-      return files.length
-        ? { canCopy: true }
-        : {
-            canCopy: false,
-            messageKey: "copy-no-files",
-          };
     },
 
-    async getReaderAvailability(itemID?: number): Promise<CopyAvailability> {
+    getReaderAvailability(itemID?: number): Promise<CopyAvailability> {
       const activeItemID = itemID ?? deps.getCurrentReaderItemID();
-      if (!activeItemID) {
-        return {
-          canCopy: false,
-          messageKey: "copy-reader-no-active",
-        };
-      }
-
       const settings = deps.getSettings();
-      const files = await deps.resolveFromReader(
+      return checkReaderAvailability(
         activeItemID,
         settings.allowedTypes,
+        deps.resolveFromReader,
       );
-
-      return files.length
-        ? { canCopy: true }
-        : {
-            canCopy: false,
-            messageKey: "copy-no-files",
-          };
     },
 
     getClipboardDiagnostics(): Promise<ClipboardDiagnostics> {
@@ -115,11 +132,8 @@ export function createCopyService(deps: CopyServiceDeps): CopyService {
   };
 }
 
-function buildNoActiveReaderResult(): ClipboardResult {
-  return {
-    ok: false,
-    format: "none",
-    count: 0,
-    messageKey: "copy-reader-no-active",
-  };
+export function buildUnavailableResult(
+  messageKey: CopyMessageKey,
+): ClipboardResult {
+  return { ok: false, format: "none", count: 0, messageKey };
 }

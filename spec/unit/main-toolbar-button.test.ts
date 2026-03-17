@@ -5,6 +5,7 @@ import {
   registerMainToolbarButton,
   type MainToolbarButtonHandle,
 } from "../../src/modules/copy/mainToolbarButton";
+import { createLibraryActionState } from "./fixtures/actionStateFixtures";
 
 type EventHandler = (event: Event) => void;
 
@@ -101,7 +102,7 @@ test("registerMainToolbarButton inserts a native toolbarbutton after the preferr
 
   const handle = registerMainToolbarButton(doc as unknown as Document, {
     getLabel: () => "Copy Attachment File(s)",
-    getActionState: async () => createMainToolbarActionState(),
+    getActionState: async () => createLibraryActionState(),
   });
 
   await handle.refresh();
@@ -120,7 +121,7 @@ test("registerMainToolbarButton disables the button when selection copy is unava
   const handle = registerMainToolbarButton(doc as unknown as Document, {
     getLabel: () => "Copy Attachment File(s)",
     getActionState: async () =>
-      createMainToolbarActionState({
+      createLibraryActionState({
         canExecute: false,
         reasonKey: "copy-no-files",
       }),
@@ -138,11 +139,11 @@ test("registerMainToolbarButton does not insert duplicates on repeated registrat
 
   const firstHandle = registerMainToolbarButton(doc as unknown as Document, {
     getLabel: () => "Copy Attachment File(s)",
-    getActionState: async () => createMainToolbarActionState(),
+    getActionState: async () => createLibraryActionState(),
   });
   const secondHandle = registerMainToolbarButton(doc as unknown as Document, {
     getLabel: () => "Copy Attachment File(s)",
-    getActionState: async () => createMainToolbarActionState(),
+    getActionState: async () => createLibraryActionState(),
   });
 
   await firstHandle.refresh();
@@ -158,7 +159,7 @@ test("registerMainToolbarButton runs the copy command only once for a single too
   const handle = registerMainToolbarButton(doc as unknown as Document, {
     getLabel: () => "Copy Attachment File(s)",
     getActionState: async () =>
-      createMainToolbarActionState({
+      createLibraryActionState({
         run: async () => {
           calls += 1;
           return {
@@ -187,7 +188,7 @@ test("registerMainToolbarButton coalesces repeated refresh calls for the same re
     getRefreshKey: () => "selection:1",
     getActionState: async () => {
       actionStateCalls += 1;
-      return createMainToolbarActionState();
+      return createLibraryActionState();
     },
   });
 
@@ -205,7 +206,7 @@ test("registerMainToolbarButton refreshes once after command completion for the 
     getRefreshKey: () => "selection:1",
     getActionState: async () => {
       actionStateCalls += 1;
-      return createMainToolbarActionState();
+      return createLibraryActionState();
     },
   });
 
@@ -222,7 +223,7 @@ test("registerMainToolbarButton delegates element creation through a shared help
 
   const handle = registerMainToolbarButton(doc as unknown as Document, {
     getLabel: () => "Copy Attachment File(s)",
-    getActionState: async () => createMainToolbarActionState(),
+    getActionState: async () => createLibraryActionState(),
     createToolbarButton: ({
       doc: targetDoc,
       id,
@@ -280,34 +281,3 @@ test("registerMainToolbarButton reads disabled state and tooltip from action sta
   assert.equal(doc.button.disabled, true);
   assert.equal(doc.button.title, "No files to copy.");
 });
-
-function createMainToolbarActionState(
-  overrides: {
-    canExecute?: boolean;
-    reasonKey?: "copy-no-files";
-    run?: () => Promise<{
-      ok: true;
-      format: "file-object";
-      count: number;
-      outcome: "copied-files";
-    }>;
-  } = {},
-) {
-  return {
-    source: "library" as const,
-    refreshKey: "library|11",
-    primary: {
-      kind: "copy-files" as const,
-      canExecute: overrides.canExecute ?? true,
-      reasonKey: overrides.reasonKey,
-      run:
-        overrides.run ||
-        (async () => ({
-          ok: true as const,
-          format: "file-object" as const,
-          count: 1,
-          outcome: "copied-files" as const,
-        })),
-    },
-  };
-}

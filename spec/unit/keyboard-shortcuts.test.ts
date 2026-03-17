@@ -4,6 +4,11 @@ import test from "node:test";
 import { handleReaderCopyShortcut } from "../../src/modules/copy/readerHook";
 import { handleSelectionCopyShortcut } from "../../src/modules/copy/selectionHook";
 import type { ParsedShortcut } from "../../src/modules/copy/shortcuts";
+import {
+  createCopyFilesResult,
+  createLibraryActionState,
+  createReaderActionState,
+} from "./fixtures/actionStateFixtures";
 
 const CTRL_SHIFT_C: ParsedShortcut = {
   ctrlOrMeta: true,
@@ -269,53 +274,4 @@ test("keyboard shortcuts: library copy can execute the primary action from actio
   assert.equal(mock.wasPrevented(), true);
 });
 
-function createLibraryActionState(
-  overrides: {
-    canExecute?: boolean;
-    run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
-  } = {},
-) {
-  return {
-    source: "library" as const,
-    refreshKey: "library|11",
-    primary: {
-      kind: "copy-files" as const,
-      canExecute: overrides.canExecute ?? true,
-      run:
-        overrides.run ||
-        (async () => {
-          return createCopyFilesResult();
-        }),
-    },
-  };
-}
-
-function createReaderActionState(
-  overrides: {
-    canExecute?: boolean;
-    run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
-  } = {},
-) {
-  return {
-    source: "reader" as const,
-    refreshKey: "reader|2048",
-    primary: {
-      kind: "copy-files" as const,
-      canExecute: overrides.canExecute ?? true,
-      run:
-        overrides.run ||
-        (async () => {
-          return createCopyFilesResult();
-        }),
-    },
-  };
-}
-
-function createCopyFilesResult() {
-  return {
-    ok: true as const,
-    format: "file-object" as const,
-    count: 1,
-    outcome: "copied-files" as const,
-  };
-}
+// Factories imported from shared fixtures — see fixtures/actionStateFixtures.ts

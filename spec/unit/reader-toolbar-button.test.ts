@@ -7,6 +7,7 @@ import {
   registerReaderToolbarButton,
   type ReaderToolbarRenderEventLike,
 } from "../../src/modules/copy/readerToolbarButton";
+import { createReaderActionState } from "./fixtures/actionStateFixtures";
 
 type EventHandler = (event: Event) => void;
 
@@ -168,7 +169,7 @@ test("mountReaderToolbarButton appends an icon-only button through renderToolbar
   const doc = new FakeDocument();
   const handle = mountReaderToolbarButton(makeEvent(doc), {
     getLabel: () => "Copy Current Reader Attachment",
-    getActionState: async () => createReaderToolbarActionState(),
+    getActionState: async () => createReaderActionState(),
   });
 
   await handle.refresh();
@@ -187,7 +188,7 @@ test("mountReaderToolbarButton keeps the button visible but disabled when reader
   const handle = mountReaderToolbarButton(makeEvent(doc), {
     getLabel: () => "Copy Current Reader Attachment",
     getActionState: async () =>
-      createReaderToolbarActionState({
+      createReaderActionState({
         canExecute: false,
         reasonKey: "copy-reader-no-active",
       }),
@@ -207,7 +208,7 @@ test("mountReaderToolbarButton click uses the current reader item id", async () 
   const handle = mountReaderToolbarButton(makeEvent(doc, 2048), {
     getLabel: () => "Copy Current Reader Attachment",
     getActionState: async (itemID) =>
-      createReaderToolbarActionState({
+      createReaderActionState({
         run: async () => {
           clickedItemID = itemID;
           return {
@@ -231,11 +232,11 @@ test("mountReaderToolbarButton does not append duplicates for the same reader do
   const doc = new FakeDocument();
   const firstHandle = mountReaderToolbarButton(makeEvent(doc), {
     getLabel: () => "Copy Current Reader Attachment",
-    getActionState: async () => createReaderToolbarActionState(),
+    getActionState: async () => createReaderActionState(),
   });
   const secondHandle = mountReaderToolbarButton(makeEvent(doc), {
     getLabel: () => "Copy Current Reader Attachment",
-    getActionState: async () => createReaderToolbarActionState(),
+    getActionState: async () => createReaderActionState(),
   });
 
   await firstHandle.refresh();
@@ -254,7 +255,7 @@ test("mountReaderToolbarButton coalesces repeated refresh calls for the same rea
     getRefreshKey: (itemID) => `reader:${itemID || "none"}`,
     getActionState: async () => {
       actionStateCalls += 1;
-      return createReaderToolbarActionState();
+      return createReaderActionState();
     },
   });
 
@@ -271,7 +272,7 @@ test("mountReaderToolbarButton runs the copy command only once for a single tool
   const handle = mountReaderToolbarButton(makeEvent(doc, 2048), {
     getLabel: () => "Copy Current Reader Attachment",
     getActionState: async () =>
-      createReaderToolbarActionState({
+      createReaderActionState({
         run: async () => {
           calls += 1;
           return {
@@ -300,7 +301,7 @@ test("registerReaderToolbarButton creates a dedicated fallback section for exist
 
   const dispose = registerReaderToolbarButton({
     getLabel: () => "Copy Current Reader Attachment",
-    getActionState: async () => createReaderToolbarActionState(),
+    getActionState: async () => createReaderActionState(),
     readerAPI: {
       registerEventListener: (_type, handler) => {
         registerHandler = handler;
@@ -348,7 +349,7 @@ test("registerReaderToolbarButton reuses reader availability for repeated render
     getRefreshKey: (itemID) => `reader:${itemID || "none"}`,
     getActionState: async () => {
       actionStateCalls += 1;
-      return createReaderToolbarActionState();
+      return createReaderActionState();
     },
     readerAPI: {
       registerEventListener: (_type, handler) => {
@@ -375,7 +376,7 @@ test("mountReaderToolbarButton uses a shared helper to build the button node", a
 
   const handle = mountReaderToolbarButton(makeEvent(doc), {
     getLabel: () => "Copy Current Reader Attachment",
-    getActionState: async () => createReaderToolbarActionState(),
+    getActionState: async () => createReaderActionState(),
     createButton: ({ doc: targetDoc, id, className, title, iconDataURL }) => {
       helperCalls += 1;
       const button = targetDoc.createElement("button");
@@ -427,45 +428,3 @@ test("mountReaderToolbarButton reads reader action state and keeps disabled tool
   assert.equal(doc.button.disabled, true);
   assert.equal(doc.button.title, "No active reader attachment");
 });
-
-function createReaderToolbarActionState(
-  overrides: {
-    canExecute?: boolean;
-    reasonKey?: "copy-reader-no-active";
-    run?: () => Promise<{
-      ok: true;
-      format: "file-object";
-      count: number;
-      outcome: "copied-files";
-    }>;
-  } = {},
-) {
-  return {
-    source: "reader" as const,
-    refreshKey: "reader|2048",
-    primary: {
-      kind: "copy-files" as const,
-      canExecute: overrides.canExecute ?? true,
-      reasonKey: overrides.reasonKey,
-      run:
-        overrides.run ||
-        (async () => ({
-          ok: true as const,
-          format: "file-object" as const,
-          count: 1,
-          outcome: "copied-files" as const,
-        })),
-    },
-    secondary: {
-      kind: "copy-path" as const,
-      canExecute: true,
-      run: async () => ({
-        ok: true as const,
-        format: "path-text" as const,
-        count: 1,
-        outcome: "copied-path-text-explicit" as const,
-        messageKey: "copy-path-text-explicit" as const,
-      }),
-    },
-  };
-}

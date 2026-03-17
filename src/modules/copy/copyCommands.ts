@@ -4,7 +4,8 @@ import {
 } from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
 import { createCopyService, type CopyServiceDeps } from "./copyService";
-import { getCurrentReaderItemID } from "./interaction/readerContext";
+import { getActiveReaderItemID } from "./zoteroReaderAccess";
+import type { ClipboardSource } from "./clipboard/types";
 import type {
   ClipboardResult,
   MultiAttachmentMode,
@@ -25,7 +26,7 @@ export interface CopyCommandDeps {
   ): Promise<ResolvedAttachment[]>;
   writeClipboard(
     files: ResolvedAttachment[],
-    source: "library" | "reader",
+    source: ClipboardSource,
   ): Promise<ClipboardResult>;
 }
 
@@ -34,18 +35,7 @@ const DEFAULT_DEPS: CopyCommandDeps = {
     const pane = Zotero.getActiveZoteroPane();
     return (pane?.getSelectedItems?.() || []) as Zotero.Item[];
   },
-  getCurrentReaderItemID: () => {
-    return getCurrentReaderItemID({
-      getTabs: () =>
-        ztoolkit.getGlobal("Zotero_Tabs") as
-          | {
-              selectedID?: string;
-              selectedType?: string;
-            }
-          | undefined,
-      getReaderByTabID: (tabID) => Zotero.Reader.getByTabID(tabID),
-    });
-  },
+  getCurrentReaderItemID: () => getActiveReaderItemID(),
   resolveFromItems: (items, mode, allowedTypes) =>
     resolveAttachmentsFromItems(items, mode, allowedTypes),
   resolveFromReader: (itemID, allowedTypes) =>

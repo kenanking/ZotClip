@@ -1,9 +1,9 @@
 import type { CopyMessageKey } from "../types";
 import type { PlatformContext } from "./platformDetection";
-import { BACKEND_IDS } from "./types";
+import { BACKEND_IDS, type BackendId } from "./types";
 
 export interface ClipboardBackendStatus {
-  activeBackend: string;
+  activeBackend: BackendId;
   lastFallbackMessageKey?: CopyMessageKey;
 }
 
@@ -31,7 +31,7 @@ export function resolveClipboardBackendStatus(
 function getActiveBackendID(
   platformContext: PlatformContext,
   commands: Record<string, boolean>,
-): string {
+): BackendId {
   if (platformContext.platform === "windows") {
     return BACKEND_IDS.WINDOWS_NATIVE;
   }
@@ -62,7 +62,7 @@ function getActiveBackendID(
 function getFallbackMessageKey(
   platformContext: PlatformContext,
   commands: Record<string, boolean>,
-  activeBackend: string,
+  activeBackend: BackendId,
 ): CopyMessageKey | undefined {
   if (platformContext.platform === "linux") {
     if (activeBackend !== BACKEND_IDS.FALLBACK) {

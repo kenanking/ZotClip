@@ -3,7 +3,11 @@ import {
   copyFromSelection,
 } from "./modules/copy/copyCommands";
 import { copyFromReaderPath } from "./modules/copy/copyPathCommands";
-import { createCopyService } from "./modules/copy/copyService";
+import {
+  buildUnavailableResult,
+  checkReaderAvailability,
+  checkSelectionAvailability,
+} from "./modules/copy/copyService";
 import { initToolbarIcon } from "./modules/copy/copyUi";
 import {
   resolveAttachmentFromReader,
@@ -11,8 +15,12 @@ import {
 } from "./modules/copy/attachmentResolver";
 import { createCopyActionController } from "./modules/copy/interaction/actions/copyActionController";
 import type { CopyActionState } from "./modules/copy/interaction/actions/copyActionTypes";
-import { getSelectedLibraryItems } from "./modules/copy/interaction/context/libraryContext";
-import { getCurrentReaderItemID } from "./modules/copy/interaction/readerContext";
+import {
+  buildLibraryRefreshKey,
+  getSelectedLibraryItems,
+} from "./modules/copy/interaction/context/libraryContext";
+import { buildReaderRefreshKey } from "./modules/copy/interaction/readerContext";
+import { getActiveReaderItemID } from "./modules/copy/zoteroReaderAccess";
 import {
   registerMainToolbarButton,
   type MainToolbarButtonHandle,
@@ -246,7 +254,7 @@ export function registerMainToolbarCopyButton(
 
   const buttonHandle = deps.mountButton(win.document, {
     getLabel: () => deps.getLabel(),
-    getRefreshKey: () => buildSelectionRefreshKey(win, deps),
+    getRefreshKey: () => buildSelectionRefreshKeyFromDeps(win, deps),
     getActionState: deps.getActionState
       ? deps.getActionState
       : async () => createMainToolbarActionState(win, deps),
@@ -283,7 +291,7 @@ export function registerReaderToolbarCopyButton(
 
   return deps.registerButton({
     getLabel: () => deps.getLabel(),
-    getRefreshKey: (itemID) => buildReaderRefreshKey(itemID, deps),
+    getRefreshKey: (itemID) => buildReaderRefreshKeyFromDeps(itemID, deps),
     getActionState: deps.getActionState
       ? deps.getActionState
       : async (itemID) => createReaderToolbarActionState(itemID, deps),
@@ -325,7 +333,7 @@ async function executeCopyPathFromReader(): Promise<
 
 async function createActiveLibraryActionState(): Promise<CopyActionState> {
   const settings = runtimeSettings.getSnapshot();
-  const getSelectedItems = () =>
+  const getItems = () =>
     getSelectedLibraryItems({
       getActivePane: () => Zotero.getActiveZoteroPane(),
     });
@@ -333,33 +341,14 @@ async function createActiveLibraryActionState(): Promise<CopyActionState> {
   const controller = createCopyActionController({
     getAllowedTypes: () => settings.allowedTypes,
     getMode: () => settings.multiAttachmentMode,
-    getLibraryItems: () => getSelectedItems(),
+    getLibraryItems: getItems,
     getReaderItemID: () => undefined,
-    getSelectionAvailability: async () =>
-      createCopyService({
-        getSettings: () => ({
-          allowedTypes: settings.allowedTypes,
-          multiAttachmentMode: settings.multiAttachmentMode,
-        }),
-        getSelectedItems,
-        getCurrentReaderItemID: () => undefined,
-        resolveFromItems: (items, mode, allowedTypes) =>
-          resolveAttachmentsFromItems(items, mode, allowedTypes),
-        resolveFromReader: async () => [],
-        writeClipboard: async () => ({
-          ok: false as const,
-          format: "none" as const,
-          count: 0,
-          messageKey: "copy-no-files" as const,
-        }),
-        getClipboardDiagnostics: async () => ({
-          platform: "linux" as const,
-          linuxSession: "unknown" as const,
-          commands: {},
-          activeBackend: "unknown" as const,
-          lines: [],
-        }),
-      }).getSelectionAvailability(),
+    getSelectionAvailability: () =>
+      checkSelectionAvailability(
+        settings,
+        getItems(),
+        resolveAttachmentsFromItems,
+      ),
     getReaderAvailability: async () => ({
       canCopy: false,
       messageKey: "copy-reader-no-active",
@@ -372,18 +361,10 @@ async function createActiveLibraryActionState(): Promise<CopyActionState> {
       notifyCopyResult(result);
       return result;
     },
-    executePrimaryReaderCopy: async () => ({
-      ok: false,
-      format: "none",
-      count: 0,
-      messageKey: "copy-reader-no-active",
-    }),
-    executeExplicitReaderPathCopy: async () => ({
-      ok: false,
-      format: "none",
-      count: 0,
-      messageKey: "copy-reader-no-active",
-    }),
+    executePrimaryReaderCopy: async () =>
+      buildUnavailableResult("copy-reader-no-active"),
+    executeExplicitReaderPathCopy: async () =>
+      buildUnavailableResult("copy-reader-no-active"),
   });
 
   return controller.getCurrentActionState();
@@ -398,40 +379,24 @@ async function createMainToolbarActionState(
     getMode: () => deps.getMode(),
     getLibraryItems: () => deps.getSelectedItems(win),
     getReaderItemID: () => undefined,
-    getSelectionAvailability: async () =>
-      createCopyService({
-        getSettings: () => ({
+    getSelectionAvailability: () =>
+      checkSelectionAvailability(
+        {
           allowedTypes: deps.getAllowedTypes(),
           multiAttachmentMode: deps.getMode(),
-        }),
-        getSelectedItems: () => deps.getSelectedItems(win),
-        getCurrentReaderItemID: () => undefined,
-        resolveFromItems: (items, mode, allowedTypes) =>
-          deps.resolveFromItems(items, mode, allowedTypes),
-        resolveFromReader: async () => [],
-        writeClipboard: async () => ({
-          ok: false as const,
-          format: "none" as const,
-          count: 0,
-          messageKey: "copy-no-files" as const,
-        }),
-        getClipboardDiagnostics: async () => ({
-          platform: "linux" as const,
-          linuxSession: "unknown" as const,
-          commands: {},
-          activeBackend: "unknown" as const,
-          lines: [],
-        }),
-      }).getSelectionAvailability(),
+        },
+        deps.getSelectedItems(win),
+        deps.resolveFromItems,
+      ),
     getReaderAvailability: async () => ({
       canCopy: false,
       messageKey: "copy-reader-no-active",
     }),
     executePrimaryLibraryCopy: async () => deps.executeCopy(),
     executePrimaryReaderCopy: async () =>
-      buildUnavailableActionResult("copy-reader-no-active"),
+      buildUnavailableResult("copy-reader-no-active"),
     executeExplicitReaderPathCopy: async () =>
-      buildUnavailableActionResult("copy-reader-no-active"),
+      buildUnavailableResult("copy-reader-no-active"),
   });
 
   return controller.getCurrentActionState();
@@ -450,37 +415,14 @@ async function createActiveReaderActionState(): Promise<CopyActionState> {
       canCopy: false,
       messageKey: "copy-no-files",
     }),
-    getReaderAvailability: async () =>
-      createCopyService({
-        getSettings: () => ({
-          allowedTypes: settings.allowedTypes,
-          multiAttachmentMode: "all",
-        }),
-        getSelectedItems: () => [],
-        getCurrentReaderItemID: () => itemID,
-        resolveFromItems: async () => [],
-        resolveFromReader: (currentItemID, allowedTypes) =>
-          resolveAttachmentFromReader(currentItemID, allowedTypes),
-        writeClipboard: async () => ({
-          ok: false as const,
-          format: "none" as const,
-          count: 0,
-          messageKey: "copy-no-files" as const,
-        }),
-        getClipboardDiagnostics: async () => ({
-          platform: "linux" as const,
-          linuxSession: "unknown" as const,
-          commands: {},
-          activeBackend: "unknown" as const,
-          lines: [],
-        }),
-      }).getReaderAvailability(itemID),
-    executePrimaryLibraryCopy: async () => ({
-      ok: false,
-      format: "none",
-      count: 0,
-      messageKey: "copy-no-files",
-    }),
+    getReaderAvailability: () =>
+      checkReaderAvailability(
+        itemID,
+        settings.allowedTypes,
+        resolveAttachmentFromReader,
+      ),
+    executePrimaryLibraryCopy: async () =>
+      buildUnavailableResult("copy-no-files"),
     executePrimaryReaderCopy: async () => {
       const result = await copyFromReaderItem(itemID, settings.allowedTypes);
       notifyCopyResult(result);
@@ -505,62 +447,19 @@ async function createReaderToolbarActionState(
       canCopy: false,
       messageKey: "copy-no-files",
     }),
-    getReaderAvailability: async () =>
-      createCopyService({
-        getSettings: () => ({
-          allowedTypes: deps.getAllowedTypes(),
-          multiAttachmentMode: "all",
-        }),
-        getSelectedItems: () => [],
-        getCurrentReaderItemID: () => itemID,
-        resolveFromItems: async () => [],
-        resolveFromReader: (currentItemID, allowedTypes) =>
-          deps.resolveFromReader(currentItemID, allowedTypes),
-        writeClipboard: async () => ({
-          ok: false as const,
-          format: "none" as const,
-          count: 0,
-          messageKey: "copy-no-files" as const,
-        }),
-        getClipboardDiagnostics: async () => ({
-          platform: "linux" as const,
-          linuxSession: "unknown" as const,
-          commands: {},
-          activeBackend: "unknown" as const,
-          lines: [],
-        }),
-      }).getReaderAvailability(itemID),
+    getReaderAvailability: () =>
+      checkReaderAvailability(
+        itemID,
+        deps.getAllowedTypes(),
+        deps.resolveFromReader,
+      ),
     executePrimaryLibraryCopy: async () =>
-      buildUnavailableActionResult("copy-no-files"),
+      buildUnavailableResult("copy-no-files"),
     executePrimaryReaderCopy: async () => deps.executeCopy(itemID),
     executeExplicitReaderPathCopy: async () => deps.executeCopyPath(),
   });
 
   return controller.getCurrentActionState();
-}
-
-function getActiveReaderItemID(): number | undefined {
-  return getCurrentReaderItemID({
-    getTabs: () =>
-      ztoolkit.getGlobal("Zotero_Tabs") as
-        | {
-            selectedID?: string;
-            selectedType?: string;
-          }
-        | undefined,
-    getReaderByTabID: (tabID) => Zotero.Reader.getByTabID(tabID),
-  });
-}
-
-function buildUnavailableActionResult(
-  messageKey: "copy-no-files" | "copy-reader-no-active",
-) {
-  return {
-    ok: false,
-    format: "none" as const,
-    count: 0,
-    messageKey,
-  };
 }
 
 function syncMainToolbarButtons(): void {
@@ -603,23 +502,22 @@ export default {
   onDialogEvents,
 };
 
-function buildSelectionRefreshKey(
+function buildSelectionRefreshKeyFromDeps(
   win: Window,
   deps: MainToolbarCopyButtonDeps,
 ): string {
-  const itemIDs = deps
-    .getSelectedItems(win)
-    .map((item) => item.id)
-    .join(",");
-
-  return [deps.getMode(), deps.getAllowedTypes().join(","), itemIDs].join("|");
+  return buildLibraryRefreshKey({
+    mode: deps.getMode(),
+    allowedTypes: deps.getAllowedTypes(),
+    items: deps.getSelectedItems(win),
+  });
 }
 
-function buildReaderRefreshKey(
+function buildReaderRefreshKeyFromDeps(
   itemID: number | undefined,
   deps: ReaderToolbarCopyButtonDeps,
 ): string {
-  return [itemID || "none", deps.getAllowedTypes().join(",")].join("|");
+  return buildReaderRefreshKey(itemID, deps.getAllowedTypes());
 }
 
 function createDebouncedCallback(

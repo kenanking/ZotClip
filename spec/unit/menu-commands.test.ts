@@ -5,6 +5,12 @@ import {
   registerCopyMenuCommands,
   unregisterCopyMenuCommands,
 } from "../../src/modules/copy/menuCommands";
+import {
+  createCopyFilesResult,
+  createLibraryActionState,
+  createPathCopyResult,
+  createReaderActionState,
+} from "./fixtures/actionStateFixtures";
 
 test("menu commands register library and tools menu entries with command handlers", async () => {
   const registrations: Array<_ZoteroTypes.MenuManager.AllMenuOptions> = [];
@@ -28,7 +34,7 @@ test("menu commands register library and tools menu entries with command handler
       }),
     getReaderActionState: async () =>
       createReaderActionState({
-        runPrimary: async () => {
+        run: async () => {
           readerCopyCount += 1;
           return createCopyFilesResult();
         },
@@ -103,7 +109,7 @@ test("menu commands expose copy file and copy path entries from reader action st
     getLibraryActionState: async () => createLibraryActionState(),
     getReaderActionState: async () =>
       createReaderActionState({
-        runPrimary: async () => {
+        run: async () => {
           primaryCalls += 1;
           return createCopyFilesResult();
         },
@@ -137,74 +143,7 @@ test("menu commands expose copy file and copy path entries from reader action st
   assert.equal(secondaryCalls, 1);
 });
 
-function createLibraryActionState(
-  overrides: {
-    run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
-  } = {},
-) {
-  return {
-    source: "library" as const,
-    refreshKey: "library|11",
-    primary: {
-      kind: "copy-files" as const,
-      canExecute: true,
-      run:
-        overrides.run ||
-        (async () => {
-          return createCopyFilesResult();
-        }),
-    },
-  };
-}
-
-function createReaderActionState(
-  overrides: {
-    runPrimary?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
-    runSecondary?: () => Promise<ReturnType<typeof createPathCopyResult>>;
-  } = {},
-) {
-  return {
-    source: "reader" as const,
-    refreshKey: "reader|2048",
-    primary: {
-      kind: "copy-files" as const,
-      canExecute: true,
-      run:
-        overrides.runPrimary ||
-        (async () => {
-          return createCopyFilesResult();
-        }),
-    },
-    secondary: {
-      kind: "copy-path" as const,
-      canExecute: true,
-      run:
-        overrides.runSecondary ||
-        (async () => {
-          return createPathCopyResult();
-        }),
-    },
-  };
-}
-
-function createCopyFilesResult() {
-  return {
-    ok: true as const,
-    format: "file-object" as const,
-    count: 1,
-    outcome: "copied-files" as const,
-  };
-}
-
-function createPathCopyResult() {
-  return {
-    ok: true as const,
-    format: "path-text" as const,
-    count: 1,
-    outcome: "copied-path-text-explicit" as const,
-    messageKey: "copy-path-text-explicit" as const,
-  };
-}
+// Factories imported from shared fixtures — see fixtures/actionStateFixtures.ts
 
 function createMenuContext() {
   const menuElem = {

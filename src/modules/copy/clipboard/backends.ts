@@ -5,10 +5,10 @@ import type {
   CopyMessageKey,
   ClipboardResult,
 } from "../types";
-import type { BackendAvailability, ClipboardPayload } from "./types";
+import type { BackendAvailability, BackendId, ClipboardPayload } from "./types";
 
 export interface ClipboardBackend {
-  id: string;
+  id: BackendId;
   priority: number;
   isAvailable(payload: ClipboardPayload): Promise<BackendAvailability>;
   write(payload: ClipboardPayload): Promise<ClipboardResult>;

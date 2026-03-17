@@ -32,3 +32,5 @@ export const BACKEND_IDS = {
   PATH_TEXT: "path-text",
   FALLBACK: "generic-clipboard-fallback",
 } as const;
+
+export type BackendId = (typeof BACKEND_IDS)[keyof typeof BACKEND_IDS];

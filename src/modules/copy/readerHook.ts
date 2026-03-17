@@ -1,8 +1,8 @@
 import { copyFromReader } from "./copyCommands";
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
-import { isReaderTabSelected } from "./interaction/readerContext";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import type { ParsedShortcut } from "./shortcuts";
+import { isActiveReaderTabSelected } from "./zoteroReaderAccess";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export interface ReaderHookDeps {
@@ -13,14 +13,7 @@ export interface ReaderHookDeps {
 
 const DEFAULT_DEPS: ReaderHookDeps = {
   getParsedShortcut: () => undefined,
-  isReaderContext: () => {
-    return isReaderTabSelected({
-      getTabs: () =>
-        ztoolkit.getGlobal("Zotero_Tabs") as
-          | _ZoteroTypes.Zotero_Tabs
-          | undefined,
-    });
-  },
+  isReaderContext: () => isActiveReaderTabSelected(),
   getActionState: async () => ({
     source: "reader",
     refreshKey: "reader|default",

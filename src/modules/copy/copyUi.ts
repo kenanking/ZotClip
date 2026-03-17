@@ -16,15 +16,3 @@ export async function initToolbarIcon(options?: {
 export function getToolbarIconDataURL(): string {
   return toolbarIconDataURL;
 }
-
-export function getToolbarTooltipText(
-  label: string,
-  availability: {
-    canCopy: boolean;
-    unavailableMessage?: string;
-  },
-): string {
-  return availability.canCopy
-    ? label
-    : availability.unavailableMessage || label;
-}

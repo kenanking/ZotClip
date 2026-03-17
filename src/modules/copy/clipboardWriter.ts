@@ -14,6 +14,7 @@ import { createLinuxWaylandBackend } from "./clipboard/linuxWaylandBackend";
 import { createMacosCommandBackend } from "./clipboard/macosCommandBackend";
 import { createPathTextBackend } from "./clipboard/pathTextBackend";
 import { buildClipboardPayload } from "./clipboard/payload";
+import type { ClipboardSource } from "./clipboard/types";
 import {
   detectCurrentPlatformContext,
   type PlatformContext,
@@ -71,7 +72,7 @@ const DEFAULT_DEPS: ClipboardWriterDeps = {
 
 export async function writeClipboard(
   files: ResolvedAttachment[],
-  source: "library" | "reader" = "library",
+  source: ClipboardSource = "library",
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
   const runtimeCache = deps.runtimeCache || getClipboardRuntimeCache();
