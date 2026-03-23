@@ -1,6 +1,12 @@
 import type { ResolvedAttachment } from "./types";
 
 const DUPLICATE_COPY_CONCURRENCY = 4;
+const TEMP_DIR_CLEANUP_DELAY_MS = 30_000;
+
+export interface PreparedAttachmentResult {
+  files: ResolvedAttachment[];
+  tempDir?: string;
+}
 
 export interface PreparedAttachmentDeps {
   createOperationTempDir(): Promise<string>;
@@ -21,7 +27,7 @@ const DEFAULT_DEPS: PreparedAttachmentDeps = {
 export async function prepareResolvedAttachments(
   files: ResolvedAttachment[],
   deps: PreparedAttachmentDeps = DEFAULT_DEPS,
-): Promise<ResolvedAttachment[]> {
+): Promise<PreparedAttachmentResult> {
   const nameCounts = new Map<string, number>();
 
   for (const file of files) {
@@ -64,7 +70,21 @@ export async function prepareResolvedAttachments(
   }
 
   await runWithConcurrencyLimit(copyJobs, DUPLICATE_COPY_CONCURRENCY);
-  return prepared;
+  return { files: prepared, tempDir: operationTempDir };
+}
+
+export function scheduleTempDirCleanup(
+  tempDir: string,
+  delayMs: number = TEMP_DIR_CLEANUP_DELAY_MS,
+  removeFn: (path: string) => Promise<void> = defaultRemoveTempDir,
+): void {
+  setTimeout(() => {
+    void removeFn(tempDir).catch(() => {});
+  }, delayMs);
+}
+
+async function defaultRemoveTempDir(path: string): Promise<void> {
+  await IOUtils.remove(path, { recursive: true });
 }
 
 function buildSuffixedName(baseName: string, suffix: number): string {

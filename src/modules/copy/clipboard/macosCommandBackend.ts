@@ -44,7 +44,7 @@ export function createMacosCommandBackend(
         };
       }
 
-      if (!(await deps.probeCommand("osascript"))) {
+      if (!(await deps.probeCommand(OSASCRIPT_PATH))) {
         return {
           available: false,
           dependency: "osascript",

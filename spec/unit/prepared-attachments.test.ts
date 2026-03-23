@@ -17,7 +17,7 @@ function createDeferred(): {
 test("prepareResolvedAttachments keeps the first duplicate name and suffixes later duplicates", async () => {
   const copied: Array<{ from: string; to: string }> = [];
 
-  const prepared = await prepareResolvedAttachments(
+  const result = await prepareResolvedAttachments(
     [
       { itemID: 1, attachmentID: 11, path: "/src/a/paper.pdf" },
       { itemID: 1, attachmentID: 12, path: "/src/b/paper.pdf" },
@@ -32,13 +32,14 @@ test("prepareResolvedAttachments keeps the first duplicate name and suffixes lat
   );
 
   assert.deepEqual(
-    prepared.map((file) => file.clipboardPath),
+    result.files.map((file) => file.clipboardPath),
     [
       "/src/a/paper.pdf",
       "/tmp/zotclip-op/paper_1.pdf",
       "/tmp/zotclip-op/paper_2.pdf",
     ],
   );
+  assert.equal(result.tempDir, "/tmp/zotclip-op");
   assert.deepEqual(copied, [
     { from: "/src/b/paper.pdf", to: "/tmp/zotclip-op/paper_1.pdf" },
     { from: "/src/c/paper.pdf", to: "/tmp/zotclip-op/paper_2.pdf" },
@@ -48,7 +49,7 @@ test("prepareResolvedAttachments keeps the first duplicate name and suffixes lat
 test("prepareResolvedAttachments ignores duplicates when extensions differ", async () => {
   const copied: Array<{ from: string; to: string }> = [];
 
-  const prepared = await prepareResolvedAttachments(
+  const result = await prepareResolvedAttachments(
     [
       { itemID: 1, attachmentID: 21, path: "/src/a/paper.pdf" },
       { itemID: 1, attachmentID: 22, path: "/src/b/paper.epub" },
@@ -64,9 +65,10 @@ test("prepareResolvedAttachments ignores duplicates when extensions differ", asy
   );
 
   assert.deepEqual(
-    prepared.map((file) => file.clipboardPath),
+    result.files.map((file) => file.clipboardPath),
     ["/src/a/paper.pdf", "/src/b/paper.epub"],
   );
+  assert.equal(result.tempDir, undefined);
   assert.deepEqual(copied, []);
 });
 
@@ -107,10 +109,10 @@ test("prepareResolvedAttachments can start duplicate copies concurrently while p
 
   secondCopy.resolve();
   firstCopy.resolve();
-  const prepared = await preparePromise;
+  const result = await preparePromise;
 
   assert.deepEqual(
-    prepared.map((file) => file.clipboardPath),
+    result.files.map((file) => file.clipboardPath),
     [
       "/src/a/paper.pdf",
       "/tmp/zotclip-op/paper_1.pdf",

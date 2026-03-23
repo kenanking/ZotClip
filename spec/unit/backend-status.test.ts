@@ -86,7 +86,28 @@ test("unknown Linux session keeps a Linux fallback reason only when no file back
 
   assert.deepEqual(result, {
     activeBackend: BACKEND_IDS.FALLBACK,
-    lastFallbackMessageKey: "copy-linux-gtk4-missing",
+    lastFallbackMessageKey: "copy-linux-no-file-backend",
+  });
+});
+
+test("Wayland session falls back to GTK when wl-copy is unavailable", async () => {
+  const resolveClipboardBackendStatus = await loadResolver();
+
+  assert.equal(typeof resolveClipboardBackendStatus, "function");
+
+  const result = resolveClipboardBackendStatus!(
+    {
+      platform: "linux",
+      linuxSession: "wayland",
+    },
+    {
+      "wl-copy": false,
+      "gtk4-helper": true,
+    },
+  );
+
+  assert.deepEqual(result, {
+    activeBackend: BACKEND_IDS.LINUX_GTK4,
   });
 });
 

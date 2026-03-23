@@ -21,6 +21,7 @@ export type CopyMessageKey =
   | "copy-path-text-fallback"
   | "copy-linux-gtk4-missing"
   | "copy-linux-wl-copy-missing"
+  | "copy-linux-no-file-backend"
   | "copy-macos-osascript-missing";
 
 export type CopyMessageArgs = Record<string, string | number>;

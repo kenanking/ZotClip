@@ -67,11 +67,11 @@ export function buildClipboardDiagnostics(
     });
   }
 
-  const installCommand = buildInstallCommand(input);
-  if (installCommand) {
+  const installPackages = buildInstallHintPackages(input);
+  if (installPackages) {
     lines.push({
       key: "copy-diagnostics-install-command",
-      args: { command: installCommand },
+      args: { command: installPackages },
     });
     lines.push({
       key: "copy-diagnostics-troubleshoot",
@@ -105,7 +105,7 @@ function buildPlatformLine(
   };
 }
 
-function buildInstallCommand(
+function buildInstallHintPackages(
   input: ClipboardDiagnosticsInput,
 ): string | undefined {
   if (input.platform !== "linux") {
@@ -119,19 +119,19 @@ function buildInstallCommand(
   const commands = input.commands || {};
 
   if (input.linuxSession === "wayland" && commands["wl-copy"] === false) {
-    return "sudo apt install wl-clipboard";
+    return "wl-clipboard";
   }
 
   if (input.linuxSession === "x11" && commands["gtk4-helper"] === false) {
-    return "sudo apt install python3-gi gir1.2-gtk-4.0";
+    return "python3-gi, gir1.2-gtk-4.0";
   }
 
   if (commands["gtk4-helper"] === false) {
-    return "sudo apt install python3-gi gir1.2-gtk-4.0";
+    return "python3-gi, gir1.2-gtk-4.0";
   }
 
   if (commands["wl-copy"] === false) {
-    return "sudo apt install wl-clipboard";
+    return "wl-clipboard";
   }
 
   return undefined;

@@ -24,7 +24,11 @@ import {
   type ClipboardRuntimeCache,
 } from "./clipboard/runtimeCache";
 import { createWindowsBackend } from "./clipboard/windowsBackend";
-import { prepareResolvedAttachments } from "./preparedAttachments";
+import {
+  prepareResolvedAttachments,
+  scheduleTempDirCleanup,
+} from "./preparedAttachments";
+import type { PreparedAttachmentResult } from "./preparedAttachments";
 import type { ClipboardResult, ResolvedAttachment } from "./types";
 import { writeWindowsFileDrop } from "./windowsFileClipboard";
 
@@ -34,7 +38,7 @@ export interface ClipboardWriterDeps {
   detectPlatformContext?(): PlatformContext;
   prepareResolvedAttachments?(
     files: ResolvedAttachment[],
-  ): Promise<ResolvedAttachment[]>;
+  ): Promise<PreparedAttachmentResult | ResolvedAttachment[]>;
   runtimeCache?: ClipboardRuntimeCache;
   probeCommand?(name: string): Promise<boolean>;
   runCommand?(call: CommandCall): Promise<CommandResult>;
@@ -76,8 +80,8 @@ export async function writeClipboard(
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
   const runtimeCache = deps.runtimeCache || getClipboardRuntimeCache();
-  const preparedFiles =
-    (await deps.prepareResolvedAttachments?.(files)) || files;
+  const prepareResult = await deps.prepareResolvedAttachments?.(files);
+  const { preparedFiles, tempDir } = extractPrepareResult(prepareResult, files);
   const payload = buildClipboardPayload(preparedFiles, source);
   if (!payload.paths.length) {
     return {
@@ -104,6 +108,9 @@ export async function writeClipboard(
   });
 
   invalidateRuntimeCacheOnBackendFailure(runtimeCache, platformContext, result);
+  if (tempDir) {
+    scheduleTempDirCleanup(tempDir);
+  }
   return result;
 }
 
@@ -131,9 +138,15 @@ function buildLinuxBackends(
   const commandDeps = buildCommandDeps(deps, runtimeCache);
   const linuxBackends =
     platformContext.linuxSession === "wayland"
-      ? [createLinuxWaylandBackend(commandDeps)]
+      ? [
+          createLinuxWaylandBackend(commandDeps),
+          createLinuxGtkBackend(commandDeps),
+        ]
       : platformContext.linuxSession === "x11"
-        ? [createLinuxGtkBackend(commandDeps)]
+        ? [
+            createLinuxGtkBackend(commandDeps),
+            createLinuxWaylandBackend(commandDeps),
+          ]
         : [
             createLinuxGtkBackend(commandDeps),
             createLinuxWaylandBackend(commandDeps),
@@ -202,6 +215,19 @@ function buildPathTextBackend(deps: ClipboardWriterDeps): ClipboardBackend {
   });
 }
 
+function extractPrepareResult(
+  result: PreparedAttachmentResult | ResolvedAttachment[] | undefined,
+  fallback: ResolvedAttachment[],
+): { preparedFiles: ResolvedAttachment[]; tempDir?: string } {
+  if (!result) {
+    return { preparedFiles: fallback };
+  }
+  if (Array.isArray(result)) {
+    return { preparedFiles: result };
+  }
+  return { preparedFiles: result.files, tempDir: result.tempDir };
+}
+
 function buildUnavailableCommandResult(): CommandResult {
   return {
     ok: false,
@@ -221,14 +247,8 @@ function invalidateRuntimeCacheOnBackendFailure(
   }
 
   if (platformContext.platform === "linux") {
-    if (platformContext.linuxSession !== "wayland") {
-      runtimeCache.invalidateLinuxGtkAvailability();
-    }
-
-    if (platformContext.linuxSession !== "x11") {
-      runtimeCache.invalidateCommandAvailability("wl-copy");
-    }
-
+    runtimeCache.invalidateLinuxGtkAvailability();
+    runtimeCache.invalidateCommandAvailability("wl-copy");
     return;
   }
 

@@ -43,19 +43,13 @@ function getActiveBackendID(
   }
 
   if (platformContext.linuxSession === "wayland") {
-    return commands["wl-copy"]
-      ? BACKEND_IDS.LINUX_WAYLAND
-      : BACKEND_IDS.FALLBACK;
+    if (commands["wl-copy"]) return BACKEND_IDS.LINUX_WAYLAND;
+    if (commands["gtk4-helper"]) return BACKEND_IDS.LINUX_GTK4;
+    return BACKEND_IDS.FALLBACK;
   }
 
-  if (commands["gtk4-helper"]) {
-    return BACKEND_IDS.LINUX_GTK4;
-  }
-
-  if (commands["wl-copy"]) {
-    return BACKEND_IDS.LINUX_WAYLAND;
-  }
-
+  if (commands["gtk4-helper"]) return BACKEND_IDS.LINUX_GTK4;
+  if (commands["wl-copy"]) return BACKEND_IDS.LINUX_WAYLAND;
   return BACKEND_IDS.FALLBACK;
 }
 
@@ -67,6 +61,10 @@ function getFallbackMessageKey(
   if (platformContext.platform === "linux") {
     if (activeBackend !== BACKEND_IDS.FALLBACK) {
       return undefined;
+    }
+
+    if (!commands["gtk4-helper"] && !commands["wl-copy"]) {
+      return "copy-linux-no-file-backend";
     }
 
     if (platformContext.linuxSession === "wayland" && !commands["wl-copy"]) {

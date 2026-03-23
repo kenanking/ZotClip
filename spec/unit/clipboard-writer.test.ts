@@ -188,6 +188,44 @@ test("ClipboardWriter prefers wl-copy on Wayland before path-text fallback", asy
   assert.equal(result.outcome, "copied-files");
 });
 
+test("ClipboardWriter falls back to GTK on Wayland when wl-copy is unavailable", async () => {
+  let fallbackCalled = false;
+  const helperCalls: any[] = [];
+
+  const result = await writeClipboard(
+    [{ attachmentID: 1, itemID: 1, path: "/home/user/a.pdf" }],
+    "library",
+    {
+      detectPlatformContext: () => ({
+        platform: "linux",
+        linuxSession: "wayland",
+      }),
+      runtimeCache: createClipboardRuntimeCache(),
+      runCommand: async () => ({
+        ok: true,
+        exitCode: 0,
+        stdout: "",
+        stderr: "",
+      }),
+      startCommand: async (call) => {
+        helperCalls.push(call);
+        return { ok: true, exitCode: 0, stdout: "", stderr: "" };
+      },
+      probeCommand: async (name) => name !== "wl-copy",
+      writePathText: () => {
+        fallbackCalled = true;
+        return true;
+      },
+    },
+  );
+
+  assert.equal(helperCalls.length, 1);
+  assert.equal(fallbackCalled, false);
+  assert.equal(result.ok, true);
+  assert.equal(result.format, "file-uri-list");
+  assert.equal(result.outcome, "copied-files");
+});
+
 test("ClipboardWriter prefers the Linux GTK4 helper backend on X11", async () => {
   let fallbackCalled = false;
   const probeCalls: any[] = [];
@@ -334,7 +372,7 @@ test("ClipboardWriter prefers the macOS command backend before path-text fallbac
     {
       detectPlatformContext: () => ({ platform: "macos" }),
       runtimeCache: createClipboardRuntimeCache(),
-      probeCommand: async (name) => name === "osascript",
+      probeCommand: async (name) => name === "/usr/bin/osascript",
       runCommand: async (call) => {
         commands.push(call);
         return {
@@ -406,7 +444,7 @@ test("ClipboardWriter falls back to path-text when the macOS pasteboard write fa
     {
       detectPlatformContext: () => ({ platform: "macos" }),
       runtimeCache: createClipboardRuntimeCache(),
-      probeCommand: async (name) => name === "osascript",
+      probeCommand: async (name) => name === "/usr/bin/osascript",
       runCommand: async () => ({
         ok: false,
         exitCode: 1,

@@ -24,9 +24,15 @@ export function buildClipboardPayload(
 
 function pathToFileUri(path: string): string {
   if (/^[A-Za-z]:\\/.test(path)) {
-    const normalizedPath = path.replace(/\\/g, "/");
-    return `file:///${encodeURI(normalizedPath)}`;
+    return `file:///${encodePathSegments(path.replace(/\\/g, "/"))}`;
   }
 
-  return `file://${encodeURI(path)}`;
+  return `file://${encodePathSegments(path)}`;
+}
+
+function encodePathSegments(posixPath: string): string {
+  return posixPath
+    .split("/")
+    .map((seg) => (/^[A-Za-z]:$/.test(seg) ? seg : encodeURIComponent(seg)))
+    .join("/");
 }

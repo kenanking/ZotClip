@@ -23,6 +23,25 @@ test("buildClipboardPayload returns unique paths, file URIs, and path text", () 
   assert.equal(payload.source, "library");
 });
 
+test("buildClipboardPayload encodes # and special characters in file URIs", () => {
+  const payload = buildClipboardPayload(
+    [
+      { itemID: 1, attachmentID: 11, path: "/home/user/Smith #1.pdf" },
+      {
+        itemID: 2,
+        attachmentID: 12,
+        path: "C:\\Docs\\Q&A (draft).pdf",
+      },
+    ],
+    "library",
+  );
+
+  assert.deepEqual(payload.fileUris, [
+    "file:///home/user/Smith%20%231.pdf",
+    "file:///C:/Docs/Q%26A%20(draft).pdf",
+  ]);
+});
+
 test("buildClipboardPayload prefers clipboardPath over the original path", () => {
   const payload = buildClipboardPayload(
     [
