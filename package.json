@@ -1,7 +1,7 @@
 {
   "name": "zotclip",
   "type": "module",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Copy Zotero attachments to clipboard.",
   "config": {
     "addonName": "ZotClip",
