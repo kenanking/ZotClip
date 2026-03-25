@@ -217,15 +217,6 @@ function onShutdown(): void {
   delete Zotero[addon.data.config.addonInstance];
 }
 
-async function onNotify(
-  _event: string,
-  _type: string,
-  _ids: Array<string | number>,
-  _extraData: { [key: string]: any },
-) {
-  return;
-}
-
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
     case "load":
@@ -234,14 +225,6 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
     default:
       return;
   }
-}
-
-function onShortcuts(_type: string) {
-  return;
-}
-
-function onDialogEvents(_type: string) {
-  return;
 }
 
 export function registerMainToolbarCopyButton(
@@ -496,10 +479,7 @@ export default {
   onShutdown,
   onMainWindowLoad,
   onMainWindowUnload,
-  onNotify,
   onPrefsEvent,
-  onShortcuts,
-  onDialogEvents,
 };
 
 function buildSelectionRefreshKeyFromDeps(

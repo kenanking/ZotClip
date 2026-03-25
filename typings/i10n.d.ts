@@ -13,6 +13,7 @@ export type FluentMessageId =
   | 'copy-diagnostics-platform-linux'
   | 'copy-diagnostics-troubleshoot'
   | 'copy-linux-gtk4-missing'
+  | 'copy-linux-no-file-backend'
   | 'copy-linux-wl-copy-missing'
   | 'copy-macos-osascript-missing'
   | 'copy-no-file-uris'

@@ -34,6 +34,8 @@ export default defineConfig({
         },
         bundle: true,
         target: "firefox115",
+        minify: true,
+        treeShaking: true,
         outfile: `.scaffold/build/addon/content/scripts/${pkg.config.addonRef}.js`,
       },
     ],
