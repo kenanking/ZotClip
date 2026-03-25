@@ -6,9 +6,6 @@ import { createReaderToolbarController } from "../../src/modules/copy/readerTool
 
 function createWindowStub(): _ZoteroTypes.MainWindow {
   return {
-    MozXULElement: {
-      insertFTLIfNeeded: () => {},
-    },
     document: {
       addEventListener: () => {},
       removeEventListener: () => {},
@@ -26,7 +23,6 @@ test("main window controller registers toolbar state per window and disposes onl
   let disposedSecond = 0;
 
   const controller = createMainWindowController({
-    insertLocale: () => {},
     isMainToolbarButtonEnabled: () => true,
     registerMainToolbarCopyButton: (win) => {
       toolbarRegistrations += 1;

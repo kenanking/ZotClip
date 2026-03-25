@@ -51,14 +51,6 @@ export async function registerPrefsUI(
   window: Window,
   deps: RegisterPrefsUIDeps = DEFAULT_DEPS,
 ): Promise<PrefsUIHandle> {
-  const addonData = (globalThis as { addon?: { data?: { prefs?: unknown } } })
-    .addon?.data;
-  if (addonData) {
-    addonData.prefs = {
-      window,
-    };
-  }
-
   windowHandles.get(window)?.dispose();
   deps.syncPreferenceMenulists?.(window.document);
 

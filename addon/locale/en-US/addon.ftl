@@ -1,16 +1,10 @@
 prefs-title = ZotClip
 mainwindow-copy-toolbar = Copy File
-mainwindow-copy-selected-unavailable = No eligible attachments selected
-mainwindow-copy-reader-no-active = No active reader attachment
-mainwindow-copy-reader-unavailable = No eligible reader attachment
 menu-copy-selected = Copy Attachment File(s)
 menu-copy-reader = Copy Current Reader Attachment
 menu-copy-reader-path = Copy Current Reader Path
-menu-copy-reader-shortcut = Copy Current Reader Attachment (Ctrl+Shift+C)
-notify-copy-failed = Copy failed
 copy-notify-files = Copied { $count } attachment file(s) to clipboard.
 copy-notify-files-file-object = Copied { $count } attachment file(s) to clipboard (file-object).
-copy-notify-file-uris = Copied { $count } attachment file URI(s) to clipboard.
 copy-notify-files-with-format = Copied { $count } attachment file(s) to clipboard ({ $format }).
 copy-notify-generic-failure = Copy failed. Please check file availability and clipboard support in target app.
 copy-no-files = No files to copy.

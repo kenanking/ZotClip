@@ -3,7 +3,6 @@ import {
   KeyboardManager,
   makeHelperTool,
   ProgressWindowHelper,
-  UITool,
   unregister,
 } from "zotero-plugin-toolkit";
 import { config } from "../../package.json";
@@ -17,11 +16,8 @@ function createZToolkit() {
 }
 
 function initZToolkit(_ztoolkit: MyToolkit) {
-  const env = __env__;
   _ztoolkit.basicOptions.log.prefix = `[${config.addonName}]`;
-  _ztoolkit.basicOptions.log.disableConsole = env === "production";
-  _ztoolkit.UI.basicOptions.ui.enableElementJSONLog = __env__ === "development";
-  _ztoolkit.UI.basicOptions.ui.enableElementDOMLog = __env__ === "development";
+  _ztoolkit.basicOptions.log.disableConsole = __env__ === "production";
   _ztoolkit.basicOptions.api.pluginID = config.addonID;
   _ztoolkit.ProgressWindow.setIconURI(
     "default",
@@ -30,13 +26,11 @@ function initZToolkit(_ztoolkit: MyToolkit) {
 }
 
 class MyToolkit extends BasicTool {
-  UI: UITool;
   Keyboard: KeyboardManager;
   ProgressWindow: typeof ProgressWindowHelper;
 
   constructor() {
     super();
-    this.UI = new UITool(this);
     this.Keyboard = new KeyboardManager(this);
     this.ProgressWindow = makeHelperTool(ProgressWindowHelper, this);
   }

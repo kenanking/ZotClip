@@ -1,5 +1,4 @@
 export interface MainWindowControllerDeps {
-  insertLocale(win: _ZoteroTypes.MainWindow): void;
   isMainToolbarButtonEnabled(): boolean;
   registerMainToolbarCopyButton(win: _ZoteroTypes.MainWindow): () => void;
 }
@@ -18,8 +17,6 @@ export function createMainWindowController(
 
   return {
     load(win): void {
-      deps.insertLocale(win);
-
       if (deps.isMainToolbarButtonEnabled()) {
         mainToolbarDisposers.set(win, deps.registerMainToolbarCopyButton(win));
       }

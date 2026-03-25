@@ -1,16 +1,10 @@
 prefs-title = ZotClip
 mainwindow-copy-toolbar = 复制文件
-mainwindow-copy-selected-unavailable = 当前没有可复制的附件
-mainwindow-copy-reader-no-active = 当前没有活动的阅读器附件
-mainwindow-copy-reader-unavailable = 当前附件不可复制
 menu-copy-selected = 复制附件文件
 menu-copy-reader = 复制当前阅读器附件
 menu-copy-reader-path = 复制当前阅读器路径
-menu-copy-reader-shortcut = 复制当前阅读器附件（Ctrl+Shift+C）
-notify-copy-failed = 复制失败
 copy-notify-files = 已复制 { $count } 个附件文件到剪贴板。
 copy-notify-files-file-object = 已复制 { $count } 个附件文件到剪贴板（文件对象）。
-copy-notify-file-uris = 已复制 { $count } 个附件文件 URI 到剪贴板。
 copy-notify-files-with-format = 已复制 { $count } 个附件文件到剪贴板（{ $format }）。
 copy-notify-generic-failure = 复制失败。请检查文件是否可用，以及目标应用是否支持当前剪贴板格式。
 copy-no-files = 没有可复制的文件。

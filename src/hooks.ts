@@ -37,7 +37,7 @@ import { registerReaderToolbarButton } from "./modules/copy/readerToolbarButton"
 import { createReaderToolbarController } from "./modules/copy/readerToolbarController";
 import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
 import { handleSelectionCopyShortcut } from "./modules/copy/selectionHook";
-import { registerPrefsScripts } from "./modules/preferenceScript";
+import { registerPrefsUI } from "./modules/copy/preferences/registerPrefsUI";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
@@ -125,11 +125,6 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
 };
 
 const mainWindowController = createMainWindowController({
-  insertLocale: (win) => {
-    win.MozXULElement.insertFTLIfNeeded(
-      `${addon.data.config.addonRef}-mainWindow.ftl`,
-    );
-  },
   isMainToolbarButtonEnabled: () =>
     runtimeSettings.getSnapshot().showMainToolbarButton,
   registerMainToolbarCopyButton: (win) => registerMainToolbarCopyButton(win),
@@ -191,8 +186,6 @@ async function onStartup() {
   registerToolbarPreferenceObservers();
   syncMainToolbarButtons();
   syncReaderToolbarButton();
-
-  addon.data.initialized = true;
 }
 
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
@@ -220,7 +213,7 @@ function onShutdown(): void {
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
     case "load":
-      registerPrefsScripts(data.window);
+      registerPrefsUI(data.window);
       break;
     default:
       return;
