@@ -34,7 +34,7 @@
     "zotero-plugin-toolkit": "5.1.2"
   },
   "devDependencies": {
-    "@types/node": "25.5.0",
+    "@types/node": "25.5.2",
     "@zotero-plugin/eslint-config": "^0.6.9",
     "eslint": "10.1.0",
     "mocha": "^11.7.5",
