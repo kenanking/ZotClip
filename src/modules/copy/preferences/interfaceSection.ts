@@ -10,9 +10,7 @@ import {
   createNoopHandle,
 } from "../ui/disposables";
 
-export function registerInterfaceSection(
-  doc: Document,
-): { dispose(): void } {
+export function registerInterfaceSection(doc: Document): { dispose(): void } {
   const contextMenuCheckbox = doc.querySelector<HTMLInputElement>(
     "[data-zotclip-context-menu-entry]",
   );
