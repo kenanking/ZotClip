@@ -98,14 +98,15 @@
   <separator class="thin" />
 
   <label class="zotclip-pref-section"
-    ><html:h3 data-l10n-id="pref-section-toolbar-buttons"></html:h3
+    ><html:h3 data-l10n-id="pref-section-interface"></html:h3
   ></label>
 
   <vbox class="zotclip-pref-field">
-    <html:div
-      class="zotclip-pref-toggle-row"
-      data-zotclip-toolbar-buttons-row="true"
-    >
+    <html:div class="zotclip-pref-toggle-row">
+      <html:label class="zotclip-pref-type-option">
+        <html:input type="checkbox" data-zotclip-context-menu-entry="true" />
+        <html:span data-l10n-id="pref-show-context-menu"></html:span>
+      </html:label>
       <html:label class="zotclip-pref-type-option">
         <html:input type="checkbox" data-zotclip-main-toolbar-button="true" />
         <html:span data-l10n-id="pref-main-toolbar-button"></html:span>
@@ -116,7 +117,7 @@
       </html:label>
     </html:div>
     <description class="zotclip-pref-help">
-      <html:span data-l10n-id="pref-toolbar-buttons-help"></html:span>
+      <html:span data-l10n-id="pref-interface-help"></html:span>
     </description>
   </vbox>
 

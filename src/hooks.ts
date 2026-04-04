@@ -38,6 +38,7 @@ import { createReaderToolbarController } from "./modules/copy/readerToolbarContr
 import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
 import { handleSelectionCopyShortcut } from "./modules/copy/selectionHook";
 import { registerPrefsUI } from "./modules/copy/preferences/registerPrefsUI";
+import { getContextMenuEntryEnabled } from "./utils/prefs";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
@@ -178,6 +179,7 @@ async function onStartup() {
     getLabel: (key) => getString(key),
     getLibraryActionState: createActiveLibraryActionState,
     getReaderActionState: createActiveReaderActionState,
+    isContextMenuVisible: () => getContextMenuEntryEnabled(),
   });
 
   await Promise.all(

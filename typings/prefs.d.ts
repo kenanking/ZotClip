@@ -14,6 +14,7 @@ declare namespace _ZoteroTypes {
       "showReaderToolbarButton": boolean;
       "enabledAttachmentTypes": string;
       "customAttachmentTypes": string;
+      "showContextMenuEntry": boolean;
     };
   }
 }

@@ -12,6 +12,7 @@ export interface CopyMenuRegistrationDeps {
   getLabel(key: CopyMenuLabelKey): string;
   getLibraryActionState(): Promise<CopyActionState>;
   getReaderActionState(): Promise<CopyActionState>;
+  isContextMenuVisible?(): boolean;
   registerMenu?(
     options: _ZoteroTypes.MenuManager.AllMenuOptions,
   ): string | false;
@@ -49,6 +50,8 @@ export function unregisterCopyMenuCommands(
 function buildCopyMenuOptions(
   deps: CopyMenuRegistrationDeps,
 ): _ZoteroTypes.MenuManager.AllMenuOptions[] {
+  const isContextMenuVisible = deps.isContextMenuVisible ?? (() => true);
+
   const options: _ZoteroTypes.MenuManager.AllMenuOptions[] = [
     {
       menuID: `${deps.addonRef}-copy-selected`,
@@ -65,6 +68,9 @@ function buildCopyMenuOptions(
             }
 
             await state.primary.run();
+          },
+          (_event, context) => {
+            context.setVisible(isContextMenuVisible());
           },
         ),
       ],
@@ -116,6 +122,10 @@ function createMenuItem(
   label: string,
   icon: string,
   onCommand: () => Promise<void>,
+  beforeShowing?: (
+    _event: any,
+    context: _ZoteroTypes.MenuManager.BaseMenuContext,
+  ) => void,
 ): _ZoteroTypes.MenuManager.MenuData {
   return {
     menuType: "menuitem",
@@ -123,6 +133,7 @@ function createMenuItem(
     onShowing: (_event, context) => {
       context.menuElem.setAttribute("label", label);
       context.setIcon(icon);
+      beforeShowing?.(_event, context);
     },
     onCommand: async () => {
       await onCommand();

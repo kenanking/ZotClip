@@ -13,10 +13,6 @@ import {
   persistShortcutPrefs,
   validateShortcutInput,
 } from "../../src/modules/copy/preferences/shortcutsSection";
-import {
-  persistToolbarButtonPrefs,
-  readToolbarButtonVisibility,
-} from "../../src/modules/copy/preferences/toolbarButtonsSection";
 
 test("attachment types section builds effective types from presets and custom input", () => {
   assert.deepEqual(
@@ -71,35 +67,6 @@ test("persistShortcutPrefs keeps invalid shortcut text visible and skips persist
   assert.deepEqual(calls, []);
 });
 
-test("toolbar buttons section reads and persists visibility values", () => {
-  const calls: Array<{ key: string; value: boolean }> = [];
-
-  const visibility = readToolbarButtonVisibility({
-    mainToolbarCheckbox: { checked: false } as HTMLInputElement,
-    readerToolbarCheckbox: { checked: true } as HTMLInputElement,
-  });
-
-  persistToolbarButtonPrefs(
-    {
-      mainToolbarCheckbox: { checked: false } as HTMLInputElement,
-      readerToolbarCheckbox: { checked: true } as HTMLInputElement,
-    },
-    (key, value) => {
-      calls.push({ key, value });
-      return true;
-    },
-  );
-
-  assert.deepEqual(visibility, {
-    showMainToolbarButton: false,
-    showReaderToolbarButton: true,
-  });
-  assert.deepEqual(calls, [
-    { key: "showMainToolbarButton", value: false },
-    { key: "showReaderToolbarButton", value: true },
-  ]);
-});
-
 test("registerPrefsUI disposes an earlier registration before re-registering the same window", async () => {
   const windowStub = {
     document: {} as Document,
@@ -118,11 +85,11 @@ test("registerPrefsUI disposes an earlier registration before re-registering the
         },
       };
     },
-    registerToolbarButtonsSection: async () => {
-      callLog.push("register-toolbar-buttons");
+    registerInterfaceSection: async () => {
+      callLog.push("register-interface");
       return {
         dispose: () => {
-          callLog.push("dispose-toolbar-buttons");
+          callLog.push("dispose-interface");
         },
       };
     },
@@ -150,16 +117,16 @@ test("registerPrefsUI disposes an earlier registration before re-registering the
   assert.deepEqual(callLog, [
     "sync-menulists",
     "register-attachment-types",
-    "register-toolbar-buttons",
+    "register-interface",
     "register-shortcuts",
     "register-diagnostics",
     "dispose-attachment-types",
-    "dispose-toolbar-buttons",
+    "dispose-interface",
     "dispose-shortcuts",
     "dispose-diagnostics",
     "sync-menulists",
     "register-attachment-types",
-    "register-toolbar-buttons",
+    "register-interface",
     "register-shortcuts",
     "register-diagnostics",
   ]);
@@ -181,7 +148,7 @@ test("registerPrefsUI dispose is idempotent for the same registration handle", a
         disposals += 1;
       },
     }),
-    registerToolbarButtonsSection: async () => ({
+    registerInterfaceSection: async () => ({
       dispose: () => {
         disposals += 1;
       },

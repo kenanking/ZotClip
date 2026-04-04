@@ -1,8 +1,8 @@
 import { getMultiAttachmentMode } from "../../../utils/prefs";
 import { registerAttachmentTypesSection } from "./attachmentTypesSection";
 import { registerDiagnosticsSection } from "./diagnosticsSection";
+import { registerInterfaceSection } from "./interfaceSection";
 import { registerShortcutsSection } from "./shortcutsSection";
-import { registerToolbarButtonsSection } from "./toolbarButtonsSection";
 import { composeDisposables, createNoopHandle } from "../ui/disposables";
 
 interface MenuitemLike {
@@ -26,7 +26,7 @@ export interface RegisterPrefsUIDeps {
   registerAttachmentTypesSection?(
     doc: Document,
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
-  registerToolbarButtonsSection?(
+  registerInterfaceSection?(
     doc: Document,
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
   registerShortcutsSection?(
@@ -42,7 +42,7 @@ const windowHandles = new WeakMap<Window, PrefsUIHandle>();
 const DEFAULT_DEPS: RegisterPrefsUIDeps = {
   syncPreferenceMenulists: (doc) => syncPreferenceMenulists(doc),
   registerAttachmentTypesSection: (doc) => registerAttachmentTypesSection(doc),
-  registerToolbarButtonsSection: (doc) => registerToolbarButtonsSection(doc),
+  registerInterfaceSection: (doc) => registerInterfaceSection(doc),
   registerShortcutsSection: (doc) => registerShortcutsSection(doc),
   registerDiagnosticsSection: (doc) => registerDiagnosticsSection(doc),
 };
@@ -57,7 +57,7 @@ export async function registerPrefsUI(
   const sectionHandles = await Promise.all([
     deps.registerAttachmentTypesSection?.(window.document) ||
       createNoopHandle(),
-    deps.registerToolbarButtonsSection?.(window.document) || createNoopHandle(),
+    deps.registerInterfaceSection?.(window.document) || createNoopHandle(),
     deps.registerShortcutsSection?.(window.document) || createNoopHandle(),
     deps.registerDiagnosticsSection?.(window.document) || createNoopHandle(),
   ]);

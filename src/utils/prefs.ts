@@ -51,6 +51,11 @@ export function getReaderToolbarButtonEnabled(): boolean {
   return value !== false;
 }
 
+export function getContextMenuEntryEnabled(): boolean {
+  const value = getPref("showContextMenuEntry");
+  return value !== false;
+}
+
 export function getEnabledAttachmentTypes(): string[] {
   return normalizeExtensionList(getPref("enabledAttachmentTypes") || "");
 }
