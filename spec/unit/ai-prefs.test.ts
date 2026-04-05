@@ -15,9 +15,9 @@ const store: Record<string, string> = {};
 
 import {
   getEffectiveAiModel,
-  getEffectiveEndpoint,
   reconcileAiModelForProvider,
 } from "../../src/utils/prefs";
+import { resolveProviderEndpoint } from "../../src/modules/tagging/core/providerAdapter";
 
 const P = "extensions.zotero.zotclip";
 
@@ -27,24 +27,24 @@ function clearStore() {
   }
 }
 
-test("getEffectiveEndpoint resolves Ollama, custom base, and static providers", () => {
+test("resolveProviderEndpoint resolves Ollama, custom base, and static providers", () => {
   clearStore();
   store["extensions.zotero.zotclip.aiEndpointOllama"] =
     "http://localhost:11434///";
   assert.equal(
-    getEffectiveEndpoint("ollama"),
+    resolveProviderEndpoint("ollama"),
     "http://localhost:11434/v1/chat/completions",
   );
 
   store["extensions.zotero.zotclip.aiApiEndpoint"] =
     "https://api.moonshot.cn/v1";
   assert.equal(
-    getEffectiveEndpoint("custom"),
+    resolveProviderEndpoint("custom"),
     "https://api.moonshot.cn/v1/chat/completions",
   );
 
   assert.equal(
-    getEffectiveEndpoint("deepseek"),
+    resolveProviderEndpoint("deepseek"),
     "https://api.deepseek.com/v1/chat/completions",
   );
 });

@@ -36,6 +36,11 @@ export async function zoteroAutoTagHttpRequest(
     body: options.body,
     timeout: HTTP_TIMEOUT_MS,
   });
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(
+      `HTTP ${response.status}: ${response.responseText?.slice(0, 200) ?? "no body"}`,
+    );
+  }
   return { response: response.responseText ?? "" };
 }
 
@@ -46,17 +51,12 @@ export function createZoteroAutoTagDeps(
   const policy = resolveProviderRuntimePolicy({ providerId });
   return {
     getEndpoint: () => policy.endpoint,
-    getApiKey: () => {
-      const key = getAiApiKeyForProvider(providerId);
-      // Ollama does not require an API key — return a placeholder so
-      // autoTagService's empty-key guard doesn't skip the request.
-      if (!policy.apiKeyRequired && !key) return "ollama-no-key";
-      return key;
-    },
+    getApiKey: () => getAiApiKeyForProvider(providerId),
+    isApiKeyRequired: () => policy.apiKeyRequired,
     getModel: getEffectiveAiModel,
     getRequestOptions: () => ({
       includeJsonObjectResponseFormat:
-        policy.request.includeJsonObjectResponseFormat,
+        policy.includeJsonObjectResponseFormat,
     }),
     getPrompt: buildPrompt,
     onProgress,

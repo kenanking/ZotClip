@@ -12,6 +12,7 @@ export interface AutoTagProgress {
 export interface AutoTagServiceDeps {
   getEndpoint(): string;
   getApiKey(): string;
+  isApiKeyRequired(): boolean;
   getModel(): string;
   getRequestOptions(): {
     includeJsonObjectResponseFormat: boolean;

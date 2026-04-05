@@ -135,6 +135,7 @@ test("autoTagItem skips when prerequisites are missing", async () => {
   const deps: AutoTagServiceDeps = {
     getEndpoint: () => "https://x",
     getApiKey: () => "k",
+    isApiKeyRequired: () => true,
     getModel: () => "m",
     getRequestOptions: () => ({ includeJsonObjectResponseFormat: true }),
     getPrompt: () => "p",
@@ -150,7 +151,11 @@ test("autoTagItem skips when prerequisites are missing", async () => {
 
   const noKey = createFakeItem({ title: "T" });
   assert.deepEqual(
-    await autoTagItem(noKey as any, { ...deps, getApiKey: () => "" }),
+    await autoTagItem(noKey as any, {
+      ...deps,
+      getApiKey: () => "",
+      isApiKeyRequired: () => true,
+    }),
     { kind: "skipped", reason: "noApiKey" },
   );
 });
@@ -163,6 +168,7 @@ test("autoTagItem adds only new model tags and saves once", async () => {
   const deps: AutoTagServiceDeps = {
     getEndpoint: () => "https://x",
     getApiKey: () => "k",
+    isApiKeyRequired: () => true,
     getModel: () => "m",
     getRequestOptions: () => ({ includeJsonObjectResponseFormat: true }),
     getPrompt: () => "p",
@@ -230,11 +236,28 @@ test("provider adapter normalizes Ollama endpoint and relaxes JSON mode", () => 
     endpointOverride: "http://localhost:11434/",
   });
   assert.equal(ollama.apiKeyRequired, false);
-  assert.equal(ollama.request.includeJsonObjectResponseFormat, false);
+  assert.equal(ollama.includeJsonObjectResponseFormat, false);
 
   const deepseek = resolveProviderRuntimePolicy({ providerId: "deepseek" });
   assert.equal(deepseek.apiKeyRequired, true);
-  assert.equal(deepseek.request.includeJsonObjectResponseFormat, true);
+  assert.equal(deepseek.includeJsonObjectResponseFormat, true);
+
+  const custom = resolveProviderRuntimePolicy({
+    providerId: "custom",
+    endpointOverride: "https://my-api.example.com/v1",
+  });
+  assert.equal(custom.includeJsonObjectResponseFormat, false);
+});
+
+test("resolveProviderEndpoint normalizes custom provider endpoint", () => {
+  assert.equal(
+    resolveProviderEndpoint("custom", "https://api.example.com/v1"),
+    "https://api.example.com/v1/chat/completions",
+  );
+  assert.equal(
+    resolveProviderEndpoint("custom", "https://api.example.com/v1/chat/completions"),
+    "https://api.example.com/v1/chat/completions",
+  );
 });
 
 test("resolveModelForAiProvider picks listed static models and passes through dynamic ids", () => {
@@ -253,4 +276,14 @@ test("sanitizeAiJsonResponse and parseAutoTagResponse handle typical model outpu
     tags: ["a", "b"],
   });
   assert.deepEqual(parseAutoTagResponse("{}"), { tags: [] });
+});
+
+test("parseAutoTagResponse throws on non-array tags", () => {
+  assert.throws(() => parseAutoTagResponse('{"tags": "machine learning"}'), {
+    message: "Response is not a JSON object with a tags array",
+  });
+  assert.throws(() => parseAutoTagResponse('{"tags": 123}'), {
+    message: "Response is not a JSON object with a tags array",
+  });
+  assert.deepEqual(parseAutoTagResponse('{"other": 1}'), { tags: [] });
 });

@@ -180,44 +180,66 @@ export function registerAutoTagAIPanel(doc: Document): { dispose(): void } {
       promptTextarea.value = DEFAULT_AI_PROMPT;
       setPref("aiPrompt", DEFAULT_AI_PROMPT);
     }),
-    createListenerDisposer(testConnectionButton, "click", () => {
-      void (async () => {
-        const selectedId = getMenulistSelectedValue(providerMenulist);
-        const policy = resolveProviderRuntimePolicy({
-          providerId: selectedId,
-          endpointOverride: endpointInput.value,
-        });
-        const model = resolveProbeModelFromUi(
-          selectedId,
-          modelMenulist,
-          modelTextInput,
-        );
-        const key = keyInput.value.trim();
-
-        testConnectionButton.disabled = true;
-        try {
-          const result = await runAiConnectionProbe({
-            url: policy.endpoint,
-            apiKey: key,
-            apiKeyRequired: policy.apiKeyRequired,
-            model,
-            includeJsonObjectResponseFormat:
-              policy.request.includeJsonObjectResponseFormat,
-            httpPost: zoteroProbeHttpPost,
-          });
-          showAutoTagPrefsToast(
-            result.ok
-              ? getString("pref-ai-test-connection-ok")
-              : formatProbeMessage(result.message),
-          );
-        } finally {
-          testConnectionButton.disabled = false;
-        }
-      })();
-    }),
+    createListenerDisposer(
+      testConnectionButton,
+      "click",
+      handleTestConnection(
+        providerMenulist,
+        endpointInput,
+        modelMenulist,
+        modelTextInput,
+        keyInput,
+        testConnectionButton,
+      ),
+    ),
   ];
 
   return composeDisposables(...disposers, ollamaDisposer);
+}
+
+function handleTestConnection(
+  providerMenulist: MenulistLike,
+  endpointInput: HTMLInputElement,
+  modelMenulist: MenulistLike,
+  modelTextInput: HTMLInputElement,
+  keyInput: HTMLInputElement,
+  button: HTMLButtonElement,
+): () => void {
+  return () => {
+    void (async () => {
+      const selectedId = getMenulistSelectedValue(providerMenulist);
+      const policy = resolveProviderRuntimePolicy({
+        providerId: selectedId,
+        endpointOverride: endpointInput.value,
+      });
+      const model = resolveProbeModelFromUi(
+        selectedId,
+        modelMenulist,
+        modelTextInput,
+      );
+      const key = keyInput.value.trim();
+
+      button.disabled = true;
+      try {
+        const result = await runAiConnectionProbe({
+          url: policy.endpoint,
+          apiKey: key,
+          apiKeyRequired: policy.apiKeyRequired,
+          model,
+          includeJsonObjectResponseFormat:
+            policy.includeJsonObjectResponseFormat,
+          httpPost: zoteroProbeHttpPost,
+        });
+        showAutoTagPrefsToast(
+          result.ok
+            ? getString("pref-ai-test-connection-ok")
+            : formatProbeMessage(result.message),
+        );
+      } finally {
+        button.disabled = false;
+      }
+    })();
+  };
 }
 
 function resolveProbeModelFromUi(

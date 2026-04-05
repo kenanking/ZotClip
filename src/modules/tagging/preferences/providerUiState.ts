@@ -10,7 +10,7 @@ import { getString } from "../../../utils/locale";
 
 export type MenulistLike = HTMLElement & { value: string; selectedItem?: any };
 
-function createMenuElement(doc: Document): Element {
+export function createMenuElement(doc: Document): Element {
   return (doc as any).createXULElement
     ? (doc as any).createXULElement("menuitem")
     : doc.createElement("menuitem");

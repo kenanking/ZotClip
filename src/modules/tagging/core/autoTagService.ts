@@ -14,7 +14,7 @@ export async function autoTagItem(
   }
 
   const apiKey = deps.getApiKey();
-  if (!apiKey) {
+  if (!apiKey && deps.isApiKeyRequired()) {
     return { kind: "skipped", reason: "noApiKey" };
   }
 
@@ -33,12 +33,15 @@ export async function autoTagItem(
 
   let responseText: string;
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`;
+    }
     const result = await deps.httpRequest(deps.getEndpoint(), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers,
       body,
     });
     responseText = result.response;
@@ -71,15 +74,6 @@ export async function autoTagItem(
       progress: 100,
     });
     return { kind: "failed", message };
-  }
-
-  if (parsed.tags.length === 0) {
-    deps.onProgress({
-      phase: "done",
-      text: "",
-      progress: 100,
-    });
-    return { kind: "ok", tagsAdded: [] };
   }
 
   const existingTags = new Set(

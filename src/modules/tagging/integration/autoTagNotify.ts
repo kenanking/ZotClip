@@ -20,14 +20,18 @@ export function notifyAutoTagResult(
 ): void {
   const message =
     options === undefined ? getString(key) : getString(key, options);
+  showAutoTagToast(message);
+}
+
+export function showAutoTagToast(text: string, closeTime = 2000): void {
   new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeTime: 2000,
+    closeTime,
     closeOnClick: true,
   })
     .createLine({
-      text: message,
+      text,
       icon: notifyIcon,
-      progress: 100,
+      progress: 0,
     })
     .show();
 }

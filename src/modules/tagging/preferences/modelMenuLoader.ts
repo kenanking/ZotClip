@@ -4,28 +4,16 @@ import {
   setPref,
 } from "../../../utils/prefs";
 import { fetchOllamaModels } from "../core/ollamaModels";
-import { getAddonFaviconUri } from "../../../utils/addonAssets";
 import { getString } from "../../../utils/locale";
-import type { MenulistLike } from "./providerUiState";
-import { setMenulistValue } from "./providerUiState";
-
-function createMenuElement(doc: Document): Element {
-  return (doc as any).createXULElement
-    ? (doc as any).createXULElement("menuitem")
-    : doc.createElement("menuitem");
-}
+import { showAutoTagToast } from "../integration/autoTagNotify";
+import {
+  createMenuElement,
+  type MenulistLike,
+  setMenulistValue,
+} from "./providerUiState";
 
 function showOllamaUnavailableToast(): void {
-  const icon = getAddonFaviconUri();
-  const progressWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeOnClick: true,
-  });
-  progressWin.createLine({
-    text: getString("auto-tag-ollama-not-running"),
-    icon,
-    progress: 0,
-  });
-  progressWin.show(3000);
+  showAutoTagToast(getString("auto-tag-ollama-not-running"), 3000);
 }
 
 export function createOllamaPopupDisposer(
@@ -35,11 +23,13 @@ export function createOllamaPopupDisposer(
   const popup = modelMenulist.querySelector("menupopup");
   if (!popup) return () => {};
 
+  let inFlight = false;
   const handler = async () => {
-    if (getAiProvider() !== "ollama") return;
+    if (getAiProvider() !== "ollama" || inFlight) return;
     const baseUrl = endpointInput.value.trim();
     if (!baseUrl) return;
 
+    inFlight = true;
     try {
       const models = await fetchOllamaModels(baseUrl, (url) =>
         Zotero.HTTP.request("GET", url, { timeout: 5000 }).then((r: any) => ({
@@ -68,6 +58,8 @@ export function createOllamaPopupDisposer(
     } catch {
       while (popup.firstChild) popup.removeChild(popup.firstChild);
       showOllamaUnavailableToast();
+    } finally {
+      inFlight = false;
     }
   };
 

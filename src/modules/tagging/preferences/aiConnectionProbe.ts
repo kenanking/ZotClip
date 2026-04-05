@@ -81,12 +81,13 @@ export async function runAiConnectionProbe(args: {
     return { ok: false, message: "__needs_model__" };
   }
 
-  const bearer =
-    args.apiKey.trim() || (args.apiKeyRequired ? "" : "ollama-no-key");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${bearer}`,
   };
+  const apiKey = args.apiKey.trim();
+  if (apiKey) {
+    headers.Authorization = `Bearer ${apiKey}`;
+  }
 
   const body = buildProbeRequestBody(model, {
     includeJsonObjectResponseFormat: args.includeJsonObjectResponseFormat,

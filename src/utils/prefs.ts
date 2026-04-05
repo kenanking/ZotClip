@@ -177,17 +177,6 @@ export function buildOllamaChatCompletionsUrl(baseUrl: string): string {
   return base ? `${base}/v1/chat/completions` : "";
 }
 
-export function getEffectiveEndpoint(providerId?: string): string {
-  const id = providerId ?? getAiProvider();
-  if (id === "ollama") {
-    const base = (getPref("aiEndpointOllama") || "").trim();
-    return buildOllamaChatCompletionsUrl(base);
-  }
-  if (id === "custom") {
-    return normalizeOpenAiChatCompletionsUrl(getPref("aiApiEndpoint") || "");
-  }
-  return getAiProviderConfig(id).endpoint;
-}
 
 export function getProviderEndpointForUi(providerId: string): string {
   if (providerId === "ollama") {
@@ -278,15 +267,18 @@ function getLastModelForProvider(
   return (getPref(lastModelPref) || "").trim();
 }
 
+const AI_DYNAMIC_PROVIDER_LAST_MODEL_PREFS: Record<
+  string,
+  "aiLastModelOllama" | "aiLastModelCustom"
+> = {
+  ollama: "aiLastModelOllama",
+  custom: "aiLastModelCustom",
+};
+
 export function restoreAiModelForDynamicProviderIfEmpty(
   providerId: string,
 ): void {
-  const pref =
-    providerId === "ollama"
-      ? "aiLastModelOllama"
-      : providerId === "custom"
-        ? "aiLastModelCustom"
-        : null;
+  const pref = AI_DYNAMIC_PROVIDER_LAST_MODEL_PREFS[providerId];
   if (!pref) return;
   const remembered = (getPref(pref) || "").trim();
   if (remembered && !getAiModel()) {
@@ -321,14 +313,6 @@ export function resolveModelForAiProvider(
   }
   return config.models[0]?.value ?? "";
 }
-
-const AI_DYNAMIC_PROVIDER_LAST_MODEL_PREFS: Record<
-  string,
-  "aiLastModelOllama" | "aiLastModelCustom"
-> = {
-  ollama: "aiLastModelOllama",
-  custom: "aiLastModelCustom",
-};
 
 /** When leaving Ollama or Custom, remember the current model id for that provider. */
 export function persistAiModelForDynamicProviderIfLeaving(

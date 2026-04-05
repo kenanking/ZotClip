@@ -1,5 +1,5 @@
-import { getAddonFaviconUri } from "../../../utils/addonAssets";
 import { getString } from "../../../utils/locale";
+import { showAutoTagToast } from "../integration/autoTagNotify";
 
 export async function zoteroProbeHttpPost(
   url: string,
@@ -50,14 +50,5 @@ export function formatProbeMessage(failureMessage: string): string {
 }
 
 export function showAutoTagPrefsToast(text: string): void {
-  const icon = getAddonFaviconUri();
-  const progressWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeOnClick: true,
-  });
-  progressWin.createLine({
-    text,
-    icon,
-    progress: 0,
-  });
-  progressWin.show(3500);
+  showAutoTagToast(text, 3500);
 }
