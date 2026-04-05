@@ -8,11 +8,15 @@
 [![Latest release](https://img.shields.io/github/v/release/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/releases)
 [![License](https://img.shields.io/github/license/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/blob/main/LICENSE)
 
-ZotClip is a plugin for Zotero 8 and 9 that copies attachment files from the
-library view or reader into the system clipboard. When the target app accepts
-file pastes, attachments are pasted as files. When file-oriented clipboard
-support is not available, ZotClip falls back to copying absolute attachment
-paths as plain text.
+ZotClip is a plugin for Zotero 8 and 9 with two parallel feature areas:
+
+- **Attachment clipboard copy** — from the library or reader, copy attachment
+  files to the system clipboard. Target apps that accept file pastes receive
+  files; otherwise ZotClip falls back to absolute paths as plain text.
+- **AI tagging** — generate tags for selected library items using an
+  OpenAI-compatible chat API. Built-in providers include DeepSeek, OpenRouter,
+  and Ollama, plus a custom URL for other endpoints. Keys and prompts are
+  configured in preferences.
 
 ## Installation
 
@@ -35,13 +39,16 @@ After installation, open `Edit -> Preferences -> ZotClip` and check the
 `Compatibility` section. Confirm that `Backend diagnostics` reports the
 expected backend for your system and does not show a missing dependency. If the
 compatibility check does not pass, install the required system package before
-retesting.
+retesting. AI tagging does not use these clipboard backends; it only needs
+network access to your chosen API (or a local Ollama instance).
 
 The current runtime optimization pass is validated on Windows and Linux. macOS
 uses an `osascript` AppKit pasteboard backend and has targeted automated
 coverage, but it has not been manually verified on a real macOS device yet.
 
 ## Usage
+
+### Attachment clipboard copy
 
 In the library view, select an attachment or a parent item and press `Ctrl+C`,
 or use `Copy Attachment File(s)` from the item context menu.
@@ -50,13 +57,22 @@ In the reader, ZotClip keeps the default `Ctrl+C` behavior for text selection.
 Use the reader toolbar button to copy the current attachment. If you want a
 reader-specific shortcut, configure one in `Edit -> Preferences -> ZotClip`.
 
-The settings page lets you configure:
+### AI tagging
 
-- allowed attachment types
-- multi-attachment strategy
-- library shortcut
-- reader shortcut
-- compatibility diagnostics for the current platform
+In the library, select one or more regular items and choose **Generate AI Tags**
+from the item context menu (when AI tagging is enabled in preferences). You can
+also opt into automatic tagging for newly added items and optional stripping of
+Connector-import tags; see preferences for details.
+
+## Settings (`Edit -> Preferences -> ZotClip`)
+
+**Copying:** allowed attachment types, multi-attachment strategy, library and
+reader shortcuts, toolbar and context menu visibility, platform clipboard
+diagnostics.
+
+**AI tagging:** enable the feature, provider and model, API key and endpoint
+(where applicable), optional connection test, and a prompt template with
+`{title}`, `{abstract}`, and `{language}` placeholders.
 
 ## Development
 
