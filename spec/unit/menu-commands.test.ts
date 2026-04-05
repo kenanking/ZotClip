@@ -47,12 +47,18 @@ test("menu commands register library and tools menu entries with command handler
 
   assert.deepEqual(registeredMenuIDs, [
     "zotclip-copy-selected",
+    "zotclip-auto-tag",
     "zotclip-copy-reader",
     "zotclip-copy-reader-path",
   ]);
   assert.deepEqual(
     registrations.map((registration) => registration.target),
-    ["main/library/item", "main/menubar/tools", "main/menubar/tools"],
+    [
+      "main/library/item",
+      "main/library/item",
+      "main/menubar/tools",
+      "main/menubar/tools",
+    ],
   );
 
   const itemContext = createMenuContext();
@@ -60,8 +66,8 @@ test("menu commands register library and tools menu entries with command handler
   await registrations[0].menus[0].onCommand?.({} as Event, itemContext as any);
 
   const toolsContext = createMenuContext();
-  registrations[1].menus[0].onShowing?.({} as Event, toolsContext as any);
-  await registrations[1].menus[0].onCommand?.({} as Event, toolsContext as any);
+  registrations[2].menus[0].onShowing?.({} as Event, toolsContext as any);
+  await registrations[2].menus[0].onCommand?.({} as Event, toolsContext as any);
 
   assert.equal(itemContext.label, "Copy Attachment File(s)");
   assert.equal(toolsContext.label, "Copy Current Reader Attachment");
@@ -74,16 +80,26 @@ test("menu commands register library and tools menu entries with command handler
 test("menu commands unregister every registered menu id", () => {
   const removedMenuIDs: string[] = [];
 
-  unregisterCopyMenuCommands(["zotclip-copy-selected", "zotclip-copy-reader"], {
-    unregisterMenu: (menuID) => {
-      removedMenuIDs.push(menuID);
-      return true;
+  unregisterCopyMenuCommands(
+    [
+      "zotclip-copy-selected",
+      "zotclip-auto-tag",
+      "zotclip-copy-reader",
+      "zotclip-copy-reader-path",
+    ],
+    {
+      unregisterMenu: (menuID) => {
+        removedMenuIDs.push(menuID);
+        return true;
+      },
     },
-  });
+  );
 
   assert.deepEqual(removedMenuIDs, [
     "zotclip-copy-selected",
+    "zotclip-auto-tag",
     "zotclip-copy-reader",
+    "zotclip-copy-reader-path",
   ]);
 });
 
@@ -100,6 +116,8 @@ test("menu commands expose copy file and copy path entries from reader action st
       switch (key) {
         case "menu-copy-selected":
           return "Copy Attachment File(s)";
+        case "menu-auto-tag":
+          return "Generate AI Tags";
         case "menu-copy-reader":
           return "Copy Current Reader Attachment";
         default:
@@ -126,15 +144,16 @@ test("menu commands expose copy file and copy path entries from reader action st
 
   assert.deepEqual(registeredMenuIDs, [
     "zotclip-copy-selected",
+    "zotclip-auto-tag",
     "zotclip-copy-reader",
     "zotclip-copy-reader-path",
   ]);
 
-  await registrations[1].menus[0].onCommand?.(
+  await registrations[2].menus[0].onCommand?.(
     {} as Event,
     createMenuContext() as any,
   );
-  await registrations[2].menus[0].onCommand?.(
+  await registrations[3].menus[0].onCommand?.(
     {} as Event,
     createMenuContext() as any,
   );

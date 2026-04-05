@@ -205,6 +205,117 @@
       ></html:div>
     </description>
   </vbox>
+
+  <separator class="thin" />
+
+  <html:div style="height: 28px"></html:div>
+
+  <label class="zotclip-pref-section-heading"
+    ><html:h3 data-l10n-id="pref-section-auto-tag"></html:h3
+  ></label>
+
+  <hbox class="zotclip-pref-row" align="center">
+    <html:label class="zotclip-pref-type-option">
+      <html:input type="checkbox" data-zotclip-auto-tag-enabled="true" />
+      <html:span data-l10n-id="pref-auto-tag-enabled"></html:span>
+    </html:label>
+  </hbox>
+
+  <hbox class="zotclip-pref-row" align="center">
+    <html:label class="zotclip-pref-type-option">
+      <html:input type="checkbox" data-zotclip-strip-connector-tags="true" />
+      <html:span data-l10n-id="pref-strip-connector-tags"></html:span>
+    </html:label>
+  </hbox>
+
+  <hbox class="zotclip-pref-row" align="center">
+    <html:label class="zotclip-pref-type-option">
+      <html:input type="checkbox" data-zotclip-auto-tag-on-add="true" />
+      <html:span data-l10n-id="pref-auto-tag-on-add"></html:span>
+    </html:label>
+  </hbox>
+
+  <hbox class="zotclip-pref-row" align="center">
+    <html:label
+      class="zotclip-pref-field-label zotclip-pref-inline-label"
+      data-l10n-id="pref-ai-provider"
+    ></html:label>
+    <menulist class="zotclip-pref-menulist" data-zotclip-ai-provider="true">
+      <menupopup>
+        <menuitem value="deepseek" label="DeepSeek" />
+        <menuitem value="openrouter" label="OpenRouter" />
+        <menuitem value="ollama" label="Ollama" />
+        <menuitem value="custom" label="Custom" />
+      </menupopup>
+    </menulist>
+    <html:label
+      class="zotclip-pref-field-label zotclip-pref-inline-label zotclip-pref-model-label"
+      data-l10n-id="pref-auto-tag-model"
+    ></html:label>
+    <menulist class="zotclip-pref-menulist" data-zotclip-ai-model-menu="true">
+      <menupopup></menupopup>
+    </menulist>
+    <html:input
+      class="zotclip-pref-textinput"
+      type="text"
+      data-zotclip-ai-model-text="true"
+      hidden="hidden"
+      style="display: none"
+    />
+  </hbox>
+
+  <hbox class="zotclip-pref-row" align="center">
+    <html:label
+      class="zotclip-pref-field-label zotclip-pref-inline-label"
+      data-l10n-id="pref-auto-tag-key"
+    ></html:label>
+    <html:input
+      class="zotclip-pref-textinput"
+      type="password"
+      data-zotclip-auto-tag-key="true"
+    />
+  </hbox>
+
+  <hbox class="zotclip-pref-row zotclip-pref-endpoint-row" align="center">
+    <html:label
+      class="zotclip-pref-field-label zotclip-pref-inline-label"
+      data-l10n-id="pref-auto-tag-endpoint"
+    ></html:label>
+    <html:input
+      class="zotclip-pref-textinput zotclip-pref-endpoint-input"
+      type="text"
+      data-zotclip-auto-tag-endpoint="true"
+    />
+    <html:button
+      data-l10n-id="pref-ai-test-connection"
+      data-zotclip-ai-test-connection="true"
+    />
+  </hbox>
+
+  <description class="zotclip-pref-help">
+    <html:span data-l10n-id="pref-api-key-storage-note"></html:span>
+  </description>
+
+  <vbox class="zotclip-pref-field">
+    <hbox class="zotclip-pref-prompt-header">
+      <html:label
+        class="zotclip-pref-field-label"
+        data-l10n-id="pref-ai-prompt"
+      ></html:label>
+      <html:button
+        data-l10n-id="pref-ai-prompt-reset"
+        data-zotclip-ai-prompt-reset="true"
+      />
+    </hbox>
+    <html:textarea
+      class="zotclip-pref-textinput zotclip-pref-prompt-area"
+      rows="8"
+      data-zotclip-ai-prompt="true"
+    ></html:textarea>
+    <description class="zotclip-pref-help">
+      <html:span data-l10n-id="pref-ai-prompt-help"></html:span>
+    </description>
+  </vbox>
 </groupbox>
 <vbox class="zotclip-pref-build">
   <html:label

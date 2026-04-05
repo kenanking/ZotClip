@@ -2,13 +2,30 @@
   padding: 8px 0 0;
 }
 
+.zotclip-pref-group > label > h2 {
+  font-size: 1.35em;
+  font-weight: 400;
+}
+
 .zotclip-pref-section {
   margin-top: 12px;
 }
 
+.zotclip-pref-section-heading > h3 {
+  font-size: 1.35em;
+  font-weight: 400;
+}
+
+.zotclip-pref-section-heading::before {
+  content: "";
+  display: block;
+  margin-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+
 .zotclip-pref-row {
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-top: 6px;
 }
 
@@ -39,7 +56,8 @@
 }
 
 .zotclip-pref-menulist {
-  min-width: 18rem;
+  width: 14rem;
+  min-width: 0;
   font-weight: 400;
 }
 
@@ -94,4 +112,46 @@
   white-space: pre-wrap;
   font-family: Consolas, "Courier New", monospace;
   font-size: 12px;
+}
+
+.zotclip-pref-inline-label {
+  margin: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.zotclip-pref-model-label {
+  margin-left: 12px;
+}
+
+.zotclip-pref-row .zotclip-pref-textinput {
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+
+.zotclip-pref-endpoint-row .zotclip-pref-endpoint-input {
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+
+.zotclip-pref-model-input {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  width: auto;
+}
+
+.zotclip-pref-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 6px;
+}
+
+.zotclip-pref-prompt-header .zotclip-pref-field-label {
+  margin: 0;
+}
+
+.zotclip-pref-prompt-area {
+  min-height: 120px;
+  resize: vertical;
 }

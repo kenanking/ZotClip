@@ -1,4 +1,4 @@
-import { config } from "../../../package.json";
+import { getAddonFaviconUri } from "../../utils/addonAssets";
 import type { CopyMessageRenderDeps } from "./copyMessages";
 import { formatActionExecutionMessage } from "./interaction/presentation/copyActionMessages";
 import type { ClipboardResult } from "./types";
@@ -19,7 +19,7 @@ export function getCopyNotificationOptions(result: ClipboardResult): {
 }
 
 function getCopyResultNotificationIcon(_result: ClipboardResult): string {
-  return `chrome://${config.addonRef}/content/icons/favicon.svg`;
+  return getAddonFaviconUri();
 }
 
 export function notifyCopyResult(result: ClipboardResult): void {

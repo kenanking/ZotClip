@@ -3,7 +3,11 @@ import { registerAttachmentTypesSection } from "./attachmentTypesSection";
 import { registerDiagnosticsSection } from "./diagnosticsSection";
 import { registerInterfaceSection } from "./interfaceSection";
 import { registerShortcutsSection } from "./shortcutsSection";
-import { composeDisposables, createNoopHandle } from "../ui/disposables";
+import { registerAutoTagAIPanel } from "../../tagging/preferences/autoTagAIPanel";
+import {
+  composeDisposables,
+  createNoopHandle,
+} from "../../../utils/disposables";
 
 interface MenuitemLike {
   value?: string;
@@ -32,6 +36,9 @@ export interface RegisterPrefsUIDeps {
   registerShortcutsSection?(
     doc: Document,
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
+  registerAutoTagSection?(
+    doc: Document,
+  ): Promise<PrefsUIHandle> | PrefsUIHandle;
   registerDiagnosticsSection?(
     doc: Document,
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
@@ -44,6 +51,7 @@ const DEFAULT_DEPS: RegisterPrefsUIDeps = {
   registerAttachmentTypesSection: (doc) => registerAttachmentTypesSection(doc),
   registerInterfaceSection: (doc) => registerInterfaceSection(doc),
   registerShortcutsSection: (doc) => registerShortcutsSection(doc),
+  registerAutoTagSection: (doc) => registerAutoTagAIPanel(doc),
   registerDiagnosticsSection: (doc) => registerDiagnosticsSection(doc),
 };
 
@@ -59,6 +67,7 @@ export async function registerPrefsUI(
       createNoopHandle(),
     deps.registerInterfaceSection?.(window.document) || createNoopHandle(),
     deps.registerShortcutsSection?.(window.document) || createNoopHandle(),
+    deps.registerAutoTagSection?.(window.document) || createNoopHandle(),
     deps.registerDiagnosticsSection?.(window.document) || createNoopHandle(),
   ]);
 

@@ -1,6 +1,7 @@
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 
 type CopyMenuLabelKey =
+  | "menu-auto-tag"
   | "menu-copy-selected"
   | "menu-copy-reader"
   | "menu-copy-reader-path";
@@ -13,6 +14,8 @@ export interface CopyMenuRegistrationDeps {
   getLibraryActionState(): Promise<CopyActionState>;
   getReaderActionState(): Promise<CopyActionState>;
   isContextMenuVisible?(): boolean;
+  isAutoTagEnabled?(): boolean;
+  autoTagSelected?(): Promise<void>;
   registerMenu?(
     options: _ZoteroTypes.MenuManager.AllMenuOptions,
   ): string | false;
@@ -51,6 +54,7 @@ function buildCopyMenuOptions(
   deps: CopyMenuRegistrationDeps,
 ): _ZoteroTypes.MenuManager.AllMenuOptions[] {
   const isContextMenuVisible = deps.isContextMenuVisible ?? (() => true);
+  const isAutoTagEnabled = deps.isAutoTagEnabled ?? (() => false);
 
   const options: _ZoteroTypes.MenuManager.AllMenuOptions[] = [
     {
@@ -71,6 +75,23 @@ function buildCopyMenuOptions(
           },
           (_event, context) => {
             context.setVisible(isContextMenuVisible());
+          },
+        ),
+      ],
+    },
+    {
+      menuID: `${deps.addonRef}-auto-tag`,
+      pluginID: deps.pluginID,
+      target: "main/library/item",
+      menus: [
+        createMenuItem(
+          deps.getLabel("menu-auto-tag"),
+          deps.menuIcon,
+          async () => {
+            await deps.autoTagSelected?.();
+          },
+          (_event, context) => {
+            context.setVisible(isAutoTagEnabled());
           },
         ),
       ],

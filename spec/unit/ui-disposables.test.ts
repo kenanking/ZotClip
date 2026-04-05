@@ -5,7 +5,7 @@ import {
   composeDisposables,
   createListenerDisposer,
   createNoopHandle,
-} from "../../src/modules/copy/ui/disposables";
+} from "../../src/utils/disposables";
 
 test("composeDisposables disposes all callbacks once", () => {
   const calls: string[] = [];

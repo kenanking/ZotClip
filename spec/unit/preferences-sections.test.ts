@@ -101,6 +101,14 @@ test("registerPrefsUI disposes an earlier registration before re-registering the
         },
       };
     },
+    registerAutoTagSection: async () => {
+      callLog.push("register-auto-tag");
+      return {
+        dispose: () => {
+          callLog.push("dispose-auto-tag");
+        },
+      };
+    },
     registerDiagnosticsSection: async () => {
       callLog.push("register-diagnostics");
       return {
@@ -119,15 +127,18 @@ test("registerPrefsUI disposes an earlier registration before re-registering the
     "register-attachment-types",
     "register-interface",
     "register-shortcuts",
+    "register-auto-tag",
     "register-diagnostics",
     "dispose-attachment-types",
     "dispose-interface",
     "dispose-shortcuts",
+    "dispose-auto-tag",
     "dispose-diagnostics",
     "sync-menulists",
     "register-attachment-types",
     "register-interface",
     "register-shortcuts",
+    "register-auto-tag",
     "register-diagnostics",
   ]);
 
@@ -158,6 +169,11 @@ test("registerPrefsUI dispose is idempotent for the same registration handle", a
         disposals += 1;
       },
     }),
+    registerAutoTagSection: async () => ({
+      dispose: () => {
+        disposals += 1;
+      },
+    }),
     registerDiagnosticsSection: async () => ({
       dispose: () => {
         disposals += 1;
@@ -168,7 +184,7 @@ test("registerPrefsUI dispose is idempotent for the same registration handle", a
   handle.dispose();
   handle.dispose();
 
-  assert.equal(disposals, 4);
+  assert.equal(disposals, 5);
 });
 
 class FakeDiagnosticsElement {

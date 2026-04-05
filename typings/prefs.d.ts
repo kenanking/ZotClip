@@ -15,6 +15,20 @@ declare namespace _ZoteroTypes {
       "enabledAttachmentTypes": string;
       "customAttachmentTypes": string;
       "showContextMenuEntry": boolean;
+      "autoTaggingEnabled": boolean;
+      "aiProvider": string;
+      "aiApiEndpoint": string;
+      "aiApiKeyDeepseek": string;
+      "aiApiKeyOpenrouter": string;
+      "aiApiKeyOllama": string;
+      "aiApiKeyCustom": string;
+      "aiEndpointOllama": string;
+      "aiModel": string;
+      "aiLastModelOllama": string;
+      "aiLastModelCustom": string;
+      "aiPrompt": string;
+      "stripConnectorTags": boolean;
+      "autoTagOnAdd": boolean;
     };
   }
 }

@@ -38,12 +38,18 @@ import { createReaderToolbarController } from "./modules/copy/readerToolbarContr
 import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
 import { handleSelectionCopyShortcut } from "./modules/copy/selectionHook";
 import { registerPrefsUI } from "./modules/copy/preferences/registerPrefsUI";
-import { getContextMenuEntryEnabled } from "./utils/prefs";
+import { registerAutoTagItemAddObserver } from "./modules/tagging/integration/itemAddAutoTagObserver";
+import { executeAutoTagSelection } from "./modules/tagging/integration/manualAutoTagSelection";
+import {
+  getContextMenuEntryEnabled,
+  getAutoTaggingEnabled,
+} from "./utils/prefs";
+import { getAddonFaviconUri } from "./utils/addonAssets";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
-const menuIcon = `chrome://${config.addonRef}/content/icons/favicon.svg`;
+const menuIcon = getAddonFaviconUri();
 const MAIN_TOOLBAR_REFRESH_DEBOUNCE_MS = 100;
 const RUNTIME_SETTINGS_PREF_KEYS = [
   "multiAttachmentMode",
@@ -57,6 +63,7 @@ const RUNTIME_SETTINGS_PREF_KEYS = [
 let registeredCopyMenuIDs: string[] = [];
 let runtimeSettingsPrefObservers: symbol[] = [];
 let keyboardRegistryHandle: { dispose(): void } | undefined;
+let autoTagItemAddHandle: { dispose(): void } | undefined;
 const runtimeSettings = getRuntimeSettingsStore();
 
 export interface MainToolbarCopyButtonDeps {
@@ -170,7 +177,7 @@ async function onStartup() {
     pluginID: addon.data.config.addonID,
     src: `${rootURI}content/preferences.xhtml`,
     label: getString("prefs-title"),
-    image: `chrome://${addon.data.config.addonRef}/content/icons/favicon.svg`,
+    image: getAddonFaviconUri(),
   });
   registeredCopyMenuIDs = registerCopyMenuCommands({
     addonRef: addon.data.config.addonRef,
@@ -180,7 +187,11 @@ async function onStartup() {
     getLibraryActionState: createActiveLibraryActionState,
     getReaderActionState: createActiveReaderActionState,
     isContextMenuVisible: () => getContextMenuEntryEnabled(),
+    isAutoTagEnabled: () => getAutoTaggingEnabled(),
+    autoTagSelected: () => executeAutoTagSelection(),
   });
+
+  autoTagItemAddHandle = registerAutoTagItemAddObserver();
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -199,6 +210,8 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  autoTagItemAddHandle?.dispose();
+  autoTagItemAddHandle = undefined;
   unregisterToolbarPreferenceObservers();
   keyboardRegistryHandle?.dispose();
   keyboardRegistryHandle = undefined;
@@ -214,9 +227,10 @@ function onShutdown(): void {
 
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
-    case "load":
+    case "load": {
       registerPrefsUI(data.window);
       break;
+    }
     default:
       return;
   }
