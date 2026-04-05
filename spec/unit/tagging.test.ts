@@ -255,7 +255,10 @@ test("resolveProviderEndpoint normalizes custom provider endpoint", () => {
     "https://api.example.com/v1/chat/completions",
   );
   assert.equal(
-    resolveProviderEndpoint("custom", "https://api.example.com/v1/chat/completions"),
+    resolveProviderEndpoint(
+      "custom",
+      "https://api.example.com/v1/chat/completions",
+    ),
     "https://api.example.com/v1/chat/completions",
   );
 });

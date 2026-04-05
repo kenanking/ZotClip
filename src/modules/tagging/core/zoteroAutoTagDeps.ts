@@ -55,8 +55,7 @@ export function createZoteroAutoTagDeps(
     isApiKeyRequired: () => policy.apiKeyRequired,
     getModel: getEffectiveAiModel,
     getRequestOptions: () => ({
-      includeJsonObjectResponseFormat:
-        policy.includeJsonObjectResponseFormat,
+      includeJsonObjectResponseFormat: policy.includeJsonObjectResponseFormat,
     }),
     getPrompt: buildPrompt,
     onProgress,

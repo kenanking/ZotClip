@@ -177,7 +177,6 @@ export function buildOllamaChatCompletionsUrl(baseUrl: string): string {
   return base ? `${base}/v1/chat/completions` : "";
 }
 
-
 export function getProviderEndpointForUi(providerId: string): string {
   if (providerId === "ollama") {
     return (getPref("aiEndpointOllama") || "http://localhost:11434").trim();
