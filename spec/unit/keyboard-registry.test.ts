@@ -49,7 +49,65 @@ test("keyboard registry only routes keydown events", async () => {
   registry.start();
   registeredCallback?.({} as KeyboardEvent, { type: "keyup" });
   registeredCallback?.({} as KeyboardEvent, { type: "keydown" });
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 10));
 
   assert.deepEqual(calls, ["library", "reader"]);
+});
+
+test("keyboard registry skips reader handler when library handler returns true", async () => {
+  const calls: string[] = [];
+  let registeredCallback:
+    | ((event: KeyboardEvent, options: { type: "keydown" | "keyup" }) => void)
+    | undefined;
+
+  const registry = createKeyboardRegistry({
+    register: (callback) => {
+      registeredCallback = callback;
+    },
+    unregister: () => {},
+    onLibraryShortcut: async () => {
+      calls.push("library");
+      return true;
+    },
+    onReaderShortcut: async () => {
+      calls.push("reader");
+      return false;
+    },
+  });
+
+  registry.start();
+  registeredCallback?.({} as KeyboardEvent, { type: "keydown" });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.deepEqual(calls, ["library"]);
+});
+
+test("keyboard registry skips both handlers when event is already defaultPrevented", async () => {
+  const calls: string[] = [];
+  let registeredCallback:
+    | ((event: KeyboardEvent, options: { type: "keydown" | "keyup" }) => void)
+    | undefined;
+
+  const registry = createKeyboardRegistry({
+    register: (callback) => {
+      registeredCallback = callback;
+    },
+    unregister: () => {},
+    onLibraryShortcut: async () => {
+      calls.push("library");
+      return false;
+    },
+    onReaderShortcut: async () => {
+      calls.push("reader");
+      return false;
+    },
+  });
+
+  registry.start();
+  registeredCallback?.({ defaultPrevented: true } as KeyboardEvent, {
+    type: "keydown",
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  assert.deepEqual(calls, []);
 });

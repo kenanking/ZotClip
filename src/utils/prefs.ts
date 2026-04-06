@@ -191,12 +191,20 @@ export function buildOllamaChatCompletionsUrl(baseUrl: string): string {
   return base ? `${base}/v1/chat/completions` : "";
 }
 
+type PrefKey = keyof PluginPrefsMap;
+
+const PROVIDER_ENDPOINT_PREFS: Record<
+  string,
+  { pref: PrefKey; fallback: string }
+> = {
+  ollama: { pref: "aiEndpointOllama", fallback: "http://localhost:11434" },
+  lmstudio: { pref: "aiEndpointLmstudio", fallback: "http://localhost:1234" },
+};
+
 export function getProviderEndpointForUi(providerId: string): string {
-  if (providerId === "ollama") {
-    return (getPref("aiEndpointOllama") || "http://localhost:11434").trim();
-  }
-  if (providerId === "lmstudio") {
-    return (getPref("aiEndpointLmstudio") || "http://localhost:1234").trim();
+  const entry = PROVIDER_ENDPOINT_PREFS[providerId];
+  if (entry) {
+    return String(getPref(entry.pref) || entry.fallback).trim();
   }
   if (providerId === "custom") {
     return getAiApiEndpoint();
@@ -209,12 +217,9 @@ export function setProviderEndpointFromUi(
   endpointValue: string,
 ): void {
   const normalized = endpointValue.trim();
-  if (providerId === "ollama") {
-    setPref("aiEndpointOllama", normalized);
-    return;
-  }
-  if (providerId === "lmstudio") {
-    setPref("aiEndpointLmstudio", normalized);
+  const entry = PROVIDER_ENDPOINT_PREFS[providerId];
+  if (entry) {
+    setPref(entry.pref, normalized);
     return;
   }
   if (providerId === "custom") {
@@ -257,21 +262,11 @@ export function getAiModel(): string {
   return (getPref("aiModel") || "").trim();
 }
 
-/** Last model explicitly used with Ollama (survives switching to other providers). */
-export function getAiLastModelOllama(): string {
-  return (getPref("aiLastModelOllama") || "").trim();
-}
-
 /**
  * Model id shown for Ollama in prefs: current `aiModel`, or last remembered Ollama model.
  */
 export function getOllamaModelForUi(): string {
   return getLastModelForProvider("aiLastModelOllama");
-}
-
-/** Last model name used with Custom (free-text) provider. */
-export function getAiLastModelCustom(): string {
-  return (getPref("aiLastModelCustom") || "").trim();
 }
 
 /**

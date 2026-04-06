@@ -3,6 +3,12 @@ import { buildChatRequestBody } from "../core/chatRequest";
 /** Shorter than full auto-tag requests so the prefs probe feels snappy. */
 export const PROBE_TIMEOUT_MS = 15_000;
 
+export const PROBE_SENTINEL = {
+  NEEDS_ENDPOINT: "__needs_endpoint__",
+  NEEDS_KEY: "__needs_key__",
+  NEEDS_MODEL: "__needs_model__",
+} as const;
+
 const RESPONSE_SNIPPET_MAX = 200;
 
 export function buildProbeRequestBody(
@@ -69,16 +75,16 @@ export async function runAiConnectionProbe(args: {
 }): Promise<{ ok: true } | { ok: false; message: string }> {
   const url = args.url.trim();
   if (!url) {
-    return { ok: false, message: "__needs_endpoint__" };
+    return { ok: false, message: PROBE_SENTINEL.NEEDS_ENDPOINT };
   }
 
   if (args.apiKeyRequired && !args.apiKey.trim()) {
-    return { ok: false, message: "__needs_key__" };
+    return { ok: false, message: PROBE_SENTINEL.NEEDS_KEY };
   }
 
   const model = args.model.trim();
   if (!model) {
-    return { ok: false, message: "__needs_model__" };
+    return { ok: false, message: PROBE_SENTINEL.NEEDS_MODEL };
   }
 
   const headers: Record<string, string> = {

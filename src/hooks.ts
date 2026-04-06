@@ -3,28 +3,14 @@ import {
   copyFromSelection,
 } from "./modules/copy/copyCommands";
 import { copyFromReaderPath } from "./modules/copy/copyPathCommands";
-import {
-  buildUnavailableResult,
-  checkReaderAvailability,
-  checkSelectionAvailability,
-} from "./modules/copy/copyService";
 import { initToolbarIcon } from "./modules/copy/copyUi";
 import {
   resolveAttachmentFromReader,
   resolveAttachmentsFromItems,
 } from "./modules/copy/attachmentResolver";
-import { createCopyActionController } from "./modules/copy/interaction/actions/copyActionController";
-import type { CopyActionState } from "./modules/copy/interaction/actions/copyActionTypes";
-import {
-  buildLibraryRefreshKey,
-  getSelectedLibraryItems,
-} from "./modules/copy/interaction/context/libraryContext";
+import { buildLibraryRefreshKey } from "./modules/copy/interaction/context/libraryContext";
 import { buildReaderRefreshKey } from "./modules/copy/interaction/readerContext";
-import { getActiveReaderItemID } from "./modules/copy/zoteroReaderAccess";
-import {
-  registerMainToolbarButton,
-  type MainToolbarButtonHandle,
-} from "./modules/copy/mainToolbarButton";
+import { registerMainToolbarButton } from "./modules/copy/mainToolbarButton";
 import {
   registerCopyMenuCommands,
   unregisterCopyMenuCommands,
@@ -38,6 +24,20 @@ import { createReaderToolbarController } from "./modules/copy/readerToolbarContr
 import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
 import { handleSelectionCopyShortcut } from "./modules/copy/selectionHook";
 import { registerPrefsUI } from "./modules/copy/preferences/registerPrefsUI";
+import {
+  createActiveLibraryActionState,
+  createActiveReaderActionState,
+  createMainToolbarActionState,
+  createReaderToolbarActionState,
+} from "./modules/copy/actionStateFactory";
+import type {
+  MainToolbarCopyButtonDeps,
+  ReaderToolbarCopyButtonDeps,
+} from "./modules/copy/toolbarButtonDeps";
+import {
+  registerToolbarPreferenceObservers,
+  unregisterToolbarPreferenceObservers,
+} from "./modules/copy/toolbarSync";
 import { registerAutoTagItemAddObserver } from "./modules/tagging/integration/itemAddAutoTagObserver";
 import { executeAutoTagSelection } from "./modules/tagging/integration/manualAutoTagSelection";
 import {
@@ -47,43 +47,14 @@ import {
 import { getAddonFaviconUri } from "./utils/addonAssets";
 import { getString, initLocale } from "./utils/locale";
 import { createZToolkit } from "./utils/ztoolkit";
-import { config } from "../package.json";
 
 const menuIcon = getAddonFaviconUri();
 const MAIN_TOOLBAR_REFRESH_DEBOUNCE_MS = 100;
-const RUNTIME_SETTINGS_PREF_KEYS = [
-  "multiAttachmentMode",
-  "libraryShortcut",
-  "readerShortcut",
-  "showMainToolbarButton",
-  "showReaderToolbarButton",
-  "enabledAttachmentTypes",
-  "customAttachmentTypes",
-] as const;
 let registeredCopyMenuIDs: string[] = [];
 let runtimeSettingsPrefObservers: symbol[] = [];
 let keyboardRegistryHandle: { dispose(): void } | undefined;
 let autoTagItemAddHandle: { dispose(): void } | undefined;
 const runtimeSettings = getRuntimeSettingsStore();
-
-export interface MainToolbarCopyButtonDeps {
-  isEnabled(): boolean;
-  mountButton(
-    doc: Document,
-    deps: Parameters<typeof registerMainToolbarButton>[1],
-  ): MainToolbarButtonHandle;
-  getActionState?(): Promise<CopyActionState>;
-  getLabel(): string;
-  getSelectedItems(win: Window): Zotero.Item[];
-  getMode(): "all" | "primary";
-  getAllowedTypes(): string[];
-  resolveFromItems(
-    items: Zotero.Item[],
-    mode: "all" | "primary",
-    allowedTypes: string[],
-  ): Promise<Awaited<ReturnType<typeof resolveAttachmentsFromItems>>>;
-  executeCopy(): Promise<Awaited<ReturnType<typeof copyFromSelection>>>;
-}
 
 const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
   isEnabled: () => runtimeSettings.getSnapshot().showMainToolbarButton,
@@ -98,24 +69,6 @@ const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
     resolveAttachmentsFromItems(items, mode, allowedTypes),
   executeCopy: async () => executeCopyFromSelection(),
 };
-
-export interface ReaderToolbarCopyButtonDeps {
-  isEnabled(): boolean;
-  registerButton(
-    deps: Parameters<typeof registerReaderToolbarButton>[0],
-  ): () => void;
-  getActionState?(itemID: number | undefined): Promise<CopyActionState>;
-  getLabel(): string;
-  getAllowedTypes(): string[];
-  resolveFromReader(
-    itemID: number,
-    allowedTypes: string[],
-  ): Promise<Awaited<ReturnType<typeof resolveAttachmentFromReader>>>;
-  executeCopy(
-    itemID: number | undefined,
-  ): Promise<Awaited<ReturnType<typeof copyFromReaderItem>>>;
-  executeCopyPath(): Promise<Awaited<ReturnType<typeof copyFromReaderPath>>>;
-}
 
 const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
   isEnabled: () => runtimeSettings.getSnapshot().showReaderToolbarButton,
@@ -158,13 +111,15 @@ async function onStartup() {
       handleSelectionCopyShortcut(event, {
         getParsedShortcut: () =>
           runtimeSettings.getSnapshot().parsedLibraryShortcut,
-        getActionState: createActiveLibraryActionState,
+        getActionState: () =>
+          createActiveLibraryActionState(runtimeSettings.getSnapshot()),
       }),
     onReaderShortcut: (event) =>
       handleReaderCopyShortcut(event, {
         getParsedShortcut: () =>
           runtimeSettings.getSnapshot().parsedReaderShortcut,
-        getActionState: createActiveReaderActionState,
+        getActionState: () =>
+          createActiveReaderActionState(runtimeSettings.getSnapshot()),
       }),
   }).start();
   initLocale();
@@ -184,8 +139,10 @@ async function onStartup() {
     pluginID: addon.data.config.addonID,
     menuIcon,
     getLabel: (key) => getString(key),
-    getLibraryActionState: createActiveLibraryActionState,
-    getReaderActionState: createActiveReaderActionState,
+    getLibraryActionState: () =>
+      createActiveLibraryActionState(runtimeSettings.getSnapshot()),
+    getReaderActionState: () =>
+      createActiveReaderActionState(runtimeSettings.getSnapshot()),
     isContextMenuVisible: () => getContextMenuEntryEnabled(),
     isAutoTagEnabled: () => getAutoTaggingEnabled(),
     autoTagSelected: () => executeAutoTagSelection(),
@@ -196,7 +153,11 @@ async function onStartup() {
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
   );
-  registerToolbarPreferenceObservers();
+  runtimeSettingsPrefObservers = registerToolbarPreferenceObservers(
+    runtimeSettings,
+    syncMainToolbarButtons,
+    syncReaderToolbarButton,
+  );
   syncMainToolbarButtons();
   syncReaderToolbarButton();
 }
@@ -212,7 +173,8 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 function onShutdown(): void {
   autoTagItemAddHandle?.dispose();
   autoTagItemAddHandle = undefined;
-  unregisterToolbarPreferenceObservers();
+  unregisterToolbarPreferenceObservers(runtimeSettingsPrefObservers);
+  runtimeSettingsPrefObservers = [];
   keyboardRegistryHandle?.dispose();
   keyboardRegistryHandle = undefined;
   readerToolbarController.dispose();
@@ -323,164 +285,12 @@ async function executeCopyPathFromReader(): Promise<
   return result;
 }
 
-async function createActiveLibraryActionState(): Promise<CopyActionState> {
-  const settings = runtimeSettings.getSnapshot();
-  const getItems = () =>
-    getSelectedLibraryItems({
-      getActivePane: () => Zotero.getActiveZoteroPane(),
-    });
-
-  const controller = createCopyActionController({
-    getAllowedTypes: () => settings.allowedTypes,
-    getMode: () => settings.multiAttachmentMode,
-    getLibraryItems: getItems,
-    getReaderItemID: () => undefined,
-    getSelectionAvailability: () =>
-      checkSelectionAvailability(
-        settings,
-        getItems(),
-        resolveAttachmentsFromItems,
-      ),
-    getReaderAvailability: async () => ({
-      canCopy: false,
-      messageKey: "copy-reader-no-active",
-    }),
-    executePrimaryLibraryCopy: async () => {
-      const result = await copyFromSelection(
-        settings.multiAttachmentMode,
-        settings.allowedTypes,
-      );
-      notifyCopyResult(result);
-      return result;
-    },
-    executePrimaryReaderCopy: async () =>
-      buildUnavailableResult("copy-reader-no-active"),
-    executeExplicitReaderPathCopy: async () =>
-      buildUnavailableResult("copy-reader-no-active"),
-  });
-
-  return controller.getCurrentActionState();
-}
-
-async function createMainToolbarActionState(
-  win: Window,
-  deps: MainToolbarCopyButtonDeps,
-): Promise<CopyActionState> {
-  const controller = createCopyActionController({
-    getAllowedTypes: () => deps.getAllowedTypes(),
-    getMode: () => deps.getMode(),
-    getLibraryItems: () => deps.getSelectedItems(win),
-    getReaderItemID: () => undefined,
-    getSelectionAvailability: () =>
-      checkSelectionAvailability(
-        {
-          allowedTypes: deps.getAllowedTypes(),
-          multiAttachmentMode: deps.getMode(),
-        },
-        deps.getSelectedItems(win),
-        deps.resolveFromItems,
-      ),
-    getReaderAvailability: async () => ({
-      canCopy: false,
-      messageKey: "copy-reader-no-active",
-    }),
-    executePrimaryLibraryCopy: async () => deps.executeCopy(),
-    executePrimaryReaderCopy: async () =>
-      buildUnavailableResult("copy-reader-no-active"),
-    executeExplicitReaderPathCopy: async () =>
-      buildUnavailableResult("copy-reader-no-active"),
-  });
-
-  return controller.getCurrentActionState();
-}
-
-async function createActiveReaderActionState(): Promise<CopyActionState> {
-  const settings = runtimeSettings.getSnapshot();
-  const itemID = getActiveReaderItemID();
-
-  const controller = createCopyActionController({
-    getAllowedTypes: () => settings.allowedTypes,
-    getMode: () => settings.multiAttachmentMode,
-    getLibraryItems: () => [],
-    getReaderItemID: () => itemID,
-    getSelectionAvailability: async () => ({
-      canCopy: false,
-      messageKey: "copy-no-files",
-    }),
-    getReaderAvailability: () =>
-      checkReaderAvailability(
-        itemID,
-        settings.allowedTypes,
-        resolveAttachmentFromReader,
-      ),
-    executePrimaryLibraryCopy: async () =>
-      buildUnavailableResult("copy-no-files"),
-    executePrimaryReaderCopy: async () => {
-      const result = await copyFromReaderItem(itemID, settings.allowedTypes);
-      notifyCopyResult(result);
-      return result;
-    },
-    executeExplicitReaderPathCopy: async () => executeCopyPathFromReader(),
-  });
-
-  return controller.getCurrentActionState();
-}
-
-async function createReaderToolbarActionState(
-  itemID: number | undefined,
-  deps: ReaderToolbarCopyButtonDeps,
-): Promise<CopyActionState> {
-  const controller = createCopyActionController({
-    getAllowedTypes: () => deps.getAllowedTypes(),
-    getMode: () => "all",
-    getLibraryItems: () => [],
-    getReaderItemID: () => itemID,
-    getSelectionAvailability: async () => ({
-      canCopy: false,
-      messageKey: "copy-no-files",
-    }),
-    getReaderAvailability: () =>
-      checkReaderAvailability(
-        itemID,
-        deps.getAllowedTypes(),
-        deps.resolveFromReader,
-      ),
-    executePrimaryLibraryCopy: async () =>
-      buildUnavailableResult("copy-no-files"),
-    executePrimaryReaderCopy: async () => deps.executeCopy(itemID),
-    executeExplicitReaderPathCopy: async () => deps.executeCopyPath(),
-  });
-
-  return controller.getCurrentActionState();
-}
-
 function syncMainToolbarButtons(): void {
   mainWindowController.syncMainToolbarButtons(Zotero.getMainWindows());
 }
 
 function syncReaderToolbarButton(): void {
   readerToolbarController.sync();
-}
-
-function registerToolbarPreferenceObservers(): void {
-  runtimeSettingsPrefObservers = RUNTIME_SETTINGS_PREF_KEYS.map((key) =>
-    Zotero.Prefs.registerObserver(
-      `${config.prefsPrefix}.${key}`,
-      () => {
-        runtimeSettings.invalidate();
-        syncMainToolbarButtons();
-        syncReaderToolbarButton();
-      },
-      true,
-    ),
-  );
-}
-
-function unregisterToolbarPreferenceObservers(): void {
-  for (const observer of runtimeSettingsPrefObservers) {
-    Zotero.Prefs.unregisterObserver(observer);
-  }
-  runtimeSettingsPrefObservers = [];
 }
 
 export default {

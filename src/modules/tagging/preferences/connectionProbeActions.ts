@@ -1,5 +1,6 @@
 import { getString } from "../../../utils/locale";
 import { showAutoTagToast } from "../integration/autoTagNotify";
+import { PROBE_SENTINEL } from "./aiConnectionProbe";
 
 export async function zoteroProbeHttpPost(
   url: string,
@@ -36,11 +37,11 @@ export async function zoteroProbeHttpPost(
 
 export function formatProbeMessage(failureMessage: string): string {
   switch (failureMessage) {
-    case "__needs_endpoint__":
+    case PROBE_SENTINEL.NEEDS_ENDPOINT:
       return getString("pref-ai-test-connection-needs-endpoint");
-    case "__needs_key__":
+    case PROBE_SENTINEL.NEEDS_KEY:
       return getString("pref-ai-test-connection-needs-key");
-    case "__needs_model__":
+    case PROBE_SENTINEL.NEEDS_MODEL:
       return getString("pref-ai-test-connection-needs-model");
     default:
       return getString("pref-ai-test-connection-fail", {

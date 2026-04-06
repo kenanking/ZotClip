@@ -22,8 +22,15 @@ export function createKeyboardRegistry(deps: {
       return;
     }
 
-    void deps.onLibraryShortcut(event);
-    void deps.onReaderShortcut(event);
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    void Promise.resolve(deps.onLibraryShortcut(event)).then((handled) => {
+      if (!handled && !event.defaultPrevented) {
+        void deps.onReaderShortcut(event);
+      }
+    });
   };
 
   return {

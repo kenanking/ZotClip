@@ -87,6 +87,3 @@ export function createDynamicModelPopupDisposer(
     popup.removeEventListener("popupshowing", handler as any);
   };
 }
-
-/** @deprecated Use `createDynamicModelPopupDisposer` instead. */
-export const createOllamaPopupDisposer = createDynamicModelPopupDisposer;

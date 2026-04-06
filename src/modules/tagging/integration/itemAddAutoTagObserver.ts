@@ -101,9 +101,12 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
   }
 
   function enqueueBatch(ids: string[] | number[]): void {
-    const numeric = ids.map((id) =>
-      typeof id === "string" ? parseInt(id, 10) : id,
-    );
+    const numeric = ids
+      .map((id) => (typeof id === "string" ? parseInt(id, 10) : id))
+      .filter((id) => !Number.isNaN(id));
+    if (!numeric.length) {
+      return;
+    }
     batchQueue.push(numeric);
     void drainBatchQueue();
   }

@@ -17,25 +17,27 @@ function buildLmStudioChatCompletionsUrl(baseUrl: string): string {
   return base ? `${base}/v1/chat/completions` : "";
 }
 
+type EndpointBuilder = (baseUrl: string) => string;
+
+const PROVIDER_ENDPOINT_BUILDERS: Record<string, EndpointBuilder> = {
+  ollama: buildOllamaChatCompletionsUrl,
+  lmstudio: buildLmStudioChatCompletionsUrl,
+  custom: normalizeOpenAiChatCompletionsUrl,
+};
+
+const RELAXED_JSON_MODE_PROVIDERS = new Set(["ollama", "lmstudio", "custom"]);
+
 export function resolveProviderEndpoint(
   providerId: string,
   endpointOverride?: string,
 ): string {
   const config = getAiProviderConfig(providerId);
-  if (providerId === "ollama") {
-    return buildOllamaChatCompletionsUrl(
-      endpointOverride ?? config.endpoint ?? "",
-    );
-  }
-  if (providerId === "lmstudio") {
-    return buildLmStudioChatCompletionsUrl(
-      endpointOverride ?? config.endpoint ?? "",
-    );
-  }
-  if (providerId === "custom") {
-    return normalizeOpenAiChatCompletionsUrl(
-      endpointOverride ?? getAiApiEndpoint(),
-    );
+  const builder = PROVIDER_ENDPOINT_BUILDERS[providerId];
+  if (builder) {
+    const baseUrl =
+      endpointOverride ??
+      (providerId === "custom" ? getAiApiEndpoint() : (config.endpoint ?? ""));
+    return builder(baseUrl);
   }
   return config.endpoint;
 }
@@ -49,9 +51,8 @@ export function resolveProviderRuntimePolicy(args: {
     providerId: config.id,
     endpoint: resolveProviderEndpoint(config.id, args.endpointOverride),
     apiKeyRequired: config.apiKeyRequired,
-    includeJsonObjectResponseFormat:
-      config.id !== "ollama" &&
-      config.id !== "lmstudio" &&
-      config.id !== "custom",
+    includeJsonObjectResponseFormat: !RELAXED_JSON_MODE_PROVIDERS.has(
+      config.id,
+    ),
   };
 }

@@ -18,6 +18,7 @@ import {
   buildProbeRequestBody,
   interpretProbeResponse,
   runAiConnectionProbe,
+  PROBE_SENTINEL,
 } from "../../src/modules/tagging/preferences/aiConnectionProbe";
 import {
   resolveModelForAiProvider,
@@ -105,7 +106,7 @@ test("runAiConnectionProbe validates inputs and completes a successful probe", a
     httpPost: async () => ({ response: "", status: 200 }),
   });
   assert.equal(missing.ok, false);
-  if (!missing.ok) assert.equal(missing.message, "__needs_endpoint__");
+  if (!missing.ok) assert.equal(missing.message, PROBE_SENTINEL.NEEDS_ENDPOINT);
 
   let called = false;
   const ok = await runAiConnectionProbe({

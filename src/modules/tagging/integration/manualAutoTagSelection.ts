@@ -77,6 +77,16 @@ export async function executeAutoTagSelection(): Promise<void> {
           progress: 100,
         });
       }
+    } catch (error) {
+      console.error("[ZotClip] Auto-tag failed for item:", error);
+      progressWin.changeLine({
+        text: getString("auto-tag-failed", {
+          args: {
+            error: error instanceof Error ? error.message : String(error),
+          },
+        }),
+        progress: 100,
+      });
     } finally {
       progressWin.show(2000);
     }

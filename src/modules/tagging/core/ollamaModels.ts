@@ -1,28 +1,12 @@
 import type { AiProviderModel } from "../../../utils/prefs";
-
-export interface OllamaTagsResponse {
-  models: Array<{ name: string }>;
-}
+import { parseModelListResponse } from "./modelParser";
 
 /**
  * Parse the JSON response from Ollama's `/api/tags` endpoint into the
  * provider-agnostic model list used by the preferences UI.
  */
 export function parseOllamaTagsResponse(raw: string): AiProviderModel[] {
-  let parsed: OllamaTagsResponse;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("Failed to parse Ollama response: invalid JSON");
-  }
-
-  if (!parsed || !Array.isArray(parsed.models)) {
-    throw new Error("Failed to parse Ollama response: unexpected shape");
-  }
-
-  return parsed.models
-    .filter((m) => typeof m.name === "string" && m.name.trim())
-    .map((m) => ({ value: m.name, label: m.name }));
+  return parseModelListResponse(raw, "models", "name", "Ollama");
 }
 
 /**

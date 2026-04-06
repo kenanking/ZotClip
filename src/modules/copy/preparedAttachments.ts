@@ -1,3 +1,4 @@
+import { mapWithConcurrencyLimit } from "../../utils/concurrency";
 import type { ResolvedAttachment } from "./types";
 
 const DUPLICATE_COPY_CONCURRENCY = 4;
@@ -69,7 +70,11 @@ export async function prepareResolvedAttachments(
     });
   }
 
-  await runWithConcurrencyLimit(copyJobs, DUPLICATE_COPY_CONCURRENCY);
+  await mapWithConcurrencyLimit(
+    copyJobs,
+    DUPLICATE_COPY_CONCURRENCY,
+    async (job) => job(),
+  );
   return { files: prepared, tempDir: operationTempDir };
 }
 
@@ -79,7 +84,9 @@ export function scheduleTempDirCleanup(
   removeFn: (path: string) => Promise<void> = defaultRemoveTempDir,
 ): void {
   setTimeout(() => {
-    void removeFn(tempDir).catch(() => {});
+    void removeFn(tempDir).catch((error) => {
+      console.warn("[ZotClip] Failed to clean up temp dir:", tempDir, error);
+    });
   }, delayMs);
 }
 
@@ -94,27 +101,4 @@ function buildSuffixedName(baseName: string, suffix: number): string {
   }
 
   return `${baseName.slice(0, extensionStart)}_${suffix}${baseName.slice(extensionStart)}`;
-}
-
-async function runWithConcurrencyLimit(
-  jobs: Array<() => Promise<void>>,
-  concurrency: number,
-): Promise<void> {
-  if (!jobs.length) {
-    return;
-  }
-
-  let nextIndex = 0;
-  const workers = Array.from(
-    { length: Math.min(concurrency, jobs.length) },
-    async () => {
-      while (nextIndex < jobs.length) {
-        const currentIndex = nextIndex;
-        nextIndex += 1;
-        await jobs[currentIndex]();
-      }
-    },
-  );
-
-  await Promise.all(workers);
 }
