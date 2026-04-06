@@ -226,8 +226,7 @@ function handleTestConnection(
           apiKey: key,
           apiKeyRequired: policy.apiKeyRequired,
           model,
-          includeJsonObjectResponseFormat:
-            policy.includeJsonObjectResponseFormat,
+          includeJsonObjectResponseFormat: false,
           httpPost: zoteroProbeHttpPost,
         });
         showAutoTagPrefsToast(
