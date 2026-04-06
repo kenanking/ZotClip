@@ -32,10 +32,7 @@ export function createDynamicModelPopupDisposer(
   let inFlight = false;
   const handler = async () => {
     const providerId = getAiProvider();
-    if (
-      (providerId !== "ollama" && providerId !== "lmstudio") ||
-      inFlight
-    )
+    if ((providerId !== "ollama" && providerId !== "lmstudio") || inFlight)
       return;
     const baseUrl = endpointInput.value.trim();
     if (!baseUrl) return;
@@ -43,11 +40,9 @@ export function createDynamicModelPopupDisposer(
     inFlight = true;
     try {
       const httpFetcher = (url: string) =>
-        Zotero.HTTP.request("GET", url, { timeout: 5000 }).then(
-          (r: any) => ({
-            response: r.responseText ?? "",
-          }),
-        );
+        Zotero.HTTP.request("GET", url, { timeout: 5000 }).then((r: any) => ({
+          response: r.responseText ?? "",
+        }));
 
       const models =
         providerId === "lmstudio"
