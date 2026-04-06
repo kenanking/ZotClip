@@ -2,7 +2,7 @@
   "name": "zotclip",
   "type": "module",
   "version": "0.3.2",
-  "description": "Copy Zotero attachments to clipboard.",
+  "description": "Copy Zotero attachment files to clipboard and generate tags using AI providers (DeepSeek, OpenRouter, Ollama, LM Studio, Custom).",
   "config": {
     "addonName": "ZotClip",
     "addonID": "zotclip@cvrsg.dev",
