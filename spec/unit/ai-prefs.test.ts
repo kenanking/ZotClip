@@ -27,13 +27,25 @@ function clearStore() {
   }
 }
 
-test("resolveProviderEndpoint resolves Ollama, custom base, and static providers", () => {
+test("resolveProviderEndpoint resolves Ollama, LM Studio, custom base, and static providers", () => {
   clearStore();
   store["extensions.zotero.zotclip.aiEndpointOllama"] =
     "http://localhost:11434///";
   assert.equal(
     resolveProviderEndpoint("ollama"),
     "http://localhost:11434/v1/chat/completions",
+  );
+
+  store["extensions.zotero.zotclip.aiEndpointLmstudio"] =
+    "http://localhost:1234/";
+  assert.equal(
+    resolveProviderEndpoint("lmstudio"),
+    "http://localhost:1234/v1/chat/completions",
+  );
+
+  assert.equal(
+    resolveProviderEndpoint("lmstudio"),
+    "http://localhost:1234/v1/chat/completions",
   );
 
   store["extensions.zotero.zotclip.aiApiEndpoint"] =
@@ -64,4 +76,17 @@ test("AI model prefs reconcile on provider switch and resolve effective model", 
   store[`${P}.aiModel`] = "not-a-deepseek-model";
   reconcileAiModelForProvider("deepseek");
   assert.equal(store[`${P}.aiModel`], "deepseek-chat");
+});
+
+test("LM Studio model prefs reconcile and resolve effective model", () => {
+  clearStore();
+  store[`${P}.aiModel`] = "deepseek-chat";
+  store[`${P}.aiLastModelLmstudio`] = "llama-3.1-8b-instruct";
+  reconcileAiModelForProvider("lmstudio");
+  assert.equal(store[`${P}.aiModel`], "llama-3.1-8b-instruct");
+
+  store[`${P}.aiProvider`] = "lmstudio";
+  store[`${P}.aiModel`] = "";
+  store[`${P}.aiLastModelLmstudio`] = "mistral-7b-instruct";
+  assert.equal(getEffectiveAiModel(), "mistral-7b-instruct");
 });

@@ -12,6 +12,11 @@ export interface ProviderRuntimePolicy {
   includeJsonObjectResponseFormat: boolean;
 }
 
+function buildLmStudioChatCompletionsUrl(baseUrl: string): string {
+  const base = baseUrl.trim().replace(/\/+$/, "");
+  return base ? `${base}/v1/chat/completions` : "";
+}
+
 export function resolveProviderEndpoint(
   providerId: string,
   endpointOverride?: string,
@@ -19,6 +24,11 @@ export function resolveProviderEndpoint(
   const config = getAiProviderConfig(providerId);
   if (providerId === "ollama") {
     return buildOllamaChatCompletionsUrl(
+      endpointOverride ?? config.endpoint ?? "",
+    );
+  }
+  if (providerId === "lmstudio") {
+    return buildLmStudioChatCompletionsUrl(
       endpointOverride ?? config.endpoint ?? "",
     );
   }
@@ -40,6 +50,8 @@ export function resolveProviderRuntimePolicy(args: {
     endpoint: resolveProviderEndpoint(config.id, args.endpointOverride),
     apiKeyRequired: config.apiKeyRequired,
     includeJsonObjectResponseFormat:
-      config.id !== "ollama" && config.id !== "custom",
+      config.id !== "ollama" &&
+      config.id !== "lmstudio" &&
+      config.id !== "custom",
   };
 }

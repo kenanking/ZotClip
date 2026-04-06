@@ -249,6 +249,19 @@ test("provider adapter normalizes Ollama endpoint and relaxes JSON mode", () => 
   assert.equal(custom.includeJsonObjectResponseFormat, false);
 });
 
+test("provider adapter normalizes LM Studio endpoint and relaxes JSON mode", () => {
+  assert.equal(
+    resolveProviderEndpoint("lmstudio", "http://localhost:1234///"),
+    "http://localhost:1234/v1/chat/completions",
+  );
+  const lmstudio = resolveProviderRuntimePolicy({
+    providerId: "lmstudio",
+    endpointOverride: "http://localhost:1234/",
+  });
+  assert.equal(lmstudio.apiKeyRequired, false);
+  assert.equal(lmstudio.includeJsonObjectResponseFormat, false);
+});
+
 test("resolveProviderEndpoint normalizes custom provider endpoint", () => {
   assert.equal(
     resolveProviderEndpoint("custom", "https://api.example.com/v1"),

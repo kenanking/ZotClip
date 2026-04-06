@@ -4,6 +4,7 @@
 // @ts-nocheck
 export type FluentMessageId =
   | 'auto-tag-failed'
+  | 'auto-tag-lmstudio-not-running'
   | 'auto-tag-no-api-key'
   | 'auto-tag-no-selection'
   | 'auto-tag-no-tags-suggested'
@@ -66,6 +67,7 @@ export type FluentMessageId =
   | 'pref-help'
   | 'pref-interface-help'
   | 'pref-library-shortcut'
+  | 'pref-lmstudio-api-key-placeholder'
   | 'pref-main-toolbar-button'
   | 'pref-multi-attachment-mode'
   | 'pref-multi-attachment-mode-all'

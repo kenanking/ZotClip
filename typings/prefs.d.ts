@@ -21,10 +21,13 @@ declare namespace _ZoteroTypes {
       "aiApiKeyDeepseek": string;
       "aiApiKeyOpenrouter": string;
       "aiApiKeyOllama": string;
+      "aiApiKeyLmstudio": string;
       "aiApiKeyCustom": string;
       "aiEndpointOllama": string;
+      "aiEndpointLmstudio": string;
       "aiModel": string;
       "aiLastModelOllama": string;
+      "aiLastModelLmstudio": string;
       "aiLastModelCustom": string;
       "aiPrompt": string;
       "stripConnectorTags": boolean;

@@ -11,7 +11,11 @@ export interface AiProviderModel {
   label: string;
 }
 
-export type AiModelSource = "static" | "ollama-dynamic" | "free-text";
+export type AiModelSource =
+  | "static"
+  | "ollama-dynamic"
+  | "lmstudio-dynamic"
+  | "free-text";
 
 export interface AiProviderConfig {
   id: string;
@@ -60,6 +64,16 @@ export const AI_PROVIDERS: AiProviderConfig[] = [
     modelSource: "ollama-dynamic",
     apiKeyRequired: false,
     apiKeyPlaceholder: "pref-ollama-api-key-placeholder",
+    endpointEditable: true,
+  },
+  {
+    id: "lmstudio",
+    label: "LM Studio",
+    endpoint: "http://localhost:1234",
+    models: [],
+    modelSource: "lmstudio-dynamic",
+    apiKeyRequired: false,
+    apiKeyPlaceholder: "pref-lmstudio-api-key-placeholder",
     endpointEditable: true,
   },
   {
@@ -181,6 +195,9 @@ export function getProviderEndpointForUi(providerId: string): string {
   if (providerId === "ollama") {
     return (getPref("aiEndpointOllama") || "http://localhost:11434").trim();
   }
+  if (providerId === "lmstudio") {
+    return (getPref("aiEndpointLmstudio") || "http://localhost:1234").trim();
+  }
   if (providerId === "custom") {
     return getAiApiEndpoint();
   }
@@ -196,6 +213,10 @@ export function setProviderEndpointFromUi(
     setPref("aiEndpointOllama", normalized);
     return;
   }
+  if (providerId === "lmstudio") {
+    setPref("aiEndpointLmstudio", normalized);
+    return;
+  }
   if (providerId === "custom") {
     setPref("aiApiEndpoint", normalized);
   }
@@ -206,11 +227,13 @@ const PROVIDER_API_KEY_PREFS: Record<
   | "aiApiKeyDeepseek"
   | "aiApiKeyOpenrouter"
   | "aiApiKeyOllama"
+  | "aiApiKeyLmstudio"
   | "aiApiKeyCustom"
 > = {
   deepseek: "aiApiKeyDeepseek",
   openrouter: "aiApiKeyOpenrouter",
   ollama: "aiApiKeyOllama",
+  lmstudio: "aiApiKeyLmstudio",
   custom: "aiApiKeyCustom",
 };
 
@@ -258,8 +281,16 @@ export function getCustomModelForUi(): string {
   return getLastModelForProvider("aiLastModelCustom");
 }
 
+/** Last model explicitly used with LM Studio (survives switching to other providers). */
+export function getLmStudioModelForUi(): string {
+  return getLastModelForProvider("aiLastModelLmstudio");
+}
+
 function getLastModelForProvider(
-  lastModelPref: "aiLastModelOllama" | "aiLastModelCustom",
+  lastModelPref:
+    | "aiLastModelOllama"
+    | "aiLastModelLmstudio"
+    | "aiLastModelCustom",
 ): string {
   const current = getAiModel();
   if (current) return current;
@@ -268,9 +299,10 @@ function getLastModelForProvider(
 
 const AI_DYNAMIC_PROVIDER_LAST_MODEL_PREFS: Record<
   string,
-  "aiLastModelOllama" | "aiLastModelCustom"
+  "aiLastModelOllama" | "aiLastModelLmstudio" | "aiLastModelCustom"
 > = {
   ollama: "aiLastModelOllama",
+  lmstudio: "aiLastModelLmstudio",
   custom: "aiLastModelCustom",
 };
 
@@ -348,7 +380,9 @@ export function getEffectiveAiModel(): string {
   const lastModelPref =
     config.modelSource === "ollama-dynamic"
       ? "aiLastModelOllama"
-      : "aiLastModelCustom";
+      : config.modelSource === "lmstudio-dynamic"
+        ? "aiLastModelLmstudio"
+        : "aiLastModelCustom";
   return getLastModelForProvider(lastModelPref);
 }
 

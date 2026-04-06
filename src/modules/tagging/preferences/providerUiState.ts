@@ -3,6 +3,7 @@ import {
   getAiModel,
   getAiProviderConfig,
   getCustomModelForUi,
+  getLmStudioModelForUi,
   getOllamaModelForUi,
   getProviderEndpointForUi,
 } from "../../../utils/prefs";
@@ -68,7 +69,10 @@ export function populateModelOptions(
   }
 
   const doc = modelMenulist.ownerDocument!;
-  if (config.modelSource === "ollama-dynamic") {
+  if (
+    config.modelSource === "ollama-dynamic" ||
+    config.modelSource === "lmstudio-dynamic"
+  ) {
     const saved = currentModel.trim();
     if (saved) {
       const item = createMenuElement(doc);
@@ -120,7 +124,9 @@ export function syncModelFromPrefs(
   const modelForList =
     config.modelSource === "ollama-dynamic"
       ? getOllamaModelForUi()
-      : getAiModel();
+      : config.modelSource === "lmstudio-dynamic"
+        ? getLmStudioModelForUi()
+        : getAiModel();
   populateModelOptions(modelMenulist, config, modelForList);
 }
 

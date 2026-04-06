@@ -27,7 +27,7 @@ import {
   zoteroProbeHttpPost,
 } from "./connectionProbeActions";
 import { runAiConnectionProbe } from "./aiConnectionProbe";
-import { createOllamaPopupDisposer } from "./modelMenuLoader";
+import { createDynamicModelPopupDisposer } from "./modelMenuLoader";
 import {
   applyProviderEndpointUiState,
   getMenulistSelectedValue,
@@ -104,7 +104,7 @@ export function registerAutoTagAIPanel(doc: Document): { dispose(): void } {
   restoreAiModelForDynamicProviderIfEmpty(currentProviderId);
   syncModelFromPrefs(currentProviderId, modelMenulist, modelTextInput);
 
-  const ollamaDisposer = createOllamaPopupDisposer(
+  const ollamaDisposer = createDynamicModelPopupDisposer(
     modelMenulist,
     endpointInput,
   );
@@ -144,8 +144,12 @@ export function registerAutoTagAIPanel(doc: Document): { dispose(): void } {
       () => {
         const value = getMenulistSelectedValue(modelMenulist).trim();
         setPref("aiModel", value);
-        if (getMenulistSelectedValue(providerMenulist) === "ollama" && value) {
+        const providerId = getMenulistSelectedValue(providerMenulist);
+        if (providerId === "ollama" && value) {
           setPref("aiLastModelOllama", value);
+        }
+        if (providerId === "lmstudio" && value) {
+          setPref("aiLastModelLmstudio", value);
         }
       },
     ),
