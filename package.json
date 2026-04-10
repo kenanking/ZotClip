@@ -34,11 +34,11 @@
     "zotero-plugin-toolkit": "5.1.2"
   },
   "devDependencies": {
-    "@types/node": "25.5.2",
+    "@types/node": "25.6.0",
     "@zotero-plugin/eslint-config": "^0.6.9",
-    "eslint": "10.1.0",
+    "eslint": "10.2.0",
     "mocha": "^11.7.5",
-    "prettier": "3.8.1",
+    "prettier": "3.8.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "zotero-plugin-scaffold": "0.8.5",
