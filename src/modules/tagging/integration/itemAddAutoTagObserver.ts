@@ -100,10 +100,21 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
     }
   }
 
-  function enqueueBatch(ids: string[] | number[]): void {
+  function enqueueBatch(
+    ids: string[] | number[],
+    extraData: _ZoteroTypes.anyObj,
+  ): void {
     const numeric = ids
       .map((id) => (typeof id === "string" ? parseInt(id, 10) : id))
-      .filter((id) => !Number.isNaN(id));
+      .filter((id) => {
+        if (Number.isNaN(id)) return false;
+        // Skip items added during sync or bulk operations (e.g., cloud sync),
+        // which set skipSelect to avoid auto-selection.
+        if (extraData?.[id]?.skipSelect === true) {
+          return false;
+        }
+        return true;
+      });
     if (!numeric.length) {
       return;
     }
@@ -117,11 +128,12 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
         event: _ZoteroTypes.Notifier.Event,
         type: _ZoteroTypes.Notifier.Type,
         ids: string[] | number[],
+        extraData: _ZoteroTypes.anyObj,
       ) => {
         if (event !== "add" || type !== "item" || !ids?.length) {
           return;
         }
-        enqueueBatch(ids);
+        enqueueBatch(ids, extraData);
       },
     },
     ["item"],
