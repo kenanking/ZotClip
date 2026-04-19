@@ -38,8 +38,6 @@ export type FluentMessageId =
   | 'copy-reader-no-active'
   | 'mainwindow-copy-toolbar'
   | 'menu-auto-tag'
-  | 'menu-copy-reader'
-  | 'menu-copy-reader-path'
   | 'menu-copy-selected'
   | 'pref-ai-prompt'
   | 'pref-ai-prompt-help'

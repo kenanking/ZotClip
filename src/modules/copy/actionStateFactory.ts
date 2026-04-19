@@ -1,5 +1,4 @@
 import { copyFromReaderItem, copyFromSelection } from "./copyCommands";
-import { copyFromReaderPath } from "./copyPathCommands";
 import {
   buildUnavailableResult,
   checkReaderAvailability,
@@ -53,8 +52,6 @@ export async function createActiveLibraryActionState(
     },
     executePrimaryReaderCopy: async () =>
       buildUnavailableResult("copy-reader-no-active"),
-    executeExplicitReaderPathCopy: async () =>
-      buildUnavailableResult("copy-reader-no-active"),
   });
 
   return controller.getCurrentActionState();
@@ -84,8 +81,6 @@ export async function createMainToolbarActionState(
     }),
     executePrimaryLibraryCopy: async () => deps.executeCopy(),
     executePrimaryReaderCopy: async () =>
-      buildUnavailableResult("copy-reader-no-active"),
-    executeExplicitReaderPathCopy: async () =>
       buildUnavailableResult("copy-reader-no-active"),
   });
 
@@ -119,11 +114,6 @@ export async function createActiveReaderActionState(
       notifyCopyResult(result);
       return result;
     },
-    executeExplicitReaderPathCopy: async () => {
-      const result = await copyFromReaderPath(settings.allowedTypes);
-      notifyCopyResult(result);
-      return result;
-    },
   });
 
   return controller.getCurrentActionState();
@@ -151,7 +141,6 @@ export async function createReaderToolbarActionState(
     executePrimaryLibraryCopy: async () =>
       buildUnavailableResult("copy-no-files"),
     executePrimaryReaderCopy: async () => deps.executeCopy(itemID),
-    executeExplicitReaderPathCopy: async () => deps.executeCopyPath(),
   });
 
   return controller.getCurrentActionState();

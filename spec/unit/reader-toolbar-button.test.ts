@@ -410,14 +410,6 @@ test("mountReaderToolbarButton reads reader action state and keeps disabled tool
           throw new Error("Disabled action should not run.");
         },
       },
-      secondary: {
-        kind: "copy-path",
-        canExecute: false,
-        reasonKey: "copy-reader-no-active",
-        run: async () => {
-          throw new Error("Disabled action should not run.");
-        },
-      },
     }),
     getActionTooltipText: (_label, state) =>
       state.primary.canExecute ? "Copy File" : "No active reader attachment",

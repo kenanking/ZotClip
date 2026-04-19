@@ -2,7 +2,6 @@ import {
   copyFromReaderItem,
   copyFromSelection,
 } from "../modules/copy/copyCommands";
-import { copyFromReaderPath } from "../modules/copy/copyPathCommands";
 import { notifyCopyResult } from "../modules/copy/notifier";
 import type {
   ClipboardResult,
@@ -30,14 +29,6 @@ export async function executeCopyFromReaderItem(
   settings: Pick<CopyActionSettings, "allowedTypes">,
 ): Promise<ClipboardResult> {
   const result = await copyFromReaderItem(itemID, settings.allowedTypes);
-  notifyCopyResult(result);
-  return result;
-}
-
-export async function executeCopyPathFromReader(
-  settings: Pick<CopyActionSettings, "allowedTypes">,
-): Promise<ClipboardResult> {
-  const result = await copyFromReaderPath(settings.allowedTypes);
   notifyCopyResult(result);
   return result;
 }

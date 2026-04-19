@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { createCopyActionController } from "../../src/modules/copy/interaction/actions/copyActionController";
 
-test("copy action controller returns an enabled reader primary action and copy-path secondary action", async () => {
+test("copy action controller returns an enabled reader primary action", async () => {
   const controller = createCopyActionController({
     getAllowedTypes: () => ["pdf"],
     getMode: () => "all",
@@ -25,11 +25,6 @@ test("copy action controller returns an enabled reader primary action and copy-p
       count: 1,
       outcome: "copied-files",
     }),
-    executeExplicitReaderPathCopy: async () => ({
-      ok: true,
-      format: "path-text",
-      count: 1,
-    }),
   });
 
   const state = await controller.getCurrentActionState();
@@ -38,6 +33,4 @@ test("copy action controller returns an enabled reader primary action and copy-p
   assert.equal(state.refreshKey, "2048|pdf");
   assert.equal(state.primary.kind, "copy-files");
   assert.equal(state.primary.canExecute, true);
-  assert.equal(state.secondary?.kind, "copy-path");
-  assert.equal(state.secondary?.canExecute, true);
 });

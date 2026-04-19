@@ -1,10 +1,6 @@
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 
-type CopyMenuLabelKey =
-  | "menu-auto-tag"
-  | "menu-copy-selected"
-  | "menu-copy-reader"
-  | "menu-copy-reader-path";
+type CopyMenuLabelKey = "menu-auto-tag" | "menu-copy-selected";
 
 export interface CopyMenuRegistrationDeps {
   addonRef: string;
@@ -92,44 +88,6 @@ function buildCopyMenuOptions(
           },
           (_event, context) => {
             context.setVisible(isAutoTagEnabled());
-          },
-        ),
-      ],
-    },
-    {
-      menuID: `${deps.addonRef}-copy-reader`,
-      pluginID: deps.pluginID,
-      target: "main/menubar/tools",
-      menus: [
-        createMenuItem(
-          deps.getLabel("menu-copy-reader"),
-          deps.menuIcon,
-          async () => {
-            const state = await deps.getReaderActionState();
-            if (!state.primary.canExecute) {
-              return;
-            }
-
-            await state.primary.run();
-          },
-        ),
-      ],
-    },
-    {
-      menuID: `${deps.addonRef}-copy-reader-path`,
-      pluginID: deps.pluginID,
-      target: "main/menubar/tools",
-      menus: [
-        createMenuItem(
-          deps.getLabel("menu-copy-reader-path"),
-          deps.menuIcon,
-          async () => {
-            const state = await deps.getReaderActionState();
-            if (!state.secondary?.canExecute) {
-              return;
-            }
-
-            await state.secondary.run();
           },
         ),
       ],

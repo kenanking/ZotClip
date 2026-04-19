@@ -48,7 +48,6 @@ export function createReaderActionState(
     canExecute?: boolean;
     reasonKey?: "copy-reader-no-active";
     run?: () => Promise<ReturnType<typeof createCopyFilesResult>>;
-    runSecondary?: () => Promise<ReturnType<typeof createPathCopyResult>>;
   } = {},
 ) {
   return {
@@ -62,15 +61,6 @@ export function createReaderActionState(
         overrides.run ||
         (async () => {
           return createCopyFilesResult();
-        }),
-    },
-    secondary: {
-      kind: "copy-path" as const,
-      canExecute: true,
-      run:
-        overrides.runSecondary ||
-        (async () => {
-          return createPathCopyResult();
         }),
     },
   };

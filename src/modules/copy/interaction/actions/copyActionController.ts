@@ -13,7 +13,6 @@ export interface CopyActionControllerDeps {
   getReaderAvailability(): Promise<CopyAvailability>;
   executePrimaryLibraryCopy(): Promise<ClipboardResult>;
   executePrimaryReaderCopy(): Promise<ClipboardResult>;
-  executeExplicitReaderPathCopy(): Promise<ClipboardResult>;
 }
 
 export function createCopyActionController(deps: CopyActionControllerDeps): {
@@ -34,12 +33,6 @@ export function createCopyActionController(deps: CopyActionControllerDeps): {
             canExecute: availability.canCopy,
             reasonKey: availability.messageKey,
             run: () => deps.executePrimaryReaderCopy(),
-          },
-          secondary: {
-            kind: "copy-path",
-            canExecute: availability.canCopy,
-            reasonKey: availability.messageKey,
-            run: () => deps.executeExplicitReaderPathCopy(),
           },
         };
       }

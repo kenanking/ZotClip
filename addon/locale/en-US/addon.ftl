@@ -1,8 +1,6 @@
 prefs-title = ZotClip
 mainwindow-copy-toolbar = Copy File
 menu-copy-selected = Copy Attachment File(s)
-menu-copy-reader = Copy Current Reader Attachment
-menu-copy-reader-path = Copy Current Reader Path
 menu-auto-tag = Generate AI Tags
 copy-notify-files = Copied { $count } attachment file(s) to clipboard.
 copy-notify-files-file-object = Copied { $count } attachment file(s) to clipboard (file-object).

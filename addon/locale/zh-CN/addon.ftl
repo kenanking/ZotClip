@@ -1,8 +1,6 @@
 prefs-title = ZotClip
 mainwindow-copy-toolbar = 复制文件
 menu-copy-selected = 复制附件文件
-menu-copy-reader = 复制当前阅读器附件
-menu-copy-reader-path = 复制当前阅读器路径
 menu-auto-tag = AI 生成标签
 copy-notify-files = 已复制 { $count } 个附件文件到剪贴板。
 copy-notify-files-file-object = 已复制 { $count } 个附件文件到剪贴板（文件对象）。

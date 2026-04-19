@@ -4,7 +4,6 @@ import type {
   resolveAttachmentsFromItems,
 } from "./attachmentResolver";
 import type { copyFromReaderItem, copyFromSelection } from "./copyCommands";
-import type { copyFromReaderPath } from "./copyPathCommands";
 import type {
   registerMainToolbarButton,
   MainToolbarButtonHandle,
@@ -45,5 +44,4 @@ export interface ReaderToolbarCopyButtonDeps {
   executeCopy(
     itemID: number | undefined,
   ): Promise<Awaited<ReturnType<typeof copyFromReaderItem>>>;
-  executeCopyPath(): Promise<Awaited<ReturnType<typeof copyFromReaderPath>>>;
 }

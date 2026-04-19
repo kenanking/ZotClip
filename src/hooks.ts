@@ -1,7 +1,6 @@
 import {
   executeCopyFromSelection,
   executeCopyFromReaderItem,
-  executeCopyPathFromReader,
 } from "./execution/copyActions";
 import { initToolbarIcon } from "./modules/copy/copyUi";
 import {
@@ -82,8 +81,6 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
     resolveAttachmentFromReader(itemID, allowedTypes),
   executeCopy: async (itemID) =>
     executeCopyFromReaderItem(itemID, runtimeSettings.getSnapshot()),
-  executeCopyPath: async () =>
-    executeCopyPathFromReader(runtimeSettings.getSnapshot()),
 };
 
 const mainWindowController = createMainWindowController({

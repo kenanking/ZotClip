@@ -8,16 +8,8 @@ export interface CopyPrimaryAction {
   run(): Promise<ClipboardResult>;
 }
 
-export interface CopySecondaryAction {
-  kind: "copy-path";
-  canExecute: boolean;
-  reasonKey?: CopyMessageKey;
-  run(): Promise<ClipboardResult>;
-}
-
 export interface CopyActionState {
   source: ClipboardSource;
   refreshKey: string;
   primary: CopyPrimaryAction;
-  secondary?: CopySecondaryAction;
 }
