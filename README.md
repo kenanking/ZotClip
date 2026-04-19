@@ -28,12 +28,12 @@ not appear immediately.
 
 ## System Support
 
-| System        | Status                                      | Clipboard backend                     | What to install                                 |
-| ------------- | ------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
-| Windows 10/11 | Supported and validated                     | Native `CF_HDROP` file copy           | Nothing extra                                   |
-| Linux X11     | Supported and validated with packages       | GTK4 helper backend                   | `python3-gi` and `gir1.2-gtk-4.0`               |
-| Linux Wayland | Supported and validated with packages       | `wl-copy` `text/uri-list` backend     | `wl-clipboard`                                  |
-| macOS         | Implemented; real-device validation pending | `osascript` AppKit pasteboard backend | Nothing extra; `osascript` is provided by macOS |
+| System        | Clipboard backend                     | What to install                                 |
+| ------------- | ------------------------------------- | ----------------------------------------------- |
+| Windows 10/11 | Native `CF_HDROP` file copy           | Nothing extra                                   |
+| Linux X11     | GTK4 helper backend                   | `python3-gi` and `gir1.2-gtk-4.0`               |
+| Linux Wayland | `wl-copy` `text/uri-list` backend     | `wl-clipboard`                                  |
+| macOS         | `osascript` AppKit pasteboard backend | Nothing extra; `osascript` is provided by macOS |
 
 After installation, open `Edit -> Preferences -> ZotClip` and check the
 `Compatibility` section. Confirm that `Backend diagnostics` reports the
@@ -41,10 +41,6 @@ expected backend for your system and does not show a missing dependency. If the
 compatibility check does not pass, install the required system package before
 retesting. AI tagging does not use these clipboard backends; it only needs
 network access to your chosen API (or a local Ollama instance).
-
-The current runtime optimization pass is validated on Windows and Linux. macOS
-uses an `osascript` AppKit pasteboard backend and has targeted automated
-coverage, but it has not been manually verified on a real macOS device yet.
 
 ## Usage
 
