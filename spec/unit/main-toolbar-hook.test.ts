@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { registerMainToolbarCopyButton } from "../../src/hooks";
+import { registerMainToolbarCopyButton } from "../../src/toolbar/buttonRegistration";
 
 const DEBOUNCE_SETTLE_MS = 150;
 

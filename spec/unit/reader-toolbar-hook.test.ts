@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { registerReaderToolbarCopyButton } from "../../src/hooks";
+import { registerReaderToolbarCopyButton } from "../../src/toolbar/buttonRegistration";
 
 test("reader toolbar integration skips registration when the preference is disabled", () => {
   let registerCalls = 0;
