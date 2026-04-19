@@ -56,11 +56,12 @@ $env:ZOTERO_PLUGIN_ZOTERO_BIN_PATH='C:\Program Files\Zotero\zotero.exe'
 - Releases are triggered by pushing a Git tag that matches `v**`.
 - Before a release, run `npm run test:unit`, `npm run build`, and
   `npm run lint:check`.
-- Bump the version with `npm version patch`, `npm version minor`, or
-  `npm version major`. This creates a version commit and a matching Git tag.
-- Release version bumps must use the commit message format
-  `chore(release): publish vX.Y.Z`. Prefer `npm version ... -m "chore(release): publish v%s"` so the commit message and tag stay aligned.
-- Push commits and tags with `git push origin main --follow-tags`.
+- Bump the version with `npm run release -- patch --yes`,
+  `npm run release -- minor --yes`, or `npm run release -- major --yes`.
+  This creates a version commit (`chore(publish): release vX.Y.Z`) and a
+  matching Git tag, then pushes both automatically.
+- Do **not** use `npm version` directly; it produces a generic commit message
+  that does not match the project's conventional-release configuration.
 - The GitHub Actions release workflow then runs `npm run build` and
   `npm run release`.
 - If an agent updates compatibility claims, release notes, or packaging, it

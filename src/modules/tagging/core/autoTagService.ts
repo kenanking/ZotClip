@@ -68,7 +68,11 @@ export async function autoTagItem(
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     const message = `Invalid AI response format: ${detail}`;
-    console.error("[ZotClip] Failed to parse AI response:", error);
+    Zotero.logError(
+      error instanceof Error
+        ? error
+        : new Error(`[ZotClip] Failed to parse AI response: ${String(error)}`),
+    );
     deps.onProgress({
       phase: "error",
       text: message,

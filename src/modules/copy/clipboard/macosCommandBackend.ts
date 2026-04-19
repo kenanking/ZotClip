@@ -1,8 +1,7 @@
-import type { ClipboardResult } from "../types";
 import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
 import type { CommandCall, CommandResult } from "./commandRunner";
-import { BACKEND_IDS, type ClipboardPayload } from "./types";
+import { BACKEND_IDS } from "./types";
 
 export interface MacosCommandBackendDeps {
   probeCommand(name: string): Promise<boolean>;

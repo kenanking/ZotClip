@@ -1,8 +1,7 @@
-import type { ClipboardResult } from "../types";
 import { writeWindowsFileDrop } from "../windowsFileClipboard";
 import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
-import { BACKEND_IDS, type ClipboardPayload } from "./types";
+import { BACKEND_IDS } from "./types";
 
 export interface WindowsBackendDeps {
   writeWindowsFileDrop?(paths: string[]): boolean | Promise<boolean>;

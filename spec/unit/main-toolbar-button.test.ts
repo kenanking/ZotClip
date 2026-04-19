@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  registerMainToolbarButton,
-  type MainToolbarButtonHandle,
-} from "../../src/modules/copy/mainToolbarButton";
+import { registerMainToolbarButton } from "../../src/modules/copy/mainToolbarButton";
 import { createLibraryActionState } from "./fixtures/actionStateFixtures";
 
 type EventHandler = (event: Event) => void;

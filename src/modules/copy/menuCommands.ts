@@ -144,7 +144,7 @@ function createMenuItem(
   icon: string,
   onCommand: () => Promise<void>,
   beforeShowing?: (
-    _event: any,
+    _event: Event,
     context: _ZoteroTypes.MenuManager.BaseMenuContext,
   ) => void,
 ): _ZoteroTypes.MenuManager.MenuData {

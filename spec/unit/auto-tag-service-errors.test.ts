@@ -1,6 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
+// Mock Zotero global for error logging
+(globalThis as any).Zotero = { logError: () => {} };
+
 import { autoTagItem } from "../../src/modules/tagging/core/autoTagService";
 import type { AutoTagServiceDeps } from "../../src/modules/tagging/core/types";
 

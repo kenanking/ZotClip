@@ -1,4 +1,3 @@
-import type { ClipboardResult } from "../types";
 import { buildFailureResult, buildSuccessResult } from "./backends";
 import type { ClipboardBackend } from "./backends";
 import type {

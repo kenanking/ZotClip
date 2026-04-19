@@ -50,7 +50,9 @@ function logUnexpectedBackendError(
   error: unknown,
 ): void {
   // Only log actual exceptions, not expected failures like missing commands
-  (globalThis as any).ztoolkit?.log?.(
+  (
+    globalThis as { ztoolkit?: { log?: (...args: unknown[]) => void } }
+  ).ztoolkit?.log?.(
     `Clipboard backend ${operation} failed unexpectedly`,
     backendID,
     error,

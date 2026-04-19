@@ -78,7 +78,11 @@ export async function executeAutoTagSelection(): Promise<void> {
         });
       }
     } catch (error) {
-      console.error("[ZotClip] Auto-tag failed for item:", error);
+      Zotero.logError(
+        error instanceof Error
+          ? error
+          : new Error(`[ZotClip] Auto-tag failed for item: ${String(error)}`),
+      );
       progressWin.changeLine({
         text: getString("auto-tag-failed", {
           args: {

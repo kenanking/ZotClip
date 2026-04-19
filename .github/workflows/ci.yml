@@ -14,6 +14,13 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GitHub_TOKEN }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
       - name: Setup JS
         uses: zotero-plugin-dev/workflows/setup-js@main
       - name: Run Lint
@@ -24,6 +31,13 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GitHub_TOKEN }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
       - name: Setup JS
         uses: zotero-plugin-dev/workflows/setup-js@main
       - name: Run Build
@@ -39,6 +53,13 @@ jobs:
     needs:
       - build
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
       - name: Setup JS
         uses: zotero-plugin-dev/workflows/setup-js@main
       - run: npm run test:unit

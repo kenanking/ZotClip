@@ -85,7 +85,7 @@ export function scheduleTempDirCleanup(
 ): void {
   setTimeout(() => {
     void removeFn(tempDir).catch((error) => {
-      console.warn("[ZotClip] Failed to clean up temp dir:", tempDir, error);
+      ztoolkit.log("[ZotClip] Failed to clean up temp dir:", tempDir, error);
     });
   }, delayMs);
 }
