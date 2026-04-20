@@ -32,6 +32,7 @@ import {
   registerToolbarPreferenceObservers,
   unregisterToolbarPreferenceObservers,
 } from "./modules/copy/toolbarSync";
+import { cleanupAllTempDirs } from "./modules/copy/preparedAttachments";
 import { registerAutoTagItemAddObserver } from "./modules/tagging/integration/itemAddAutoTagObserver";
 import { executeAutoTagSelection } from "./modules/tagging/integration/manualAutoTagSelection";
 import {
@@ -181,6 +182,7 @@ function onShutdown(): void {
   mainWindowController.disposeAll(Zotero.getMainWindows());
   unregisterCopyMenuCommands(registeredCopyMenuIDs);
   registeredCopyMenuIDs = [];
+  void cleanupAllTempDirs();
   ztoolkit.unregisterAll();
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed

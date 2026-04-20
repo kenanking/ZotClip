@@ -4,6 +4,9 @@ import type { ResolvedAttachment } from "./types";
 const DUPLICATE_COPY_CONCURRENCY = 4;
 const TEMP_DIR_CLEANUP_DELAY_MS = 30_000;
 
+/** Temp directories scheduled for cleanup; also cleaned on plugin shutdown. */
+const pendingTempDirs = new Set<string>();
+
 export interface PreparedAttachmentResult {
   files: ResolvedAttachment[];
   tempDir?: string;
@@ -83,11 +86,31 @@ export function scheduleTempDirCleanup(
   delayMs: number = TEMP_DIR_CLEANUP_DELAY_MS,
   removeFn: (path: string) => Promise<void> = defaultRemoveTempDir,
 ): void {
+  pendingTempDirs.add(tempDir);
   setTimeout(() => {
-    void removeFn(tempDir).catch((error) => {
-      ztoolkit.log("[ZotClip] Failed to clean up temp dir:", tempDir, error);
-    });
+    void removeFn(tempDir)
+      .then(() => {
+        pendingTempDirs.delete(tempDir);
+      })
+      .catch((error) => {
+        ztoolkit.log("[ZotClip] Failed to clean up temp dir:", tempDir, error);
+      });
   }, delayMs);
+}
+
+/** Immediately remove all temp directories that are still pending cleanup. */
+export async function cleanupAllTempDirs(): Promise<void> {
+  const dirs = Array.from(pendingTempDirs);
+  pendingTempDirs.clear();
+  await Promise.all(
+    dirs.map(async (dir) => {
+      try {
+        await IOUtils.remove(dir, { recursive: true });
+      } catch {
+        // Ignore cleanup errors during shutdown
+      }
+    }),
+  );
 }
 
 async function defaultRemoveTempDir(path: string): Promise<void> {
