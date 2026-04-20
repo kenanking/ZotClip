@@ -46,3 +46,7 @@ pref-ai-test-connection-fail = 连接失败：{ $error }
 pref-ai-test-connection-needs-endpoint = 请先填写 API 地址。
 pref-ai-test-connection-needs-key = 请先填写 API 密钥。
 pref-ai-test-connection-needs-model = 请先填写模型名称。
+auto-tag-batch-start = 正在为 { $total } 个条目生成 AI 标签…
+auto-tag-batch-progress = 正在处理第 { $current } / { $total } 个条目…
+auto-tag-batch-done = 完成：已标记 { $succeeded } 个，跳过 { $skipped } 个。
+auto-tag-batch-done-mixed = 完成：已标记 { $succeeded } 个，跳过 { $skipped } 个，失败 { $failed } 个。

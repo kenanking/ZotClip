@@ -14,6 +14,7 @@ export interface AutoTagServiceDeps {
   getApiKey(): string;
   isApiKeyRequired(): boolean;
   getModel(): string;
+  getTimeout(): number;
   getRequestOptions(): {
     includeJsonObjectResponseFormat: boolean;
   };
@@ -25,6 +26,7 @@ export interface AutoTagServiceDeps {
       method: string;
       headers: Record<string, string>;
       body: string;
+      timeout: number;
     },
   ): Promise<{ response: string }>;
 }

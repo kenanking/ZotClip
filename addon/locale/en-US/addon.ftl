@@ -46,3 +46,7 @@ pref-ai-test-connection-fail = Connection failed: { $error }
 pref-ai-test-connection-needs-endpoint = Enter an API endpoint first.
 pref-ai-test-connection-needs-key = Enter an API key first.
 pref-ai-test-connection-needs-model = Enter a model name first.
+auto-tag-batch-start = Generating AI tags for { $total } items…
+auto-tag-batch-progress = Processing item { $current } / { $total }…
+auto-tag-batch-done = Done: { $succeeded } tagged, { $skipped } skipped.
+auto-tag-batch-done-mixed = Done: { $succeeded } tagged, { $skipped } skipped, { $failed } failed.

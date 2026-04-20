@@ -15,6 +15,7 @@ function baseDeps(
     isApiKeyRequired: () => true,
     getEndpoint: () => "https://api.test/v1/chat/completions",
     getModel: () => "test-model",
+    getTimeout: () => 120_000,
     getPrompt: (title) => `Tag: ${title}`,
     getRequestOptions: () => ({ includeJsonObjectResponseFormat: true }),
     httpRequest: async () => ({ response: "" }),

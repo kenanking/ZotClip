@@ -43,6 +43,7 @@ export async function autoTagItem(
       method: "POST",
       headers,
       body,
+      timeout: deps.getTimeout(),
     });
     responseText = result.response;
   } catch (error) {

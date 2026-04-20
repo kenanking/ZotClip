@@ -20,7 +20,7 @@ function buildPrompt(title: string, abstract: string): string {
   });
 }
 
-/** Longer than Zotero's HTTP default (30s) so slow LLM completions can finish. */
+/** Default timeout for AI tag requests (120s), longer than Zotero's HTTP default (30s). */
 const HTTP_TIMEOUT_MS = 120_000;
 
 export async function zoteroAutoTagHttpRequest(
@@ -29,12 +29,13 @@ export async function zoteroAutoTagHttpRequest(
     method: string;
     headers: Record<string, string>;
     body: string;
+    timeout: number;
   },
 ): Promise<{ response: string }> {
   const response = await Zotero.HTTP.request(options.method, url, {
     headers: options.headers,
     body: options.body,
-    timeout: HTTP_TIMEOUT_MS,
+    timeout: options.timeout,
   });
   if (response.status < 200 || response.status >= 300) {
     throw new Error(
@@ -54,6 +55,7 @@ export function createZoteroAutoTagDeps(
     getApiKey: () => getAiApiKeyForProvider(providerId),
     isApiKeyRequired: () => policy.apiKeyRequired,
     getModel: getEffectiveAiModel,
+    getTimeout: () => HTTP_TIMEOUT_MS,
     getRequestOptions: () => ({
       includeJsonObjectResponseFormat: policy.includeJsonObjectResponseFormat,
     }),

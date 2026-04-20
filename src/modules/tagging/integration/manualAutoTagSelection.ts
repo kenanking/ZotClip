@@ -22,77 +22,68 @@ export async function executeAutoTagSelection(): Promise<void> {
     return;
   }
 
-  for (const item of regularItems) {
-    const progressWin = new ztoolkit.ProgressWindow(
-      addon.data.config.addonName,
-      { closeOnClick: true },
-    );
-    progressWin.createLine({
-      text: getString("auto-tag-progress-start"),
-      icon: menuIcon,
-      progress: 10,
+  const total = regularItems.length;
+
+  const progressWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
+    closeOnClick: true,
+  });
+  progressWin.createLine({
+    text: getString("auto-tag-batch-start", { args: { total } }),
+    icon: menuIcon,
+    progress: 0,
+  });
+  progressWin.show(0);
+
+  let succeeded = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (let i = 0; i < total; i++) {
+    const item = regularItems[i];
+
+    progressWin.changeLine({
+      text: getString("auto-tag-batch-progress", {
+        args: { current: i + 1, total },
+      }),
+      progress: Math.round((i / total) * 100),
     });
-    progressWin.show(0);
 
     try {
       const result = await runWithAiTagGap(() =>
         autoTagItem(
           item,
-          createZoteroAutoTagDeps((update) => {
-            let text = update.text;
-            switch (update.phase) {
-              case "start":
-                text = getString("auto-tag-progress-start");
-                break;
-              case "calling":
-                text = getString("auto-tag-progress-calling");
-                break;
-              case "done":
-                text = update.text.trim()
-                  ? getString("auto-tag-result-tags", {
-                      args: { tags: update.text },
-                    })
-                  : getString("auto-tag-no-tags-suggested");
-                break;
-              case "error":
-                text = getString("auto-tag-failed", {
-                  args: { error: update.text },
-                });
-                break;
-            }
-            progressWin.changeLine({
-              text,
-              progress: update.progress,
-            });
-          }),
+          createZoteroAutoTagDeps(() => {}),
         ),
       );
 
-      if (result.kind === "skipped") {
-        progressWin.changeLine({
-          text:
-            result.reason === "noTitle"
-              ? getString("auto-tag-no-title")
-              : getString("auto-tag-no-api-key"),
-          progress: 100,
-        });
+      if (result.kind === "ok") {
+        if (result.tagsAdded.length > 0) {
+          succeeded++;
+        } else {
+          skipped++;
+        }
+      } else if (result.kind === "skipped") {
+        skipped++;
+      } else {
+        failed++;
+        ztoolkit.log("[ZotClip] Auto-tag failed:", result.message);
       }
     } catch (error) {
+      failed++;
       Zotero.logError(
         error instanceof Error
           ? error
-          : new Error(`[ZotClip] Auto-tag failed for item: ${String(error)}`),
+          : new Error(`[ZotClip] Auto-tag failed: ${String(error)}`),
       );
-      progressWin.changeLine({
-        text: getString("auto-tag-failed", {
-          args: {
-            error: error instanceof Error ? error.message : String(error),
-          },
-        }),
-        progress: 100,
-      });
-    } finally {
-      progressWin.show(2000);
     }
   }
+
+  const summaryKey =
+    failed > 0 ? "auto-tag-batch-done-mixed" : "auto-tag-batch-done";
+
+  progressWin.changeLine({
+    text: getString(summaryKey, { args: { succeeded, skipped, failed } }),
+    progress: 100,
+  });
+  progressWin.show(4000);
 }
