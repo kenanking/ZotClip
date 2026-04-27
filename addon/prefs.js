@@ -16,7 +16,7 @@ pref("aiApiKeyLmstudio", "");
 pref("aiApiKeyCustom", "");
 pref("aiEndpointOllama", "http://localhost:11434");
 pref("aiEndpointLmstudio", "http://localhost:1234");
-pref("aiModel", "deepseek-chat");
+pref("aiModel", "deepseek-v4-flash");
 pref("aiLastModelOllama", "");
 pref("aiLastModelLmstudio", "");
 pref("aiLastModelCustom", "");

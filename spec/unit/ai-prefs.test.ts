@@ -75,7 +75,7 @@ test("AI model prefs reconcile on provider switch and resolve effective model", 
 
   store[`${P}.aiModel`] = "not-a-deepseek-model";
   reconcileAiModelForProvider("deepseek");
-  assert.equal(store[`${P}.aiModel`], "deepseek-chat");
+  assert.equal(store[`${P}.aiModel`], "deepseek-v4-flash");
 });
 
 test("LM Studio model prefs reconcile and resolve effective model", () => {

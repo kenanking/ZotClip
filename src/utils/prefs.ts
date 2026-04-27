@@ -34,8 +34,8 @@ export const AI_PROVIDERS: AiProviderConfig[] = [
     label: "DeepSeek",
     endpoint: "https://api.deepseek.com/v1/chat/completions",
     models: [
-      { value: "deepseek-chat", label: "DeepSeek Chat" },
-      { value: "deepseek-reasoner", label: "DeepSeek Reasoner" },
+      { value: "deepseek-v4-flash", label: "DeepSeek V4 Flash" },
+      { value: "deepseek-v4-pro", label: "DeepSeek V4 Pro" },
     ],
     modelSource: "static",
     apiKeyRequired: true,
