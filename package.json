@@ -31,15 +31,15 @@
     "test:unit": "tsx --test --experimental-test-coverage spec/unit/**/*.test.ts"
   },
   "dependencies": {
-    "zotero-plugin-toolkit": "5.1.2"
+    "zotero-plugin-toolkit": "5.1.4"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "@zotero-plugin/eslint-config": "^0.6.9",
-    "eslint": "^10.2.1",
-    "mocha": "^11.7.5",
-    "prettier": "^3.8.3",
-    "tsx": "^4.21.0",
+    "eslint": "^10.5.0",
+    "mocha": "^11.7.6",
+    "prettier": "^3.8.4",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "zotero-plugin-scaffold": "^0.8.6",
     "zotero-types": "4.1.2"
