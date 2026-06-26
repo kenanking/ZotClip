@@ -1,7 +1,7 @@
 import {
   buildOllamaChatCompletionsUrl,
-  getAiApiEndpoint,
   getAiProviderConfig,
+  getProviderEndpointForUi,
   normalizeOpenAiChatCompletionsUrl,
 } from "../../../utils/prefs";
 
@@ -34,9 +34,10 @@ export function resolveProviderEndpoint(
   const config = getAiProviderConfig(providerId);
   const builder = PROVIDER_ENDPOINT_BUILDERS[providerId];
   if (builder) {
-    const baseUrl =
-      endpointOverride ??
-      (providerId === "custom" ? getAiApiEndpoint() : (config.endpoint ?? ""));
+    // Without an explicit override (the real tagging path), fall back to the
+    // user-configured endpoint pref. getProviderEndpointForUi already handles
+    // ollama/lmstudio prefs, custom's aiApiEndpoint, and static defaults.
+    const baseUrl = endpointOverride ?? getProviderEndpointForUi(providerId);
     return builder(baseUrl);
   }
   return config.endpoint;

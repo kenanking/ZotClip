@@ -61,6 +61,25 @@ test("resolveProviderEndpoint resolves Ollama, LM Studio, custom base, and stati
   );
 });
 
+// Regression: the actual tagging path calls resolveProviderRuntimePolicy without
+// an endpointOverride (see zoteroAutoTagDeps). It must read the user-configured
+// endpoint pref, not fall back to the hardcoded default. Using a non-default host
+// here is what distinguishes "pref was read" from "default was used".
+test("resolveProviderEndpoint reads user-configured Ollama/LM Studio endpoints without an override", () => {
+  clearStore();
+  store[`${P}.aiEndpointOllama`] = "http://192.168.1.50:11434";
+  assert.equal(
+    resolveProviderEndpoint("ollama"),
+    "http://192.168.1.50:11434/v1/chat/completions",
+  );
+
+  store[`${P}.aiEndpointLmstudio`] = "http://10.0.0.5:1234";
+  assert.equal(
+    resolveProviderEndpoint("lmstudio"),
+    "http://10.0.0.5:1234/v1/chat/completions",
+  );
+});
+
 test("AI model prefs reconcile on provider switch and resolve effective model", () => {
   clearStore();
   store[`${P}.aiModel`] = "kimi-k2.5";
