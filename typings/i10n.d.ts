@@ -3,6 +3,10 @@
 /* eslint-disable */
 // @ts-nocheck
 export type FluentMessageId =
+  | 'auto-tag-batch-done'
+  | 'auto-tag-batch-done-mixed'
+  | 'auto-tag-batch-progress'
+  | 'auto-tag-batch-start'
   | 'auto-tag-failed'
   | 'auto-tag-lmstudio-not-running'
   | 'auto-tag-no-api-key'
