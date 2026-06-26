@@ -229,6 +229,19 @@ test("fillAiPromptTemplate substitutes placeholders", () => {
   );
 });
 
+test("fillAiPromptTemplate does not re-substitute placeholders inside values", () => {
+  // A title that literally contains "{abstract}" must not have the abstract
+  // spliced into it by the subsequent replaceAll pass.
+  assert.equal(
+    fillAiPromptTemplate("{title}|{abstract}", {
+      title: "x{abstract}y",
+      abstract: "REAL",
+      language: "English",
+    }),
+    "x{abstract}y|REAL",
+  );
+});
+
 test("provider adapter normalizes Ollama endpoint and relaxes JSON mode", () => {
   assert.equal(
     resolveProviderEndpoint("ollama", "http://localhost:11434///"),

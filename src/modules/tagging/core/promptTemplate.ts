@@ -46,8 +46,16 @@ export function fillAiPromptTemplate(
   template: string,
   vars: AiPromptPlaceholders,
 ): string {
-  return template
-    .replaceAll("{title}", vars.title)
-    .replaceAll("{abstract}", vars.abstract)
-    .replaceAll("{language}", vars.language);
+  // Single-pass replace so a placeholder-like substring inside one value
+  // (e.g. a title that literally contains "{abstract}") is not re-substituted
+  // by a later pass.
+  const values: Record<string, string> = {
+    title: vars.title,
+    abstract: vars.abstract,
+    language: vars.language,
+  };
+  return template.replace(
+    /\{(title|abstract|language)\}/g,
+    (match, key: "title" | "abstract" | "language") => values[key],
+  );
 }
