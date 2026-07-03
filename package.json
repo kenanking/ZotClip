@@ -36,12 +36,12 @@
   "devDependencies": {
     "@types/node": "^25.6.0",
     "@zotero-plugin/eslint-config": "^0.6.9",
-    "eslint": "^10.5.0",
+    "eslint": "^10.6.0",
     "mocha": "^11.7.6",
-    "prettier": "^3.8.4",
-    "tsx": "^4.22.4",
+    "prettier": "^3.9.4",
+    "tsx": "^4.22.5",
     "typescript": "^6.0.3",
-    "zotero-plugin-scaffold": "^0.8.6",
+    "zotero-plugin-scaffold": "^0.8.7",
     "zotero-types": "4.1.2"
   },
   "prettier": {
