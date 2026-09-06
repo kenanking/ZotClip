@@ -7,11 +7,9 @@ import {
 // to the Zotero runtime globals, eliminating repeated inline wiring.
 
 function getZoteroTabs():
-  | { selectedID?: string; selectedType?: string }
-  | undefined {
+  { selectedID?: string; selectedType?: string } | undefined {
   return ztoolkit.getGlobal("Zotero_Tabs") as
-    | { selectedID?: string; selectedType?: string }
-    | undefined;
+    { selectedID?: string; selectedType?: string } | undefined;
 }
 
 export function getActiveReaderItemID(): number | undefined {

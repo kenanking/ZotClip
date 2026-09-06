@@ -1,8 +1,5 @@
 export type ClipboardFormat =
-  | "file-object"
-  | "file-uri-list"
-  | "path-text"
-  | "none";
+  "file-object" | "file-uri-list" | "path-text" | "none";
 
 export type ClipboardOutcome =
   | "copied-files"

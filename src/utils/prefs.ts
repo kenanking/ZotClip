@@ -12,10 +12,7 @@ export interface AiProviderModel {
 }
 
 export type AiModelSource =
-  | "static"
-  | "ollama-dynamic"
-  | "lmstudio-dynamic"
-  | "free-text";
+  "static" | "ollama-dynamic" | "lmstudio-dynamic" | "free-text";
 
 export interface AiProviderConfig {
   id: string;
@@ -283,9 +280,7 @@ export function getLmStudioModelForUi(): string {
 
 function getLastModelForProvider(
   lastModelPref:
-    | "aiLastModelOllama"
-    | "aiLastModelLmstudio"
-    | "aiLastModelCustom",
+    "aiLastModelOllama" | "aiLastModelLmstudio" | "aiLastModelCustom",
 ): string {
   const current = getAiModel();
   if (current) return current;

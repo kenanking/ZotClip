@@ -1,5 +1,5 @@
 export function getSelectedLibraryItems(deps: {
-  getActivePane(): { getSelectedItems?(): Zotero.Item[] } | undefined;
+  getActivePane(): { getSelectedItems?(): Zotero.Item[] } | null | undefined;
 }): Zotero.Item[] {
   return (deps.getActivePane()?.getSelectedItems?.() || []) as Zotero.Item[];
 }

@@ -25,3 +25,12 @@ test("getSelectedLibraryItems returns an empty array when no pane is active", ()
     [],
   );
 });
+
+test("getSelectedLibraryItems handles Zotero returning a null active pane", () => {
+  assert.deepEqual(
+    getSelectedLibraryItems({
+      getActivePane: () => null,
+    }),
+    [],
+  );
+});

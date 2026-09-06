@@ -296,8 +296,7 @@ test("registerReaderToolbarButton creates a dedicated fallback section for exist
   await primeToolbarIcon();
   const doc = new ExistingReaderDocument();
   let registerHandler:
-    | ((event: ReaderToolbarRenderEventLike) => void)
-    | undefined;
+    ((event: ReaderToolbarRenderEventLike) => void) | undefined;
 
   const dispose = registerReaderToolbarButton({
     getLabel: () => "Copy Current Reader Attachment",
@@ -341,8 +340,7 @@ test("registerReaderToolbarButton reuses reader availability for repeated render
   const doc = new FakeDocument();
   let actionStateCalls = 0;
   let registerHandler:
-    | ((event: ReaderToolbarRenderEventLike) => void)
-    | undefined;
+    ((event: ReaderToolbarRenderEventLike) => void) | undefined;
 
   const dispose = registerReaderToolbarButton({
     getLabel: () => "Copy Current Reader Attachment",
