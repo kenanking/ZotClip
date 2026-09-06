@@ -6,6 +6,9 @@ export async function autoTagItem(
   item: Zotero.Item,
   deps: AutoTagServiceDeps,
 ): Promise<AutoTagResult> {
+  if (deps.signal?.aborted) return { kind: "cancelled" };
+  if (deps.canWrite && !(await deps.canWrite()))
+    return { kind: "skipped", reason: "notEditable" };
   const title = item.getField("title") as string;
   const abstract = (item.getField("abstractNote") as string) || "";
 
@@ -46,8 +49,9 @@ export async function autoTagItem(
       timeout: deps.getTimeout(),
     });
     responseText = result.response;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+  } catch {
+    if (deps.signal?.aborted) return { kind: "cancelled" };
+    const message = "AI request failed";
     deps.onProgress({
       phase: "error",
       text: message,
@@ -58,6 +62,7 @@ export async function autoTagItem(
 
   deps.onProgress({ phase: "calling", text: "", progress: 70 });
 
+  if (deps.signal?.aborted) return { kind: "cancelled" };
   let parsed: { tags: string[] };
   try {
     const json = JSON.parse(responseText);
@@ -66,14 +71,8 @@ export async function autoTagItem(
       throw new Error("Empty response content");
     }
     parsed = parseAutoTagResponse(content);
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    const message = `Invalid AI response format: ${detail}`;
-    Zotero.logError(
-      error instanceof Error
-        ? error
-        : new Error(`[ZotClip] Failed to parse AI response: ${String(error)}`),
-    );
+  } catch {
+    const message = "Invalid AI response format";
     deps.onProgress({
       phase: "error",
       text: message,
@@ -82,6 +81,9 @@ export async function autoTagItem(
     return { kind: "failed", message };
   }
 
+  if (deps.canWrite && !(await deps.canWrite()))
+    return { kind: "skipped", reason: "notEditable" };
+  if (deps.signal?.aborted) return { kind: "cancelled" };
   const existingTags = new Set(
     item.getTags().map((t: { tag: string }) => t.tag.toLowerCase()),
   );
@@ -107,7 +109,7 @@ export async function autoTagItem(
   for (const tag of uniqueNewTags) {
     item.addTag(tag, 0);
   }
-  await item.saveTx();
+  await (deps.saveItem ? deps.saveItem(item) : item.saveTx());
 
   deps.onProgress({
     phase: "done",

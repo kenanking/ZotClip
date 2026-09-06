@@ -1,3 +1,4 @@
+import { cancelAllAiTasks } from "./modules/tagging/core/taskManager";
 import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
 import { copyItems } from "./modules/copy/copyCommands";
 import { notifyCopyResult } from "./modules/copy/notifier";
@@ -51,6 +52,7 @@ const menuIcon = getAddonFaviconUri();
 let registeredCopyMenuIDs: string[] = [];
 let runtimeSettingsPrefObservers: symbol[] = [];
 let keyboardRegistryHandle: { dispose(): void } | undefined;
+let aiEnabledObserver: symbol | undefined;
 let autoTagItemAddHandle: { dispose(): void } | undefined;
 const runtimeSettings = getRuntimeSettingsStore();
 
@@ -159,6 +161,17 @@ async function onStartup() {
   });
 
   autoTagItemAddHandle = registerAutoTagItemAddObserver();
+  aiEnabledObserver = Zotero.Prefs.registerObserver(
+    `${addon.data.config.prefsPrefix}.autoTaggingEnabled`,
+    () => {
+      if (!getAutoTaggingEnabled()) {
+        cancelAllAiTasks();
+        autoTagItemAddHandle?.dispose();
+        autoTagItemAddHandle = registerAutoTagItemAddObserver();
+      }
+    },
+    true,
+  );
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -181,6 +194,8 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  cancelAllAiTasks();
+  if (aiEnabledObserver) Zotero.Prefs.unregisterObserver(aiEnabledObserver);
   autoTagItemAddHandle?.dispose();
   autoTagItemAddHandle = undefined;
   unregisterToolbarPreferenceObservers(runtimeSettingsPrefObservers);

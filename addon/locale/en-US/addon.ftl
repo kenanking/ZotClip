@@ -50,3 +50,6 @@ auto-tag-batch-start = Generating AI tags for { $total } items…
 auto-tag-batch-progress = Processing item { $current } / { $total }…
 auto-tag-batch-done = Done: { $succeeded } tagged, { $skipped } skipped.
 auto-tag-batch-done-mixed = Done: { $succeeded } tagged, { $skipped } skipped, { $failed } failed.
+
+auto-tag-cancel = Cancel AI tagging
+auto-tag-cancelled = AI tagging cancelled. Completed changes were kept.

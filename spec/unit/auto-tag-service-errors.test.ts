@@ -24,7 +24,7 @@ function baseDeps(
   };
 }
 
-test("autoTagService includes original error detail in failure message", async () => {
+test("autoTagService does not disclose response content in failure messages", async () => {
   const item = {
     getField: (f: string) => (f === "title" ? "Test Title" : ""),
     getTags: () => [],
@@ -42,14 +42,7 @@ test("autoTagService includes original error detail in failure message", async (
   );
 
   assert.equal(result.kind, "failed");
-  assert.ok(
-    (result as any).message.includes("Invalid AI response format:"),
-    `expected detailed message, got: ${(result as any).message}`,
-  );
-  assert.ok(
-    (result as any).message.length > "Invalid AI response format:".length + 1,
-    "message should include the original error detail",
-  );
+  assert.equal((result as any).message, "Invalid AI response format");
 });
 
 test("autoTagService returns failure when response has empty content", async () => {
@@ -70,8 +63,67 @@ test("autoTagService returns failure when response has empty content", async () 
   );
 
   assert.equal(result.kind, "failed");
-  assert.ok(
-    (result as any).message.includes("Empty response content"),
-    `expected empty content detail, got: ${(result as any).message}`,
+  assert.equal((result as any).message, "Invalid AI response format");
+});
+
+test("cancelled network response cannot write tags", async () => {
+  const controller = new AbortController();
+  let saved = false;
+  const item = {
+    getField: () => "Title",
+    getTags: () => [],
+    addTag: () => {
+      saved = true;
+    },
+    saveTx: async () => {
+      saved = true;
+    },
+  } as any;
+  const result = await autoTagItem(
+    item,
+    baseDeps({
+      signal: controller.signal,
+      httpRequest: async () => {
+        controller.abort();
+        return {
+          response: JSON.stringify({
+            choices: [{ message: { content: '{"tags":["tag"]}' } }],
+          }),
+        };
+      },
+    }),
   );
+  assert.equal(result.kind, "cancelled");
+  assert.equal(saved, false);
+});
+
+test("item becoming read-only during request is not modified", async () => {
+  let editable = true,
+    saved = false;
+  const item = {
+    getField: () => "Title",
+    getTags: () => [],
+    addTag: () => {
+      saved = true;
+    },
+    saveTx: async () => {
+      saved = true;
+    },
+  } as any;
+  const result = await autoTagItem(
+    item,
+    baseDeps({
+      canWrite: async () => editable,
+      httpRequest: async () => {
+        editable = false;
+        return {
+          response: JSON.stringify({
+            choices: [{ message: { content: '{"tags":["tag"]}' } }],
+          }),
+        };
+      },
+    }),
+  );
+  assert.deepEqual(result, { kind: "skipped", reason: "notEditable" });
+  assert.equal(saved, false);
 });

@@ -11,15 +11,6 @@ import {
 } from "../../../utils/prefs";
 import { resolveProviderRuntimePolicy } from "./providerAdapter";
 
-function buildPrompt(title: string, abstract: string): string {
-  const template = getAiPrompt();
-  return fillAiPromptTemplate(template, {
-    title,
-    abstract,
-    language: getAiPromptLanguageLabel(),
-  });
-}
-
 /** Default timeout for AI tag requests (120s), longer than Zotero's HTTP default (30s). */
 const HTTP_TIMEOUT_MS = 120_000;
 
@@ -30,37 +21,83 @@ export async function zoteroAutoTagHttpRequest(
     headers: Record<string, string>;
     body: string;
     timeout: number;
+    signal?: AbortSignal;
   },
 ): Promise<{ response: string }> {
-  const response = await Zotero.HTTP.request(options.method, url, {
-    headers: options.headers,
-    body: options.body,
-    timeout: options.timeout,
-  });
-  if (response.status < 200 || response.status >= 300) {
-    throw new Error(
-      `HTTP ${response.status}: ${response.responseText?.slice(0, 200) ?? "no body"}`,
-    );
+  options.signal?.throwIfAborted();
+  let request: XMLHttpRequest | undefined;
+  const abort = () => request?.abort();
+  options.signal?.addEventListener("abort", abort, { once: true });
+  try {
+    const response = await Zotero.HTTP.request(options.method, url, {
+      headers: options.headers,
+      body: options.body,
+      timeout: options.timeout,
+      requestObserver: (xhr: XMLHttpRequest) => {
+        request = xhr;
+        if (options.signal?.aborted) xhr.abort();
+      },
+    });
+    options.signal?.throwIfAborted();
+    if (response.status < 200 || response.status >= 300)
+      throw new Error(`HTTP ${response.status}`);
+    return { response: response.responseText ?? "" };
+  } finally {
+    options.signal?.removeEventListener("abort", abort);
   }
-  return { response: response.responseText ?? "" };
 }
 
 export function createZoteroAutoTagDeps(
   onProgress: (update: AutoTagProgress) => void,
+  options: { signal?: AbortSignal; itemID?: number; manual?: boolean } = {},
 ): AutoTagServiceDeps {
   const providerId = getAiProvider();
   const policy = resolveProviderRuntimePolicy({ providerId });
+  const apiKey = getAiApiKeyForProvider(providerId);
+  const model = getEffectiveAiModel();
+  const template = getAiPrompt();
+  const language = getAiPromptLanguageLabel();
   return {
+    signal: options.signal,
+    canWrite:
+      options.itemID === undefined
+        ? undefined
+        : async () => {
+            const item = await Zotero.Items.getAsync(options.itemID!);
+            return Boolean(
+              item &&
+              !item.deleted &&
+              item.isRegularItem() &&
+              item.isEditable(),
+            );
+          },
+    saveItem: async (item) => {
+      options.signal?.throwIfAborted();
+      const supportsUndo = Number.parseInt(Zotero.version, 10) >= 10;
+      return item.saveTx(
+        options.manual && supportsUndo
+          ? ({
+              undoAction: "undo-action-edit-metadata",
+              undoActionArgs: { count: 1 },
+            } as Parameters<Zotero.Item["saveTx"]>[0])
+          : undefined,
+      );
+    },
     getEndpoint: () => policy.endpoint,
-    getApiKey: () => getAiApiKeyForProvider(providerId),
+    getApiKey: () => apiKey,
     isApiKeyRequired: () => policy.apiKeyRequired,
-    getModel: getEffectiveAiModel,
+    getModel: () => model,
     getTimeout: () => HTTP_TIMEOUT_MS,
     getRequestOptions: () => ({
       includeJsonObjectResponseFormat: policy.includeJsonObjectResponseFormat,
     }),
-    getPrompt: buildPrompt,
+    getPrompt: (title, abstract) =>
+      fillAiPromptTemplate(template, { title, abstract, language }),
     onProgress,
-    httpRequest: zoteroAutoTagHttpRequest,
+    httpRequest: (url, requestOptions) =>
+      zoteroAutoTagHttpRequest(url, {
+        ...requestOptions,
+        signal: options.signal,
+      }),
   };
 }

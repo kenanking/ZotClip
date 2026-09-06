@@ -50,3 +50,6 @@ auto-tag-batch-start = 正在为 { $total } 个条目生成 AI 标签…
 auto-tag-batch-progress = 正在处理第 { $current } / { $total } 个条目…
 auto-tag-batch-done = 完成：已标记 { $succeeded } 个，跳过 { $skipped } 个。
 auto-tag-batch-done-mixed = 完成：已标记 { $succeeded } 个，跳过 { $skipped } 个，失败 { $failed } 个。
+
+auto-tag-cancel = 取消 AI 标签生成
+auto-tag-cancelled = 已取消 AI 标签生成，已完成的修改予以保留。

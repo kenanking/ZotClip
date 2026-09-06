@@ -4,7 +4,7 @@ import {
   getStripConnectorTags,
 } from "../../../utils/prefs";
 import { autoTagItem } from "../core/autoTagService";
-import { runWithAiTagGap } from "../core/autoTagQueue";
+import { createAiTaskGroup } from "../core/taskManager";
 import { createZoteroAutoTagDeps } from "../core/zoteroAutoTagDeps";
 import { notifyAutoTagResult } from "./autoTagNotify";
 import { isItemEligibleForAutoTagOnAdd } from "./itemAddAutoTagEligibility";
@@ -25,14 +25,16 @@ async function stripConnectorTags(item: Zotero.Item): Promise<void> {
   }
 }
 
-async function autoTagNewLibraryItem(item: Zotero.Item): Promise<void> {
+async function autoTagNewLibraryItem(
+  item: Zotero.Item,
+  group: ReturnType<typeof createAiTaskGroup>,
+): Promise<void> {
   const title = (item.getField("title") as string) || "";
-  const result = await runWithAiTagGap(() =>
-    autoTagItem(
-      item,
-      createZoteroAutoTagDeps(() => {}),
-    ),
-  );
+  const deps = createZoteroAutoTagDeps(() => {}, {
+    signal: group.signal,
+    itemID: item.id,
+  });
+  const result = await group.run(item.id, () => autoTagItem(item, deps));
 
   if (result.kind === "failed") {
     notifyAutoTagResult("auto-tag-failed", {
@@ -54,6 +56,7 @@ async function autoTagNewLibraryItem(item: Zotero.Item): Promise<void> {
 
 export function registerAutoTagItemAddObserver(): { dispose(): void } {
   let disposed = false;
+  const group = createAiTaskGroup();
   const batchQueue: number[][] = [];
   let draining = false;
 
@@ -78,17 +81,30 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
           if (disposed) {
             return;
           }
-          const item = await Zotero.Items.getAsync(id);
-          if (!item || !isItemEligibleForAutoTagOnAdd(item)) {
-            continue;
-          }
+          try {
+            const item = await Zotero.Items.getAsync(id);
+            if (
+              disposed ||
+              !item ||
+              item.deleted ||
+              !item.isEditable() ||
+              !isItemEligibleForAutoTagOnAdd(item)
+            ) {
+              continue;
+            }
 
-          if (getStripConnectorTags()) {
-            await stripConnectorTags(item);
-          }
+            if (getStripConnectorTags()) {
+              await stripConnectorTags(item);
+            }
 
-          if (getAutoTagOnAdd() && getAutoTaggingEnabled()) {
-            await autoTagNewLibraryItem(item);
+            if (getAutoTagOnAdd() && getAutoTaggingEnabled()) {
+              await autoTagNewLibraryItem(item, group);
+            }
+          } catch {
+            if (!disposed)
+              notifyAutoTagResult("auto-tag-failed", {
+                args: { error: "Item update failed" },
+              });
           }
         }
       }
@@ -143,6 +159,7 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
   return {
     dispose(): void {
       disposed = true;
+      group.dispose();
       batchQueue.length = 0;
       Zotero.Notifier.unregisterObserver(observerId);
     },

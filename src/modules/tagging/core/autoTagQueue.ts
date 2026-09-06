@@ -3,6 +3,8 @@ const AI_TAG_REQUEST_GAP_MS = 1000;
 
 interface QueuedTask<T> {
   fn: () => Promise<T>;
+  signal?: AbortSignal;
+  detach?(): void;
   resolve: (value: T) => void;
   reject: (reason: unknown) => void;
 }
@@ -23,7 +25,9 @@ async function worker(): Promise<void> {
       break;
     }
 
+    task.detach?.();
     try {
+      task.signal?.throwIfAborted();
       const result = await task.fn();
       task.resolve(result);
     } catch (error) {
@@ -54,9 +58,26 @@ function spawnWorkerIfNeeded(): void {
  * in flight. After each task finishes (success or failure), the worker waits
  * {@link AI_TAG_REQUEST_GAP_MS} before picking up the next task.
  */
-export function runWithAiTagGap<T>(fn: () => Promise<T>): Promise<T> {
+export function runWithAiTagGap<T>(
+  fn: () => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
   return new Promise((resolve, reject) => {
-    queue.push({ fn, resolve, reject } as QueuedTask<unknown>);
+    if (signal?.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const task = { fn, resolve, reject, signal } as QueuedTask<unknown>;
+    const abort = () => {
+      const index = queue.indexOf(task);
+      if (index !== -1) {
+        queue.splice(index, 1);
+        reject(signal?.reason);
+      }
+    };
+    task.detach = () => signal?.removeEventListener("abort", abort);
+    signal?.addEventListener("abort", abort, { once: true });
+    queue.push(task);
     spawnWorkerIfNeeded();
   });
 }

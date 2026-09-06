@@ -1,6 +1,7 @@
 export type AutoTagResult =
   | { kind: "ok"; tagsAdded: string[] }
-  | { kind: "skipped"; reason: "noTitle" | "noApiKey" }
+  | { kind: "cancelled" }
+  | { kind: "skipped"; reason: "noTitle" | "noApiKey" | "busy" | "notEditable" }
   | { kind: "failed"; message: string };
 
 export interface AutoTagProgress {
@@ -10,6 +11,9 @@ export interface AutoTagProgress {
 }
 
 export interface AutoTagServiceDeps {
+  signal?: AbortSignal;
+  canWrite?(): Promise<boolean>;
+  saveItem?(item: Zotero.Item): Promise<unknown>;
   getEndpoint(): string;
   getApiKey(): string;
   isApiKeyRequired(): boolean;
