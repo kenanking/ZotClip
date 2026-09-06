@@ -286,6 +286,8 @@ function handleTestConnection(
   getSignal: () => AbortSignal,
 ): () => void {
   return () => {
+    if (button.disabled) return;
+    button.disabled = true;
     const signal = getSignal();
     void (async () => {
       const selectedId = getMenulistSelectedValue(providerMenulist);
@@ -323,9 +325,13 @@ function handleTestConnection(
       } finally {
         button.disabled = false;
       }
-    })().catch(() => {
-      if (!signal.aborted) showAutoTagPrefsToast(getString("pref-key-error"));
-    });
+    })()
+      .catch(() => {
+        if (!signal.aborted) showAutoTagPrefsToast(getString("pref-key-error"));
+      })
+      .finally(() => {
+        button.disabled = false;
+      });
   };
 }
 

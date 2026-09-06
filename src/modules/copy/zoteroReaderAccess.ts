@@ -22,3 +22,20 @@ export function getActiveReaderItemID(): number | undefined {
 export function isActiveReaderTabSelected(): boolean {
   return isReaderTabSelected({ getTabs: getZoteroTabs });
 }
+
+/** Resolve the originating window before any asynchronous attachment lookup. */
+export function getReaderItemIDForWindow(
+  win: Window | null,
+): number | undefined {
+  if (!win) return undefined;
+  const top = win.top;
+  const tabs = (top as _ZoteroTypes.MainWindow | null)?.Zotero_Tabs;
+  if (tabs) {
+    return tabs.selectedType === "reader"
+      ? Zotero.Reader.getByTabID(tabs.selectedID)?.itemID
+      : undefined;
+  }
+  return Zotero.Reader._readers.find(
+    (reader) => reader._iframeWindow?.top === top,
+  )?.itemID;
+}

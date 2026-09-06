@@ -37,6 +37,7 @@ test("main window controller registers toolbar state per window and disposes onl
   });
 
   controller.load(firstWindow);
+  controller.load(firstWindow);
   controller.load(secondWindow);
   controller.unload(firstWindow);
 

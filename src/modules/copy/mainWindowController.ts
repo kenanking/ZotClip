@@ -17,7 +17,7 @@ export function createMainWindowController(
 
   return {
     load(win): void {
-      if (deps.isMainToolbarButtonEnabled()) {
+      if (deps.isMainToolbarButtonEnabled() && !mainToolbarDisposers.has(win)) {
         mainToolbarDisposers.set(win, deps.registerMainToolbarCopyButton(win));
       }
     },

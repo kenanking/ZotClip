@@ -44,7 +44,7 @@ export interface RegisterPrefsUIDeps {
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
 }
 
-const windowHandles = new WeakMap<Window, PrefsUIHandle>();
+const windowHandles = new Map<Window, PrefsUIHandle>();
 
 const DEFAULT_DEPS: RegisterPrefsUIDeps = {
   syncPreferenceMenulists: (doc) => syncPreferenceMenulists(doc),
@@ -60,28 +60,44 @@ export async function registerPrefsUI(
   deps: RegisterPrefsUIDeps = DEFAULT_DEPS,
 ): Promise<PrefsUIHandle> {
   windowHandles.get(window)?.dispose();
-  deps.syncPreferenceMenulists?.(window.document);
-
-  const sectionHandles = await Promise.all([
-    deps.registerAttachmentTypesSection?.(window.document) ||
-      createNoopHandle(),
-    deps.registerInterfaceSection?.(window.document) || createNoopHandle(),
-    deps.registerShortcutsSection?.(window.document) || createNoopHandle(),
-    deps.registerAutoTagSection?.(window.document) || createNoopHandle(),
-    deps.registerDiagnosticsSection?.(window.document) || createNoopHandle(),
-  ]);
-
-  const handle = composeDisposables(
-    ...sectionHandles.map((sectionHandle) => () => sectionHandle.dispose()),
-    () => {
-      if (windowHandles.get(window) === handle) {
-        windowHandles.delete(window);
-      }
-    },
-  ) as PrefsUIHandle;
-
+  let disposed = false;
+  const sectionHandles: PrefsUIHandle[] = [];
+  const unload = () => handle.dispose();
+  const handle = composeDisposables(() => {
+    disposed = true;
+    window.removeEventListener("unload", unload);
+    for (const section of sectionHandles) section.dispose();
+    if (windowHandles.get(window) === handle) windowHandles.delete(window);
+  });
   windowHandles.set(window, handle);
-  return handle;
+  window.addEventListener("unload", unload, { once: true });
+  try {
+    deps.syncPreferenceMenulists?.(window.document);
+    const results = await Promise.allSettled(
+      [
+        deps.registerAttachmentTypesSection,
+        deps.registerInterfaceSection,
+        deps.registerShortcutsSection,
+        deps.registerAutoTagSection,
+        deps.registerDiagnosticsSection,
+      ].map(async (register) => {
+        const section =
+          (await register?.(window.document)) || createNoopHandle();
+        if (disposed) section.dispose();
+        else sectionHandles.push(section);
+      }),
+    );
+    const failure = results.find((result) => result.status === "rejected");
+    if (failure?.status === "rejected") throw failure.reason;
+    return handle;
+  } catch (error) {
+    handle.dispose();
+    throw error;
+  }
+}
+
+export function disposePrefsUI(): void {
+  for (const handle of windowHandles.values()) handle.dispose();
 }
 
 function syncPreferenceMenulists(doc: Document): void {

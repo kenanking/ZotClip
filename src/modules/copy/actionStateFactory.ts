@@ -21,9 +21,10 @@ import type {
 
 export async function createActiveLibraryActionState(
   settings: RuntimeSettingsSnapshot,
+  pane = Zotero.getActiveZoteroPane(),
 ): Promise<CopyActionState> {
   const items = getSelectedLibraryItems({
-    getActivePane: () => Zotero.getActiveZoteroPane(),
+    getActivePane: () => pane,
   });
   const getItems = () => items;
 
@@ -73,8 +74,8 @@ export async function createMainToolbarActionState(
     getSelectionAvailability: () =>
       checkSelectionAvailability(
         {
-          allowedTypes: deps.getAllowedTypes(),
-          multiAttachmentMode: deps.getMode(),
+          allowedTypes,
+          multiAttachmentMode: mode,
         },
         items,
         deps.resolveFromItems,
@@ -83,7 +84,8 @@ export async function createMainToolbarActionState(
       canCopy: false,
       messageKey: "copy-reader-no-active",
     }),
-    executePrimaryLibraryCopy: async () => deps.executeCopy(items),
+    executePrimaryLibraryCopy: async () =>
+      deps.executeCopy(items, mode, allowedTypes),
     executePrimaryReaderCopy: async () =>
       buildUnavailableResult("copy-reader-no-active"),
   });
@@ -93,9 +95,8 @@ export async function createMainToolbarActionState(
 
 export async function createActiveReaderActionState(
   settings: RuntimeSettingsSnapshot,
+  itemID = getActiveReaderItemID(),
 ): Promise<CopyActionState> {
-  const itemID = getActiveReaderItemID();
-
   const controller = createCopyActionController({
     getAllowedTypes: () => settings.allowedTypes,
     getMode: () => settings.multiAttachmentMode,
@@ -127,8 +128,9 @@ export async function createReaderToolbarActionState(
   itemID: number | undefined,
   deps: ReaderToolbarCopyButtonDeps,
 ): Promise<CopyActionState> {
+  const allowedTypes = [...deps.getAllowedTypes()];
   const controller = createCopyActionController({
-    getAllowedTypes: () => deps.getAllowedTypes(),
+    getAllowedTypes: () => allowedTypes,
     getMode: () => "all",
     getLibraryItems: () => [],
     getReaderItemID: () => itemID,
@@ -137,14 +139,11 @@ export async function createReaderToolbarActionState(
       messageKey: "copy-no-files",
     }),
     getReaderAvailability: () =>
-      checkReaderAvailability(
-        itemID,
-        deps.getAllowedTypes(),
-        deps.resolveFromReader,
-      ),
+      checkReaderAvailability(itemID, allowedTypes, deps.resolveFromReader),
     executePrimaryLibraryCopy: async () =>
       buildUnavailableResult("copy-no-files"),
-    executePrimaryReaderCopy: async () => deps.executeCopy(itemID),
+    executePrimaryReaderCopy: async () =>
+      deps.executeCopy(itemID, allowedTypes),
   });
 
   return controller.getCurrentActionState();

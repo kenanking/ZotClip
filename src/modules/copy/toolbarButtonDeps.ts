@@ -28,6 +28,8 @@ export interface MainToolbarCopyButtonDeps {
   ): Promise<Awaited<ReturnType<typeof resolveAttachmentsFromItems>>>;
   executeCopy(
     items: Zotero.Item[],
+    mode: "all" | "primary",
+    allowedTypes: string[],
   ): Promise<Awaited<ReturnType<typeof copyFromSelection>>>;
 }
 
@@ -45,5 +47,6 @@ export interface ReaderToolbarCopyButtonDeps {
   ): Promise<Awaited<ReturnType<typeof resolveAttachmentFromReader>>>;
   executeCopy(
     itemID: number | undefined,
+    allowedTypes: string[],
   ): Promise<Awaited<ReturnType<typeof copyFromReaderItem>>>;
 }

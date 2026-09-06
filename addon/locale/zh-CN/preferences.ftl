@@ -46,4 +46,4 @@ pref-key-save = 保存／替换
 pref-key-delete = 删除
 pref-key-saved = 密钥已保存
 pref-key-unset = 未设置密钥
-pref-key-error = 密钥存储失败，原有凭据已保留。
+pref-key-error = 密钥存储不可用或操作失败，请重试并检查保存状态。

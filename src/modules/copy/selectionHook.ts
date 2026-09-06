@@ -3,13 +3,12 @@ import { copyFromSelection } from "./copyCommands";
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
 import { parseShortcut, type ParsedShortcut } from "./shortcuts";
-import { isActiveReaderTabSelected } from "./zoteroReaderAccess";
 import { getAllowedAttachmentTypes } from "../../utils/prefs";
 
 export interface SelectionHookDeps {
   getParsedShortcut(): ParsedShortcut | undefined;
   isLibraryContext(event: KeyboardEvent): boolean;
-  hasSelectedItems(): boolean;
+  hasSelectedItems(event: KeyboardEvent): boolean;
   isEditableTarget(event: KeyboardEvent): boolean;
   getActionState(): Promise<CopyActionState>;
 }
@@ -19,10 +18,11 @@ const DEFAULT_SELECTION_SHORTCUT = parseShortcut("Ctrl+C");
 const DEFAULT_DEPS: SelectionHookDeps = {
   getParsedShortcut: () => DEFAULT_SELECTION_SHORTCUT,
   isLibraryContext: (event) =>
-    !isActiveReaderTabSelected() &&
     Boolean((event.target as Element | null)?.closest?.("#zotero-items-tree")),
-  hasSelectedItems: () => {
-    const pane = Zotero.getActiveZoteroPane();
+  hasSelectedItems: (event) => {
+    const pane =
+      (event.view as _ZoteroTypes.MainWindow | null)?.ZoteroPane ||
+      Zotero.getActiveZoteroPane();
     return ((pane?.getSelectedItems?.() || []) as Zotero.Item[]).length > 0;
   },
   isEditableTarget: (event) => isEditableNode(event.target),
@@ -57,7 +57,7 @@ export async function handleSelectionCopyShortcut(
     return false;
   }
 
-  if (finalDeps.isEditableTarget(event) || !finalDeps.hasSelectedItems()) {
+  if (finalDeps.isEditableTarget(event) || !finalDeps.hasSelectedItems(event)) {
     return false;
   }
 

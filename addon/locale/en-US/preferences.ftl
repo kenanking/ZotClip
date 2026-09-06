@@ -46,4 +46,4 @@ pref-key-save = Save / replace
 pref-key-delete = Delete
 pref-key-saved = Key saved
 pref-key-unset = No key set
-pref-key-error = Key storage failed; previous credentials were preserved.
+pref-key-error = Key storage is unavailable or the operation failed. Retry and check the saved status.

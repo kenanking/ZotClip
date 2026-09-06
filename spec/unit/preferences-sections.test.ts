@@ -70,7 +70,9 @@ test("persistShortcutPrefs keeps invalid shortcut text visible and skips persist
 test("registerPrefsUI disposes an earlier registration before re-registering the same window", async () => {
   const windowStub = {
     document: {} as Document,
-  } as Window;
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  } as unknown as Window;
   const callLog: string[] = [];
 
   const deps = {
@@ -149,7 +151,9 @@ test("registerPrefsUI disposes an earlier registration before re-registering the
 test("registerPrefsUI dispose is idempotent for the same registration handle", async () => {
   const windowStub = {
     document: {} as Document,
-  } as Window;
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  } as unknown as Window;
   let disposals = 0;
 
   const handle = await registerPrefsUI(windowStub, {
@@ -248,4 +252,30 @@ test("diagnostics section renders one inline row per diagnostics line", async ()
     doc.list.children[1].textContent,
     "copy-diagnostics-active-backend",
   );
+});
+
+test("preferences dispose late sections when their window unloads during initialization", async () => {
+  const window = new EventTarget() as EventTarget & { document: Document };
+  window.document = {} as Document;
+  let resume!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  let disposed = 0;
+  const registration = registerPrefsUI(window as unknown as Window, {
+    registerAutoTagSection: async () => {
+      await pending;
+      return {
+        dispose: () => {
+          disposed++;
+        },
+      };
+    },
+  });
+  window.dispatchEvent(new Event("unload"));
+  resume();
+  const handle = await registration;
+  assert.equal(disposed, 1);
+  handle.dispose();
+  assert.equal(disposed, 1);
 });

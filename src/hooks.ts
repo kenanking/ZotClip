@@ -1,6 +1,7 @@
 import { migrateAiCredentials } from "./modules/tagging/credentials/zoteroCredentials";
 import { cancelAllAiTasks } from "./modules/tagging/core/taskManager";
 import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
+import { getReaderItemIDForWindow } from "./modules/copy/zoteroReaderAccess";
 import { copyItems } from "./modules/copy/copyCommands";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { executeCopyFromReaderItem } from "./execution/copyActions";
@@ -21,7 +22,10 @@ import { handleReaderCopyShortcut } from "./modules/copy/readerHook";
 import { createReaderToolbarController } from "./modules/copy/readerToolbarController";
 import { getRuntimeSettingsStore } from "./modules/copy/runtime/runtimeSettings";
 import { handleSelectionCopyShortcut } from "./modules/copy/selectionHook";
-import { registerPrefsUI } from "./modules/copy/preferences/registerPrefsUI";
+import {
+  registerPrefsUI,
+  disposePrefsUI,
+} from "./modules/copy/preferences/registerPrefsUI";
 import {
   createActiveLibraryActionState,
   createActiveReaderActionState,
@@ -68,13 +72,8 @@ const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
   getAllowedTypes: () => runtimeSettings.getSnapshot().allowedTypes,
   resolveFromItems: (items, mode, allowedTypes) =>
     resolveAttachmentsFromItems(items, mode, allowedTypes),
-  executeCopy: async (items) => {
-    const settings = runtimeSettings.getSnapshot();
-    const result = await copyItems(
-      items,
-      settings.multiAttachmentMode,
-      settings.allowedTypes,
-    );
+  executeCopy: async (items, mode, allowedTypes) => {
+    const result = await copyItems(items, mode, allowedTypes);
     notifyCopyResult(result);
     return result;
   },
@@ -91,8 +90,11 @@ const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {
   getAllowedTypes: () => runtimeSettings.getSnapshot().allowedTypes,
   resolveFromReader: (itemID, allowedTypes) =>
     resolveAttachmentFromReader(itemID, allowedTypes),
-  executeCopy: async (itemID) =>
-    executeCopyFromReaderItem(itemID, runtimeSettings.getSnapshot()),
+  executeCopy: async (itemID, allowedTypes) =>
+    executeCopyFromReaderItem(itemID, {
+      ...runtimeSettings.getSnapshot(),
+      allowedTypes,
+    }),
 };
 
 const mainWindowController = createMainWindowController({
@@ -124,14 +126,21 @@ async function onStartup() {
         getParsedShortcut: () =>
           runtimeSettings.getSnapshot().parsedLibraryShortcut,
         getActionState: () =>
-          createActiveLibraryActionState(runtimeSettings.getSnapshot()),
+          createActiveLibraryActionState(
+            runtimeSettings.getSnapshot(),
+            (event.view as _ZoteroTypes.MainWindow | null)?.ZoteroPane,
+          ),
       }),
     onReaderShortcut: (event) =>
       handleReaderCopyShortcut(event, {
+        isReaderContext: () => Boolean(getReaderItemIDForWindow(event.view)),
         getParsedShortcut: () =>
           runtimeSettings.getSnapshot().parsedReaderShortcut,
         getActionState: () =>
-          createActiveReaderActionState(runtimeSettings.getSnapshot()),
+          createActiveReaderActionState(
+            runtimeSettings.getSnapshot(),
+            getReaderItemIDForWindow(event.view),
+          ),
       }),
   }).start();
   initLocale();
@@ -204,8 +213,14 @@ async function onMainWindowUnload(win: Window): Promise<void> {
   mainWindowController.unload(win);
 }
 
+function onAppShutdown(): void {
+  cancelAllAiTasks();
+  stopClipboardProcesses();
+}
+
 function onShutdown(): void {
   addon.data.initialized = false;
+  disposePrefsUI();
   cancelAllAiTasks();
   if (aiEnabledObserver) Zotero.Prefs.unregisterObserver(aiEnabledObserver);
   autoTagItemAddHandle?.dispose();
@@ -228,7 +243,7 @@ function onShutdown(): void {
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
     case "load": {
-      registerPrefsUI(data.window);
+      await registerPrefsUI(data.window);
       break;
     }
     default:
@@ -247,6 +262,7 @@ function syncReaderToolbarButton(): void {
 export default {
   onStartup,
   onShutdown,
+  onAppShutdown,
   onMainWindowLoad,
   onMainWindowUnload,
   onPrefsEvent,
