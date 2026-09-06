@@ -1,6 +1,5 @@
 import { zoteroAutoTagHttpRequest } from "../core/zoteroAutoTagDeps";
 import { getString } from "../../../utils/locale";
-import { showAutoTagToast } from "../integration/autoTagNotify";
 import { PROBE_SENTINEL } from "./aiConnectionProbe";
 
 export async function zoteroProbeHttpPost(
@@ -29,8 +28,4 @@ export function formatProbeMessage(failureMessage: string): string {
         args: { error: failureMessage },
       });
   }
-}
-
-export function showAutoTagPrefsToast(text: string): void {
-  showAutoTagToast(text, 3500);
 }

@@ -123,3 +123,30 @@
 - [ ] Migrate a synthetic old key preference; clear it only after login-manager verification. Simulate unavailable storage and confirm the preference remains for retry.
 - [ ] Start a connection/model-list request, then switch provider, edit endpoint, close preferences, or disable the plugin. No stale response updates the UI.
 - [ ] Inspect failures using synthetic data: no API key, request body, abstract, or full endpoint URL appears in plugin diagnostics.
+
+## AI Task Feedback
+
+- [ ] Start a manual batch: only one bottom-right card appears, with no separate footer or floating progress window.
+- [ ] A single-item request shows an indeterminate progress indicator; a batch shows the current item and overall item progress.
+- [ ] Start the command again while it runs: focus the existing task and do not submit another batch.
+- [ ] Cancel once: the control switches to cancelling and cannot be triggered again. Completed tags remain; the summary stays until closed.
+- [ ] Let all items finish successfully: the result stays in the same card and dismisses after six seconds. Hover/focus prevents dismissal.
+- [ ] Fail one of several items: keep the summary visible. Retry requests only failed items using current API settings.
+- [ ] Import a batch for automatic tagging: successes do not create popups. Failures produce one batch summary; with an active manual card, show the warning inside it.
+- [ ] Disable the plugin or close its window during a request: remove the card and cancel the task.
+- [ ] Inspect narrow windows, light/dark themes, Chinese/English labels, and keyboard navigation through Cancel/Retry/Close.
+
+### Unified notifications
+
+- [ ] Copy an attachment while an AI task is running: both cards use the same rounded surface and typography, stack without overlap, and the task remains cancellable.
+- [ ] Confirm both task and notification headers display a 16px logo, an 8px gap and vertically centered title text. Neither card has an external shadow, including after reinstalling a same-version test XPI.
+- [ ] Copy repeatedly: only the latest ordinary notification remains; closing it does not close or cancel the AI task.
+- [ ] Verify copy feedback in both the library and a standalone reader. Trigger connection tests and unavailable model feedback from settings: notifications must appear in the main window, even if a standalone reader is active.
+- [ ] Ordinary notifications dismiss after 5 seconds (7 seconds for path fallback). Hover or focus a card to keep it open; the Close button dismisses it immediately.
+- [ ] Verify long error messages wrap inside the card and the card stack scrolls in a short window. Check light/dark themes and keyboard focus.
+- [ ] Disable the plugin or close a window: cards and their timers are removed.
+
+### API key presence
+
+- [ ] Reopen settings with a saved key: the placeholder indicates it is saved and can be replaced; the actual input value remains empty.
+- [ ] Delete the saved key or switch provider: the placeholder reflects the new state. Storage errors appear below the input, without displaying raw localization IDs or credentials.

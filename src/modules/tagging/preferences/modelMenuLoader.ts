@@ -8,7 +8,7 @@ import {
 import { fetchOllamaModels } from "../core/ollamaModels";
 import { fetchLmStudioModels } from "../core/lmStudioModels";
 import { getString } from "../../../utils/locale";
-import { showAutoTagToast } from "../integration/autoTagNotify";
+import { showMainWindowNotification } from "../../../ui/notification";
 import {
   createMenuElement,
   type MenulistLike,
@@ -20,7 +20,7 @@ function showUnavailableToast(providerId: string): void {
     providerId === "lmstudio"
       ? "auto-tag-lmstudio-not-running"
       : "auto-tag-ollama-not-running";
-  showAutoTagToast(getString(key as any), 3000);
+  showMainWindowNotification(getString(key));
 }
 
 export function createDynamicModelPopupDisposer(

@@ -44,6 +44,3 @@ pref-ai-prompt-help = In the prompt field you can use {"{"}title{"}"}, {"{"}abst
 pref-help = { $name } Build { $version } { $time }
 pref-key-save = Save / replace
 pref-key-delete = Delete
-pref-key-saved = Key saved
-pref-key-unset = No key set
-pref-key-error = Key storage is unavailable or the operation failed. Retry and check the saved status.

@@ -1,76 +1,64 @@
-import { getAddonFaviconUri } from "../../../utils/addonAssets";
+import { getAutoTaggingEnabled } from "../../../utils/prefs";
 import { getString } from "../../../utils/locale";
 import { autoTagItem } from "../core/autoTagService";
 import { createAiTaskGroup } from "../core/taskManager";
 import { createZoteroAutoTagDeps } from "../core/zoteroAutoTagDeps";
-import { notifyAutoTagResult } from "./autoTagNotify";
-
-const menuIcon = getAddonFaviconUri();
+import { getTaskCard, createTaskCard } from "../../../ui/taskCard";
+import { getAutoTagTaskLabels, notifyAutoTagResult } from "./autoTagNotify";
 
 export async function executeAutoTagSelection(): Promise<void> {
   const pane = Zotero.getActiveZoteroPane();
-  if (!pane) {
+  if (!pane) return;
+  const existing = getTaskCard(pane.document);
+  if (existing?.running) {
+    existing.focus();
     return;
   }
-
-  const regularItems = pane
-    .getSelectedItems()
-    .filter((item) => item.isRegularItem());
-
-  if (regularItems.length === 0) {
+  const items = pane.getSelectedItems().filter((item) => item.isRegularItem());
+  if (!items.length) {
     notifyAutoTagResult("auto-tag-no-selection");
     return;
   }
+  await runManualBatch(pane.document, items);
+}
 
-  const total = regularItems.length;
+async function runManualBatch(
+  doc: Document,
+  items: Zotero.Item[],
+): Promise<void> {
+  if (doc.defaultView?.closed) return;
+  const existing = getTaskCard(doc);
+  if (existing?.running) {
+    existing.focus();
+    return;
+  }
+  if (!getAutoTaggingEnabled()) {
+    createTaskCard(doc, getAutoTagTaskLabels(), () => {}).finish(
+      getString("auto-tag-panel-disabled"),
+      { persistent: true },
+    );
+    return;
+  }
   const group = createAiTaskGroup();
-  const doc = pane.document;
-  const cancelButton = doc.createElementNS(
-    "http://www.w3.org/1999/xhtml",
-    "button",
-  );
-  cancelButton.textContent = getString("auto-tag-cancel");
-  cancelButton.addEventListener("click", group.cancel);
-  const status = doc.createElementNS("http://www.w3.org/1999/xhtml", "aside");
-  status.setAttribute("role", "status");
-  (status as HTMLElement).style.cssText =
-    "display:flex;gap:8px;align-items:center;padding:8px;";
-  const statusText = doc.createElementNS(
-    "http://www.w3.org/1999/xhtml",
-    "span",
-  );
-  status.append(statusText, cancelButton);
-  doc.documentElement?.appendChild(status);
-  doc.defaultView?.addEventListener("unload", group.cancel, { once: true });
-
-  const progressWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeOnClick: true,
-  });
-  progressWin.createLine({
-    text: getString("auto-tag-batch-start", { args: { total } }),
-    icon: menuIcon,
-    progress: 0,
-  });
-  progressWin.show(0);
-
+  const panel = createTaskCard(doc, getAutoTagTaskLabels(), group.cancel);
+  const onAbort = () => panel.cancelling();
+  group.signal.addEventListener("abort", onAbort, { once: true });
+  const total = items.length;
   let succeeded = 0;
   let skipped = 0;
-  let failed = 0;
-
+  const failed: Zotero.Item[] = [];
+  let needsKey = false;
   try {
     for (let i = 0; i < total && !group.signal.aborted; i++) {
-      const item = regularItems[i];
-
-      statusText.textContent = getString("auto-tag-batch-progress", {
-        args: { current: i + 1, total },
-      });
-      progressWin.changeLine({
-        text: getString("auto-tag-batch-progress", {
+      const item = items[i];
+      panel.update(
+        getString("auto-tag-batch-progress", {
           args: { current: i + 1, total },
         }),
-        progress: Math.round((i / total) * 100),
-      });
-
+        String(item.getField("title") || ""),
+        i,
+        total,
+      );
       try {
         const deps = await createZoteroAutoTagDeps(() => {}, {
           signal: group.signal,
@@ -79,39 +67,41 @@ export async function executeAutoTagSelection(): Promise<void> {
         });
         const result = await group.run(item.id, () => autoTagItem(item, deps));
         if (result.kind === "cancelled") break;
-
         if (result.kind === "ok") {
-          if (result.tagsAdded.length > 0) {
-            succeeded++;
-          } else {
-            skipped++;
-          }
-        } else if (result.kind === "skipped") {
+          if (result.tagsAdded.length) succeeded++;
+          else skipped++;
+        } else if (result.kind === "skipped" && result.reason !== "noApiKey") {
           skipped++;
         } else {
-          failed++;
-          ztoolkit.log("[ZotClip] Auto-tag failed:", result.message);
+          needsKey ||=
+            result.kind === "skipped" && result.reason === "noApiKey";
+          failed.push(item);
         }
       } catch {
-        if (!group.signal.aborted) failed++;
+        if (!group.signal.aborted) failed.push(item);
       }
     }
-
-    const cancelled = group.signal.aborted;
-    const summaryKey = cancelled
-      ? "auto-tag-cancelled"
-      : failed > 0
-        ? "auto-tag-batch-done-mixed"
-        : "auto-tag-batch-done";
-
-    progressWin.changeLine({
-      text: getString(summaryKey, { args: { succeeded, skipped, failed } }),
-      progress: 100,
+    const summary = getString(
+      group.signal.aborted
+        ? "auto-tag-panel-cancelled"
+        : failed.length
+          ? "auto-tag-batch-done-mixed"
+          : "auto-tag-batch-done",
+      { args: { succeeded, skipped, failed: failed.length } },
+    );
+    panel.finish(summary, {
+      detail: needsKey ? getString("auto-tag-no-api-key") : undefined,
+      persistent: group.signal.aborted || failed.length > 0,
+      retry: failed.length
+        ? () => {
+            void runManualBatch(doc, failed);
+          }
+        : undefined,
     });
-    progressWin.show(4000);
+  } catch {
+    panel.finish(getString("auto-tag-panel-error"), { persistent: true });
   } finally {
-    status.remove();
-    doc.defaultView?.removeEventListener("unload", group.cancel);
+    group.signal.removeEventListener("abort", onAbort);
     group.dispose();
   }
 }

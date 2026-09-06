@@ -66,11 +66,22 @@ reader-specific shortcut, configure one in `Edit -> Preferences -> ZotClip`.
 In the library, select one or more regular items and choose **Generate AI Tags**
 from the item context menu (when AI tagging is enabled in preferences). You can
 also opt into automatic tagging for newly added items and optional stripping of
-Connector-import tags; see preferences for details. A running manual batch has
-a cancel button. Turning off AI tagging also cancels queued and active tasks.
+Connector-import tags; see preferences for details. A manual batch uses one compact
+task card with progress, the current item, and a cancel button. Successful results dismiss after six seconds (hover or focus
+keeps them visible). Failures stay visible with a button to retry only failed
+items; repeated commands focus the existing task. Automatic successes are silent,
+and automatic failures are summarized in the same card. Turning off AI tagging
+also cancels queued and active tasks.
 Completed changes are kept; cancelled requests cannot add tags. In Zotero 10,
 manual tag changes support the normal Undo/Redo commands (one item per step).
 Background tagging does not add undo steps. Read-only and deleted items are skipped.
+
+### Notifications
+
+Copy results and settings feedback share the AI task card styling, with the plugin
+logo and no external shadow. Ordinary notifications update a single card alongside
+any active task, can be closed manually, and pause automatic dismissal while
+hovered or focused. Settings feedback appears in the main Zotero window.
 
 ## Settings (`Edit -> Preferences -> ZotClip`)
 

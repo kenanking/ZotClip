@@ -44,6 +44,7 @@ export default defineConfig({
   test: {
     headless: process.env.ZOTCLIP_TEST_HEADLESS === "1",
     prefs: {
+      "intl.locale.requested": process.env.ZOTCLIP_TEST_LOCALE || "en-US",
       "app.update.auto": false,
       "app.update.enabled": false,
       "extensions.zotero.zotclip.testXpi": process.env.ZOTCLIP_TEST_XPI || "",

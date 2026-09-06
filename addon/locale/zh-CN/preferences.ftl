@@ -44,6 +44,3 @@ pref-ai-prompt-help = 提示词中可使用 {"{"}title{"}"}、{"{"}abstract{"}"}
 pref-help = { $name } 构建 { $version } { $time }
 pref-key-save = 保存／替换
 pref-key-delete = 删除
-pref-key-saved = 密钥已保存
-pref-key-unset = 未设置密钥
-pref-key-error = 密钥存储不可用或操作失败，请重试并检查保存状态。

@@ -1,3 +1,5 @@
+import { showMainWindowNotification } from "../../../ui/notification";
+import { renderApiKeyField, type ApiKeyFieldState } from "./apiKeyField";
 import {
   getAiApiKeyForProvider,
   setAiApiKeyForProvider,
@@ -26,7 +28,6 @@ import { getString } from "../../../utils/locale";
 import { resolveProviderRuntimePolicy } from "../core/providerAdapter";
 import {
   formatProbeMessage,
-  showAutoTagPrefsToast,
   zoteroProbeHttpPost,
 } from "./connectionProbeActions";
 import { runAiConnectionProbe } from "./aiConnectionProbe";
@@ -110,21 +111,33 @@ export function registerAutoTagAIPanel(doc: Document): { dispose(): void } {
     requestController.abort();
     requestController = new AbortController();
   };
+  function showKeyState(state: ApiKeyFieldState) {
+    const config = getAiProviderConfig(
+      getMenulistSelectedValue(providerMenulist!),
+    );
+    renderApiKeyField(
+      keyInput!,
+      keyStatus,
+      deleteKey,
+      state,
+      getString,
+      config.apiKeyPlaceholder
+        ? getString(config.apiKeyPlaceholder as any)
+        : undefined,
+    );
+  }
   async function refreshKeyStatus() {
     const current = ++revision;
+    const provider = getMenulistSelectedValue(providerMenulist!);
+    const targetEndpoint = endpoint();
+    showKeyState("loading");
     try {
       await migrateAiCredentials();
-      const key = await getAiApiKeyForProvider(
-        getMenulistSelectedValue(providerMenulist!),
-        endpoint(),
-      );
-      if (!disposed && current === revision && keyStatus)
-        keyStatus.textContent = getString(
-          key ? "pref-key-saved" : "pref-key-unset",
-        );
+      const key = await getAiApiKeyForProvider(provider, targetEndpoint);
+      if (!disposed && current === revision)
+        showKeyState(key ? "saved" : "unset");
     } catch {
-      if (!disposed && current === revision && keyStatus)
-        keyStatus.textContent = getString("pref-key-error");
+      if (!disposed && current === revision) showKeyState("error");
     }
   }
   async function changeKey(remove: boolean) {
@@ -142,8 +155,7 @@ export function registerAutoTagAIPanel(doc: Document): { dispose(): void } {
         await refreshKeyStatus();
       }
     } catch {
-      if (!disposed && current === revision && keyStatus)
-        keyStatus.textContent = getString("pref-key-error");
+      if (!disposed && current === revision) showKeyState("error");
     }
   }
   enabledCheckbox.checked = getAutoTaggingEnabled();
@@ -317,7 +329,7 @@ function handleTestConnection(
             zoteroProbeHttpPost(url, { ...options, signal }),
         });
         if (signal.aborted) return;
-        showAutoTagPrefsToast(
+        showMainWindowNotification(
           result.ok
             ? getString("pref-ai-test-connection-ok")
             : formatProbeMessage(result.message),
@@ -327,7 +339,8 @@ function handleTestConnection(
       }
     })()
       .catch(() => {
-        if (!signal.aborted) showAutoTagPrefsToast(getString("pref-key-error"));
+        if (!signal.aborted)
+          showMainWindowNotification(getString("pref-key-error"));
       })
       .finally(() => {
         button.disabled = false;

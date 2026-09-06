@@ -1,3 +1,9 @@
+import { config } from "../package.json";
+import {
+  showNotification,
+  showMainWindowNotification,
+} from "../src/ui/notification";
+import { disposeTaskCards, getTaskCard } from "../src/ui/taskCard";
 import { getReaderItemIDForWindow } from "../src/modules/copy/zoteroReaderAccess";
 
 describe("toolbar buttons", function () {
@@ -97,6 +103,57 @@ describe("toolbar buttons", function () {
       getReaderItemIDForWindow(windowReader._iframeWindow!),
       attachment!.id,
     );
+  });
+
+  it("places notifications in the active standalone reader and cleans them up on close", async function () {
+    const savedAddon = (window as any).addon;
+    (window as any).addon = Zotero[config.addonInstance];
+    this.timeout(30000);
+    const mainDoc = Zotero.getMainWindow().document;
+    let stage = "open reader";
+    try {
+      windowReader = (await Zotero.Reader.open(attachment!.id, undefined, {
+        allowDuplicate: true,
+        openInWindow: true,
+      })) as _ZoteroTypes.ReaderInstance;
+      await waitFor(() => windowReader?._iframeWindow);
+      const readerWindow = windowReader!._window!;
+      const readerDoc = readerWindow.document;
+      showNotification("Main window notification", 5000, mainDoc);
+      stage = "focus reader";
+      readerWindow.focus();
+      await waitFor(() => Services.focus.activeWindow === readerWindow);
+      stage = "show notification";
+      showNotification("Reader notification");
+      assert.ok(getTaskCard(readerDoc, "notification"));
+      assert.include(
+        readerDoc.getElementById("zotclip-notification")!.textContent,
+        "Reader notification",
+      );
+      showMainWindowNotification("Connection test feedback");
+      assert.include(
+        mainDoc.getElementById("zotclip-notification")!.textContent,
+        "Connection test feedback",
+      );
+      assert.include(
+        readerDoc.getElementById("zotclip-notification")!.textContent,
+        "Reader notification",
+      );
+      stage = "close reader";
+      windowReader!.close();
+      windowReader = undefined;
+      await waitFor(() => !getTaskCard(readerDoc, "notification"));
+      assert.ok(getTaskCard(mainDoc, "notification"));
+    } catch (error) {
+      assert.fail(`${stage}: ${String(error)}`);
+    } finally {
+      try {
+        disposeTaskCards();
+      } catch (error) {
+        assert.fail(`Cleanup: ${String(error)}`);
+      }
+      (window as any).addon = savedAddon;
+    }
   });
 
   it("uses an inline toolbar icon inside the reader iframe", async function () {

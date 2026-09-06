@@ -46,10 +46,23 @@ pref-ai-test-connection-fail = Connection failed: { $error }
 pref-ai-test-connection-needs-endpoint = Enter an API endpoint first.
 pref-ai-test-connection-needs-key = Enter an API key first.
 pref-ai-test-connection-needs-model = Enter a model name first.
-auto-tag-batch-start = Generating AI tags for { $total } items…
 auto-tag-batch-progress = Processing item { $current } / { $total }…
 auto-tag-batch-done = Done: { $succeeded } tagged, { $skipped } skipped.
 auto-tag-batch-done-mixed = Done: { $succeeded } tagged, { $skipped } skipped, { $failed } failed.
 
-auto-tag-cancel = Cancel AI tagging
-auto-tag-cancelled = AI tagging cancelled. Completed changes were kept.
+
+pref-key-saved = Key saved — enter a new key to replace it
+pref-key-unset = No key saved — enter an API key
+pref-key-loading = Checking saved key…
+pref-key-unavailable = Unable to check saved key
+pref-key-error = Could not access or update the saved key. Try again.
+
+auto-tag-panel-title = ZotClip · AI tags
+auto-tag-panel-cancel = Cancel
+auto-tag-panel-cancelling = Cancelling…
+notification-close = Close
+auto-tag-panel-retry = Retry failed items
+auto-tag-panel-cancelled = Cancelled: { $succeeded } tagged, { $skipped } skipped, { $failed } failed. Completed changes were kept.
+auto-tag-background-failed = Automatic tagging failed for { $count } items. Select the items and try Generate AI Tags again.
+auto-tag-panel-error = Tagging could not finish. Try again. Completed changes were kept.
+auto-tag-panel-disabled = AI tagging is turned off. Enable it in ZotClip preferences to continue.

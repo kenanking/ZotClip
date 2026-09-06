@@ -46,10 +46,23 @@ pref-ai-test-connection-fail = 连接失败：{ $error }
 pref-ai-test-connection-needs-endpoint = 请先填写 API 地址。
 pref-ai-test-connection-needs-key = 请先填写 API 密钥。
 pref-ai-test-connection-needs-model = 请先填写模型名称。
-auto-tag-batch-start = 正在为 { $total } 个条目生成 AI 标签…
 auto-tag-batch-progress = 正在处理第 { $current } / { $total } 个条目…
 auto-tag-batch-done = 完成：已标记 { $succeeded } 个，跳过 { $skipped } 个。
 auto-tag-batch-done-mixed = 完成：已标记 { $succeeded } 个，跳过 { $skipped } 个，失败 { $failed } 个。
 
-auto-tag-cancel = 取消 AI 标签生成
-auto-tag-cancelled = 已取消 AI 标签生成，已完成的修改予以保留。
+
+pref-key-saved = 已保存密钥，输入新密钥可替换
+pref-key-unset = 尚未保存，请输入 API 密钥
+pref-key-loading = 正在读取密钥状态…
+pref-key-unavailable = 暂时无法确认密钥状态
+pref-key-error = 无法读取或更新已保存的密钥，请重试。
+
+auto-tag-panel-title = ZotClip · AI 标签
+auto-tag-panel-cancel = 取消
+auto-tag-panel-cancelling = 正在取消…
+notification-close = 关闭
+auto-tag-panel-retry = 重试失败项
+auto-tag-panel-cancelled = 已取消：{ $succeeded } 个已生成，{ $skipped } 个跳过，{ $failed } 个失败。已生成的标签已保留。
+auto-tag-background-failed = 有 { $count } 个条目自动生成标签失败，可选中条目后重新执行“生成 AI 标签”。
+auto-tag-panel-error = 标签生成未能完成，请重试。已生成的标签已保留。
+auto-tag-panel-disabled = AI 标签功能已关闭，请先在 ZotClip 设置中启用。

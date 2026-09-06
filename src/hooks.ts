@@ -1,3 +1,4 @@
+import { disposeTaskCards } from "./ui/taskCard";
 import { migrateAiCredentials } from "./modules/tagging/credentials/zoteroCredentials";
 import { cancelAllAiTasks } from "./modules/tagging/core/taskManager";
 import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
@@ -221,6 +222,7 @@ function onAppShutdown(): void {
 function onShutdown(): void {
   addon.data.initialized = false;
   disposePrefsUI();
+  disposeTaskCards();
   cancelAllAiTasks();
   if (aiEnabledObserver) Zotero.Prefs.unregisterObserver(aiEnabledObserver);
   autoTagItemAddHandle?.dispose();

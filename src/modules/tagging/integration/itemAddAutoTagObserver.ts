@@ -6,7 +6,8 @@ import {
 import { autoTagItem } from "../core/autoTagService";
 import { createAiTaskGroup } from "../core/taskManager";
 import { createZoteroAutoTagDeps } from "../core/zoteroAutoTagDeps";
-import { notifyAutoTagResult } from "./autoTagNotify";
+import { notifyAutoTagBackgroundFailures } from "./autoTagNotify";
+import type { AutoTagResult } from "../core/types";
 import { isItemEligibleForAutoTagOnAdd } from "./itemAddAutoTagEligibility";
 
 const ITEM_ADD_DELAY_MS = 500;
@@ -28,30 +29,12 @@ async function stripConnectorTags(item: Zotero.Item): Promise<void> {
 async function autoTagNewLibraryItem(
   item: Zotero.Item,
   group: ReturnType<typeof createAiTaskGroup>,
-): Promise<void> {
-  const title = (item.getField("title") as string) || "";
+): Promise<AutoTagResult> {
   const deps = await createZoteroAutoTagDeps(() => {}, {
     signal: group.signal,
     itemID: item.id,
   });
-  const result = await group.run(item.id, () => autoTagItem(item, deps));
-
-  if (result.kind === "failed") {
-    notifyAutoTagResult("auto-tag-failed", {
-      args: { error: result.message },
-    });
-    return;
-  }
-
-  if (result.kind !== "ok" || result.tagsAdded.length === 0) {
-    return;
-  }
-
-  const shortTitle =
-    title.length > 20 ? title.slice(0, 20) + "..." : title || "…";
-  notifyAutoTagResult("auto-tag-success", {
-    args: { title: shortTitle, count: result.tagsAdded.length },
-  });
+  return group.run(item.id, () => autoTagItem(item, deps));
 }
 
 export function registerAutoTagItemAddObserver(): { dispose(): void } {
@@ -65,6 +48,7 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
       return;
     }
     draining = true;
+    let failureCount = 0;
     try {
       while (batchQueue.length > 0 && !disposed) {
         await new Promise<void>((resolve) => {
@@ -98,18 +82,22 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
             }
 
             if (getAutoTagOnAdd() && getAutoTaggingEnabled()) {
-              await autoTagNewLibraryItem(item, group);
+              const result = await autoTagNewLibraryItem(item, group);
+              if (
+                result.kind === "failed" ||
+                (result.kind === "skipped" && result.reason === "noApiKey")
+              )
+                failureCount++;
             }
           } catch {
-            if (!disposed)
-              notifyAutoTagResult("auto-tag-failed", {
-                args: { error: "Item update failed" },
-              });
+            if (!disposed && !group.signal.aborted) failureCount++;
           }
         }
       }
     } finally {
       draining = false;
+      if (!disposed && failureCount)
+        notifyAutoTagBackgroundFailures(failureCount);
       if (batchQueue.length > 0 && !disposed) {
         void drainBatchQueue();
       }

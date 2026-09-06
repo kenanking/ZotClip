@@ -1,8 +1,11 @@
+import {
+  createTaskCard,
+  getTaskCard,
+  type ProgressLabels,
+} from "../../../ui/taskCard";
 import type { FluentMessageId } from "../../../../typings/i10n";
-import { getAddonFaviconUri } from "../../../utils/addonAssets";
+import { showNotification } from "../../../ui/notification";
 import { getString } from "../../../utils/locale";
-
-const notifyIcon = getAddonFaviconUri();
 
 export type AutoTagNotifyMessageId = Extract<
   FluentMessageId,
@@ -20,18 +23,27 @@ export function notifyAutoTagResult(
 ): void {
   const message =
     options === undefined ? getString(key) : getString(key, options);
-  showAutoTagToast(message);
+  showNotification(message);
 }
 
-export function showAutoTagToast(text: string, closeTime = 2000): void {
-  new ztoolkit.ProgressWindow(addon.data.config.addonName, {
-    closeTime,
-    closeOnClick: true,
-  })
-    .createLine({
-      text,
-      icon: notifyIcon,
-      progress: 0,
-    })
-    .show();
+export function getAutoTagTaskLabels(): ProgressLabels {
+  return {
+    title: getString("auto-tag-panel-title"),
+    cancel: getString("auto-tag-panel-cancel"),
+    cancelling: getString("auto-tag-panel-cancelling"),
+    close: getString("notification-close"),
+    retry: getString("auto-tag-panel-retry"),
+  };
+}
+
+export function notifyAutoTagBackgroundFailures(count: number): void {
+  const doc = Zotero.getMainWindow()?.document;
+  if (!doc) return;
+  const message = getString("auto-tag-background-failed", { args: { count } });
+  const existing = getTaskCard(doc);
+  if (existing) existing.notice(message);
+  else
+    createTaskCard(doc, getAutoTagTaskLabels(), () => {}).finish(message, {
+      persistent: true,
+    });
 }
