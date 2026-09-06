@@ -120,3 +120,42 @@ test("prepareResolvedAttachments can start duplicate copies concurrently while p
     ],
   );
 });
+
+test("generated duplicate names do not collide with original suffixed names", async () => {
+  const files = ["/a/paper.pdf", "/b/PAPER.pdf", "/c/paper_1.pdf"].map(
+    (path, id) => ({ path, itemID: id, attachmentID: id }),
+  );
+  const result = await prepareResolvedAttachments(files, {
+    createOperationTempDir: async () => "/tmp/test",
+    copyFile: async () => {},
+    getBaseName: (p) => p.split("/").pop()!,
+    joinPath: (...p) => p.join("/"),
+  });
+  assert.equal(result.files[1].clipboardPath, "/tmp/test/PAPER_2.pdf");
+});
+
+test("failed preparation cleans partial copies after all jobs settle", async () => {
+  let removed = false;
+  await assert.rejects(
+    prepareResolvedAttachments(
+      ["/a/x.pdf", "/b/x.pdf"].map((path, id) => ({
+        path,
+        itemID: id,
+        attachmentID: id,
+      })),
+      {
+        createOperationTempDir: async () => "/tmp/test",
+        copyFile: async () => {
+          throw new Error("disk full");
+        },
+        getBaseName: (p) => p.split("/").pop()!,
+        joinPath: (...p) => p.join("/"),
+        removeTempDir: async () => {
+          removed = true;
+        },
+      },
+    ),
+    /disk full/,
+  );
+  assert.equal(removed, true);
+});

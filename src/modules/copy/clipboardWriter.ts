@@ -24,10 +24,7 @@ import {
   type ClipboardRuntimeCache,
 } from "./clipboard/runtimeCache";
 import { createWindowsBackend } from "./clipboard/windowsBackend";
-import {
-  prepareResolvedAttachments,
-  scheduleTempDirCleanup,
-} from "./preparedAttachments";
+import { prepareResolvedAttachments } from "./preparedAttachments";
 import type { PreparedAttachmentResult } from "./preparedAttachments";
 import type { ClipboardResult, ResolvedAttachment } from "./types";
 import { writeWindowsFileDrop } from "./windowsFileClipboard";
@@ -109,7 +106,7 @@ export async function writeClipboard(
 
   invalidateRuntimeCacheOnBackendFailure(runtimeCache, platformContext, result);
   if (tempDir) {
-    scheduleTempDirCleanup(tempDir);
+    if (!result.ok) await IOUtils.remove(tempDir, { recursive: true });
   }
   return result;
 }

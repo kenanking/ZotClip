@@ -9,10 +9,12 @@ export interface CommandResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+  process?: { exited: Promise<{ exitCode: number }>; terminate(): void };
 }
 
 export interface StartCommandOptions {
   startupTimeoutMs?: number;
+  readyMessage?: string;
 }
 
 interface LowLevelCommandResult {
@@ -35,6 +37,7 @@ interface SubprocessProcessLike {
   stdin?: SubprocessWriterLike;
   stdout?: SubprocessReaderLike;
   wait(): Promise<{ exitCode: number }>;
+  kill?(timeout?: number): void;
 }
 
 interface SubprocessLike {
@@ -213,39 +216,68 @@ async function collectProcessResult(
   };
 }
 
+const clipboardProcesses = new Set<() => void>();
+
+export function stopClipboardProcesses(): void {
+  for (const stop of clipboardProcesses) stop();
+  clipboardProcesses.clear();
+}
+
 async function startRunningProcess(
   process: SubprocessProcessLike,
   call: CommandCall,
   options: StartCommandOptions,
 ): Promise<CommandResult> {
-  await writeProcessStdin(process, call.stdinText);
-
-  const stdoutPromise = process.stdout?.readString() || Promise.resolve("");
-  const stderrPromise = process.stderr?.readString() || Promise.resolve("");
-  const exitPromise = process.wait();
-  const startupTimeoutMs = options.startupTimeoutMs ?? 150;
-  const startupState = await Promise.race([
-    exitPromise.then(({ exitCode }) => ({
-      kind: "exited" as const,
-      exitCode,
-    })),
-    waitForDelay(startupTimeoutMs).then(() => ({
-      kind: "started" as const,
-    })),
-  ]);
-
-  if (startupState.kind === "started") {
-    void monitorStartedProcess(call, exitPromise, stdoutPromise, stderrPromise);
-    return buildCommandResult(true, 0, "", "");
+  let stopped = false;
+  const terminate = () => {
+    if (stopped) return;
+    stopped = true;
+    process.kill?.(1000);
+    clipboardProcesses.delete(terminate);
+  };
+  clipboardProcesses.add(terminate);
+  const exited = process.wait();
+  void exited
+    .finally(() => clipboardProcesses.delete(terminate))
+    .catch(() => {});
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stderr =
+    process.stderr?.readString().catch(() => "") ?? Promise.resolve("");
+  try {
+    await writeProcessStdin(process, call.stdinText);
+    const ready = (async () => {
+      let output = "";
+      while (output.length < 4096) {
+        const chunk = await process.stdout?.readString();
+        if (!chunk) throw new Error("Clipboard helper closed before readiness");
+        output += chunk;
+        if (output.includes(options.readyMessage || "ZOTCLIP_READY")) return;
+      }
+      throw new Error("Invalid clipboard helper readiness response");
+    })();
+    await Promise.race([
+      ready,
+      exited.then(() => {
+        throw new Error("Clipboard helper exited before readiness");
+      }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("Clipboard helper startup timed out")),
+          options.startupTimeoutMs ?? 5000,
+        );
+      }),
+    ]);
+    void stderr;
+    return {
+      ...buildCommandResult(true, 0, "", ""),
+      process: { exited, terminate },
+    };
+  } catch (error) {
+    terminate();
+    return buildThrownCommandResult(error);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-
-  const [stdout, stderr] = await Promise.all([stdoutPromise, stderrPromise]);
-  return buildCommandResult(
-    false,
-    startupState.exitCode,
-    stdout,
-    stderr || "Command exited before startup completed.",
-  );
 }
 
 async function writeProcessStdin(
@@ -258,36 +290,6 @@ async function writeProcessStdin(
 
   await process.stdin?.write(stdinText);
   await process.stdin?.close();
-}
-
-async function monitorStartedProcess(
-  call: CommandCall,
-  exitPromise: Promise<{ exitCode: number }>,
-  stdoutPromise: Promise<string>,
-  stderrPromise: Promise<string>,
-): Promise<void> {
-  try {
-    const { exitCode } = await exitPromise;
-    if (exitCode === 0) {
-      return;
-    }
-
-    const [stdout, stderr] = await Promise.all([stdoutPromise, stderrPromise]);
-    ztoolkit.log("Background command exited", {
-      call,
-      exitCode,
-      stdout,
-      stderr,
-    });
-  } catch (error) {
-    ztoolkit.log("Background command monitoring failed", error);
-  }
-}
-
-function waitForDelay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }
 
 function defaultGetEnv(name: string): string | undefined {

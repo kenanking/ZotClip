@@ -1,3 +1,4 @@
+import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
 import { copyItems } from "./modules/copy/copyCommands";
 import { notifyCopyResult } from "./modules/copy/notifier";
 import { executeCopyFromReaderItem } from "./execution/copyActions";
@@ -31,7 +32,7 @@ import {
   registerToolbarPreferenceObservers,
   unregisterToolbarPreferenceObservers,
 } from "./modules/copy/toolbarSync";
-import { cleanupAllTempDirs } from "./modules/copy/preparedAttachments";
+import { initializeClipboardSession } from "./modules/copy/preparedAttachments";
 import { registerAutoTagItemAddObserver } from "./modules/tagging/integration/itemAddAutoTagObserver";
 import { executeAutoTagSelection } from "./modules/tagging/integration/manualAutoTagSelection";
 import {
@@ -131,6 +132,7 @@ async function onStartup() {
       }),
   }).start();
   initLocale();
+  await initializeClipboardSession();
   try {
     await initToolbarIcon();
   } catch (error) {
@@ -189,7 +191,7 @@ function onShutdown(): void {
   mainWindowController.disposeAll(Zotero.getMainWindows());
   unregisterCopyMenuCommands(registeredCopyMenuIDs);
   registeredCopyMenuIDs = [];
-  void cleanupAllTempDirs();
+  stopClipboardProcesses();
   ztoolkit.unregisterAll();
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed

@@ -11,7 +11,8 @@ import { BACKEND_IDS, MIME_TYPES, type ClipboardPayload } from "./types";
 const GTK_HELPER_COMMAND = "python3";
 const GTK_HELPER_DEPENDENCY = "gtk4-helper";
 const GTK_HELPER_START_OPTIONS: StartCommandOptions = {
-  startupTimeoutMs: 300,
+  startupTimeoutMs: 5000,
+  readyMessage: "ZOTCLIP_READY",
 };
 const GTK_PROBE_SCRIPT =
   'import gi; gi.require_version("Gtk", "4.0"); gi.require_version("Gdk", "4.0"); from gi.repository import Gtk, Gdk; initialized = Gtk.init_check(); raise SystemExit(0 if initialized and Gdk.Display.get_default() is not None else 1)';
@@ -59,7 +60,8 @@ def main() -> int:
         if loop.is_running():
             loop.quit()
 
-    GLib.timeout_add_seconds(20, lambda: (stop_loop(), False)[1])
+    clipboard.connect("changed", lambda *_: stop_loop() if not clipboard.is_local() else None)
+    print("ZOTCLIP_READY", flush=True)
     signal.signal(signal.SIGINT, stop_loop)
     signal.signal(signal.SIGTERM, stop_loop)
     loop.run()
