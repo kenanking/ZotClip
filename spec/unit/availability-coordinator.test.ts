@@ -100,3 +100,24 @@ test("availability coordinator forces a refresh for the same selection after cop
 
   assert.equal(refreshCalls, 2);
 });
+
+test("a failed refresh does not strand the next selection", async () => {
+  const coordinator = createAvailabilityCoordinator();
+  let fail!: (reason: Error) => void;
+  const first = coordinator.requestSelectionRefresh(
+    "a",
+    () =>
+      new Promise((_, reject) => {
+        fail = reject;
+      }),
+  );
+  const rejection = assert.rejects(first, /unavailable/);
+  let completed = false;
+  const next = coordinator.requestSelectionRefresh("b", async () => {
+    completed = true;
+  });
+  fail(new Error("unavailable"));
+  await rejection;
+  await next;
+  assert.equal(completed, true);
+});

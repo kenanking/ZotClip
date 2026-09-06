@@ -275,3 +275,21 @@ test("keyboard shortcuts: library copy can execute the primary action from actio
 });
 
 // Factories imported from shared fixtures — see fixtures/actionStateFixtures.ts
+
+test("library shortcut cancels synchronously while availability is pending", async () => {
+  const mock = makeKeyEvent({ ctrl: true, shift: true });
+  let resolve!: (state: ReturnType<typeof createLibraryActionState>) => void;
+  const handling = handleSelectionCopyShortcut(mock.event, {
+    getParsedShortcut: () => CTRL_SHIFT_C,
+    isLibraryContext: () => true,
+    hasSelectedItems: () => true,
+    isEditableTarget: () => false,
+    getActionState: () =>
+      new Promise((r) => {
+        resolve = r;
+      }),
+  });
+  assert.equal(mock.wasPrevented(), true);
+  resolve(createLibraryActionState());
+  assert.equal(await handling, true);
+});

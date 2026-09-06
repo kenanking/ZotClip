@@ -96,3 +96,14 @@ function createServiceFromCommandDeps(
 
   return createCopyService(serviceDeps);
 }
+
+export async function copyItems(
+  items: Zotero.Item[],
+  mode: MultiAttachmentMode,
+  allowedTypes: string[],
+): Promise<ClipboardResult> {
+  return copyFromSelection(mode, allowedTypes, {
+    ...DEFAULT_DEPS,
+    getSelectedItems: () => items,
+  });
+}

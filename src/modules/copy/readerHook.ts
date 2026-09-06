@@ -1,3 +1,5 @@
+import { notifyCopyResult } from "./notifier";
+import { reportCopyError } from "./selectionHook";
 import { copyFromReader } from "./copyCommands";
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
@@ -45,12 +47,18 @@ export async function handleReaderCopyShortcut(
     return false;
   }
 
+  event.preventDefault();
   const state = await finalDeps.getActionState();
   if (!state.primary.canExecute) {
-    return false;
+    notifyCopyResult({
+      ok: false,
+      format: "none",
+      count: 0,
+      messageKey: state.primary.reasonKey || "copy-reader-no-active",
+    });
+    return true;
   }
 
-  event.preventDefault();
   await state.primary.run();
   return true;
 }
@@ -64,7 +72,7 @@ export function registerReaderShortcutHandler(
     void handleReaderCopyShortcut(event, {
       ...deps,
       getParsedShortcut: shortcutProvider,
-    });
+    }).catch(reportCopyError);
   };
 
   win.addEventListener("keydown", onKeyDown, true);

@@ -1,4 +1,4 @@
-import { copyFromReaderItem, copyFromSelection } from "./copyCommands";
+import { copyFromReaderItem, copyItems } from "./copyCommands";
 import {
   buildUnavailableResult,
   checkReaderAvailability,
@@ -22,10 +22,10 @@ import type {
 export async function createActiveLibraryActionState(
   settings: RuntimeSettingsSnapshot,
 ): Promise<CopyActionState> {
-  const getItems = () =>
-    getSelectedLibraryItems({
-      getActivePane: () => Zotero.getActiveZoteroPane(),
-    });
+  const items = getSelectedLibraryItems({
+    getActivePane: () => Zotero.getActiveZoteroPane(),
+  });
+  const getItems = () => items;
 
   const controller = createCopyActionController({
     getAllowedTypes: () => settings.allowedTypes,
@@ -43,7 +43,8 @@ export async function createActiveLibraryActionState(
       messageKey: "copy-reader-no-active",
     }),
     executePrimaryLibraryCopy: async () => {
-      const result = await copyFromSelection(
+      const result = await copyItems(
+        items,
         settings.multiAttachmentMode,
         settings.allowedTypes,
       );
@@ -61,10 +62,13 @@ export async function createMainToolbarActionState(
   win: Window,
   deps: MainToolbarCopyButtonDeps,
 ): Promise<CopyActionState> {
+  const items = deps.getSelectedItems(win);
+  const allowedTypes = [...deps.getAllowedTypes()];
+  const mode = deps.getMode();
   const controller = createCopyActionController({
-    getAllowedTypes: () => deps.getAllowedTypes(),
-    getMode: () => deps.getMode(),
-    getLibraryItems: () => deps.getSelectedItems(win),
+    getAllowedTypes: () => allowedTypes,
+    getMode: () => mode,
+    getLibraryItems: () => items,
     getReaderItemID: () => undefined,
     getSelectionAvailability: () =>
       checkSelectionAvailability(
@@ -72,14 +76,14 @@ export async function createMainToolbarActionState(
           allowedTypes: deps.getAllowedTypes(),
           multiAttachmentMode: deps.getMode(),
         },
-        deps.getSelectedItems(win),
+        items,
         deps.resolveFromItems,
       ),
     getReaderAvailability: async () => ({
       canCopy: false,
       messageKey: "copy-reader-no-active",
     }),
-    executePrimaryLibraryCopy: async () => deps.executeCopy(),
+    executePrimaryLibraryCopy: async () => deps.executeCopy(items),
     executePrimaryReaderCopy: async () =>
       buildUnavailableResult("copy-reader-no-active"),
   });

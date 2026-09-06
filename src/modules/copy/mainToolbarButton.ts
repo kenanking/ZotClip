@@ -1,3 +1,4 @@
+import { reportCopyError } from "./selectionHook";
 import { config } from "../../../package.json";
 import { TOOLBAR_ICON_URL } from "./copyUi";
 import { buildActionTooltip } from "./interaction/presentation/copyActionMessages";
@@ -42,26 +43,44 @@ export function registerMainToolbarButton(
   doc: Document,
   deps: MainToolbarButtonDeps,
 ): MainToolbarButtonHandle {
-  const button = ensureButton(doc, deps);
+  let button: ToolbarButtonElement | null = null;
+  let disposed = false;
   const availabilityCoordinator = createAvailabilityCoordinator();
   let currentActionState: CopyActionState | undefined;
 
   const onCommand = (event: Event) => {
     const currentButton = event.currentTarget as ToolbarButtonElement | null;
-    if (currentButton?.disabled) {
+    if (disposed || currentButton?.disabled) {
       return;
     }
 
-    void currentActionState?.primary.run().then((result) => {
-      deps.onActionComplete?.(result);
-      availabilityCoordinator.notifySelectionCopyCompleted();
-      void refresh();
-    });
+    void deps
+      .getActionState()
+      .then(async (state) => {
+        if (disposed) return;
+        const result = await state.primary.run();
+        deps.onActionComplete?.(result);
+        availabilityCoordinator.notifySelectionCopyCompleted();
+        void refresh().catch(reportCopyError);
+      })
+      .catch(reportCopyError);
   };
 
-  button?.addEventListener("command", onCommand);
+  function mount() {
+    if (disposed) return null;
+    const next = ensureButton(doc, deps);
+    if (next !== button) {
+      button?.removeEventListener("command", onCommand);
+      button = next;
+      button?.addEventListener("command", onCommand);
+    }
+    return button;
+  }
+  mount();
 
   async function refresh(): Promise<void> {
+    if (disposed) return;
+    mount();
     const refreshKey = deps.getRefreshKey?.();
     if (refreshKey) {
       return availabilityCoordinator.requestSelectionRefresh(
@@ -74,12 +93,13 @@ export function registerMainToolbarButton(
   }
 
   async function refreshCurrentAvailability(): Promise<void> {
-    const currentButton = ensureButton(doc, deps);
+    const currentButton = mount();
     if (!currentButton) {
       return;
     }
 
     currentActionState = await deps.getActionState();
+    if (disposed || currentButton !== button) return;
     currentButton.disabled = !currentActionState.primary.canExecute;
     currentButton.title = (deps.getActionTooltipText || buildActionTooltip)(
       deps.getLabel(),
@@ -91,6 +111,8 @@ export function registerMainToolbarButton(
   return {
     refresh,
     dispose: () => {
+      disposed = true;
+      button?.removeEventListener("command", onCommand);
       const currentButton = doc.getElementById(
         BUTTON_ID,
       ) as ToolbarButtonElement | null;

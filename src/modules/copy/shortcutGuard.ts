@@ -9,7 +9,7 @@ export function shouldHandleConfiguredShortcut(
   event: KeyboardEvent,
   deps: ConfiguredShortcutGuardDeps,
 ): boolean {
-  if (event.defaultPrevented) {
+  if (event.defaultPrevented || event.repeat || event.isComposing) {
     return false;
   }
 

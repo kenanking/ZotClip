@@ -173,6 +173,7 @@ test("registerMainToolbarButton runs the copy command only once for a single too
   doc.button.dispatch("command");
   doc.button.dispatch("click");
 
+  await Promise.resolve();
   assert.equal(calls, 1);
 });
 
@@ -211,7 +212,7 @@ test("registerMainToolbarButton refreshes once after command completion for the 
   doc.button.dispatch("command");
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assert.equal(actionStateCalls, 2);
+  assert.equal(actionStateCalls, 3);
 });
 
 test("registerMainToolbarButton delegates element creation through a shared helper", async () => {
@@ -277,4 +278,32 @@ test("registerMainToolbarButton reads disabled state and tooltip from action sta
 
   assert.equal(doc.button.disabled, true);
   assert.equal(doc.button.title, "No files to copy.");
+});
+
+test("a toolbar mounted after registration binds its command", async () => {
+  const original = new FakeDocument();
+  let ready = false;
+  let calls = 0;
+  const doc = {
+    getElementById: (id: string) =>
+      ready ? original.getElementById(id) : null,
+  };
+  const handle = registerMainToolbarButton(doc as unknown as Document, {
+    getLabel: () => "Copy",
+    getActionTooltipText: () => "Copy",
+    createToolbarButton: ({ id }) =>
+      Object.assign(new FakeToolbarButton(), { id }) as never,
+    getActionState: async () =>
+      createLibraryActionState({
+        run: async () => {
+          calls++;
+          return { ok: true, format: "file-object", count: 1 };
+        },
+      }),
+  });
+  ready = true;
+  await handle.refresh();
+  original.preferredAnchor.afterCalls[0].dispatch("command");
+  await Promise.resolve();
+  assert.equal(calls, 1);
 });

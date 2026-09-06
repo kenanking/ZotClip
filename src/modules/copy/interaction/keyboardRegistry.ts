@@ -1,3 +1,4 @@
+import { reportCopyError } from "../selectionHook";
 import type { DisposableHandle } from "../ui/disposables";
 
 interface KeyboardEventOptionsLike {
@@ -26,11 +27,17 @@ export function createKeyboardRegistry(deps: {
       return;
     }
 
-    void Promise.resolve(deps.onLibraryShortcut(event)).then((handled) => {
-      if (!handled && !event.defaultPrevented) {
-        void deps.onReaderShortcut(event);
+    try {
+      const library = deps.onLibraryShortcut(event);
+      void Promise.resolve(library).catch(reportCopyError);
+      if (!event.defaultPrevented && library !== true) {
+        void Promise.resolve(deps.onReaderShortcut(event)).catch(
+          reportCopyError,
+        );
       }
-    });
+    } catch (error) {
+      reportCopyError(error);
+    }
   };
 
   return {

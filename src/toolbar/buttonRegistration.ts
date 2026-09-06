@@ -1,3 +1,4 @@
+import { reportCopyError } from "../modules/copy/selectionHook";
 import {
   createMainToolbarActionState,
   createReaderToolbarActionState,
@@ -31,7 +32,7 @@ export function registerMainToolbarCopyButton(
   });
 
   const requestRefresh = () => {
-    void buttonHandle.refresh();
+    void buttonHandle.refresh().catch(reportCopyError);
   };
   const debouncedRefresh = createDebouncedCallback(
     requestRefresh,
@@ -41,7 +42,7 @@ export function registerMainToolbarCopyButton(
   win.addEventListener("focus", debouncedRefresh.trigger, true);
   win.addEventListener("mouseup", debouncedRefresh.trigger, true);
   win.addEventListener("keyup", debouncedRefresh.trigger, true);
-  void buttonHandle.refresh();
+  void buttonHandle.refresh().catch(reportCopyError);
 
   return () => {
     win.removeEventListener("focus", debouncedRefresh.trigger, true);

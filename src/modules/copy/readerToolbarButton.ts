@@ -1,3 +1,4 @@
+import { reportCopyError } from "./selectionHook";
 import { config } from "../../../package.json";
 import { getToolbarIconDataURL } from "./copyUi";
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
@@ -67,28 +68,46 @@ export function mountReaderToolbarButton(
   event: ReaderToolbarRenderEventLike,
   deps: ReaderToolbarButtonDeps,
 ): ReaderToolbarButtonHandle {
-  const button = ensureButton(event.doc, deps, (...nodes) => {
-    event.append(...nodes);
-  });
+  let button: HTMLButtonElement | null = null;
+  let disposed = false;
   const availabilityCoordinator = createAvailabilityCoordinator();
   let currentActionState: CopyActionState | undefined;
 
   const onCommand = (clickEvent: Event) => {
     const currentButton = clickEvent.currentTarget as HTMLButtonElement | null;
-    if (currentButton?.disabled) {
+    if (disposed || currentButton?.disabled) {
       return;
     }
 
-    void currentActionState?.primary.run().then((result) => {
-      deps.onActionComplete?.(result);
-      availabilityCoordinator.notifyReaderCopyCompleted();
-      void refresh();
-    });
+    void deps
+      .getActionState(event.reader.itemID)
+      .then(async (state) => {
+        if (disposed) return;
+        const result = await state.primary.run();
+        deps.onActionComplete?.(result);
+        availabilityCoordinator.notifyReaderCopyCompleted();
+        void refresh().catch(reportCopyError);
+      })
+      .catch(reportCopyError);
   };
 
-  button?.addEventListener("click", onCommand);
+  function mount() {
+    if (disposed) return null;
+    const next = ensureButton(event.doc, deps, (...nodes) => {
+      event.append(...nodes);
+    });
+    if (next !== button) {
+      button?.removeEventListener("click", onCommand);
+      button = next;
+      button?.addEventListener("click", onCommand);
+    }
+    return button;
+  }
+  mount();
 
   async function refresh(): Promise<void> {
+    if (disposed) return;
+    mount();
     const refreshKey = deps.getRefreshKey?.(event.reader.itemID);
     if (refreshKey) {
       return availabilityCoordinator.requestReaderRefresh(
@@ -101,14 +120,13 @@ export function mountReaderToolbarButton(
   }
 
   async function refreshCurrentAvailability(): Promise<void> {
-    const currentButton = ensureButton(event.doc, deps, (...nodes) => {
-      event.append(...nodes);
-    });
+    const currentButton = mount();
     if (!currentButton) {
       return;
     }
 
     currentActionState = await deps.getActionState(event.reader.itemID);
+    if (disposed || currentButton !== button) return;
     applyButtonState(currentButton, {
       disabled: !currentActionState.primary.canExecute,
       tooltipText: (deps.getActionTooltipText || buildActionTooltip)(
@@ -121,6 +139,8 @@ export function mountReaderToolbarButton(
   return {
     refresh,
     dispose: () => {
+      disposed = true;
+      button?.removeEventListener("click", onCommand);
       const currentButton = event.doc.getElementById(
         BUTTON_ID,
       ) as HTMLButtonElement | null;
@@ -141,9 +161,17 @@ export function registerReaderToolbarButton(
     if (!handle) {
       handle = mountReaderToolbarButton(event, deps);
       handles.set(event.doc, handle);
+      event.doc.defaultView?.addEventListener(
+        "unload",
+        () => {
+          handle?.dispose();
+          handles.delete(event.doc);
+        },
+        { once: true },
+      );
     }
 
-    void handle.refresh();
+    void handle.refresh().catch(reportCopyError);
   };
 
   readerAPI.registerEventListener("renderToolbar", render, deps.pluginID);
@@ -156,7 +184,7 @@ export function registerReaderToolbarButton(
 
     const handle = handles.get(doc);
     if (handle) {
-      void handle.refresh();
+      void handle.refresh().catch(reportCopyError);
       continue;
     }
 
@@ -175,7 +203,15 @@ export function registerReaderToolbarButton(
       deps,
     );
     handles.set(doc, mounted);
-    void mounted.refresh();
+    doc.defaultView?.addEventListener(
+      "unload",
+      () => {
+        mounted.dispose();
+        handles.delete(doc);
+      },
+      { once: true },
+    );
+    void mounted.refresh().catch(reportCopyError);
   }
 
   return () => {
@@ -183,6 +219,7 @@ export function registerReaderToolbarButton(
     for (const handle of handles.values()) {
       handle.dispose();
     }
+    handles.clear();
   };
 }
 

@@ -1,3 +1,4 @@
+import { notifyCopyResult } from "./notifier";
 import { copyFromSelection } from "./copyCommands";
 import type { CopyActionState } from "./interaction/actions/copyActionTypes";
 import { shouldHandleConfiguredShortcut } from "./shortcutGuard";
@@ -17,7 +18,9 @@ const DEFAULT_SELECTION_SHORTCUT = parseShortcut("Ctrl+C");
 
 const DEFAULT_DEPS: SelectionHookDeps = {
   getParsedShortcut: () => DEFAULT_SELECTION_SHORTCUT,
-  isLibraryContext: () => !isActiveReaderTabSelected(),
+  isLibraryContext: (event) =>
+    !isActiveReaderTabSelected() &&
+    Boolean((event.target as Element | null)?.closest?.("#zotero-items-tree")),
   hasSelectedItems: () => {
     const pane = Zotero.getActiveZoteroPane();
     return ((pane?.getSelectedItems?.() || []) as Zotero.Item[]).length > 0;
@@ -58,12 +61,18 @@ export async function handleSelectionCopyShortcut(
     return false;
   }
 
+  event.preventDefault();
   const state = await finalDeps.getActionState();
   if (!state.primary.canExecute) {
-    return false;
+    notifyCopyResult({
+      ok: false,
+      format: "none",
+      count: 0,
+      messageKey: state.primary.reasonKey || "copy-no-files",
+    });
+    return true;
   }
 
-  event.preventDefault();
   await state.primary.run();
   return true;
 }
@@ -73,7 +82,7 @@ export function registerSelectionShortcutHandler(
   deps: Partial<SelectionHookDeps> = {},
 ): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    void handleSelectionCopyShortcut(event, deps);
+    void handleSelectionCopyShortcut(event, deps).catch(reportCopyError);
   };
 
   win.addEventListener("keydown", onKeyDown, true);
@@ -112,4 +121,14 @@ function isEditableNode(target: EventTarget | null): boolean {
   }
 
   return false;
+}
+
+export function reportCopyError(error: unknown): void {
+  Zotero.logError(error instanceof Error ? error : new Error(String(error)));
+  notifyCopyResult({
+    ok: false,
+    format: "none",
+    count: 0,
+    messageKey: "copy-clipboard-write-failed",
+  });
 }

@@ -1,7 +1,6 @@
-import {
-  executeCopyFromSelection,
-  executeCopyFromReaderItem,
-} from "./execution/copyActions";
+import { copyItems } from "./modules/copy/copyCommands";
+import { notifyCopyResult } from "./modules/copy/notifier";
+import { executeCopyFromReaderItem } from "./execution/copyActions";
 import { initToolbarIcon } from "./modules/copy/copyUi";
 import {
   resolveAttachmentFromReader,
@@ -65,8 +64,16 @@ const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
   getAllowedTypes: () => runtimeSettings.getSnapshot().allowedTypes,
   resolveFromItems: (items, mode, allowedTypes) =>
     resolveAttachmentsFromItems(items, mode, allowedTypes),
-  executeCopy: async () =>
-    executeCopyFromSelection(runtimeSettings.getSnapshot()),
+  executeCopy: async (items) => {
+    const settings = runtimeSettings.getSnapshot();
+    const result = await copyItems(
+      items,
+      settings.multiAttachmentMode,
+      settings.allowedTypes,
+    );
+    notifyCopyResult(result);
+    return result;
+  },
 };
 
 const DEFAULT_READER_TOOLBAR_COPY_BUTTON_DEPS: ReaderToolbarCopyButtonDeps = {

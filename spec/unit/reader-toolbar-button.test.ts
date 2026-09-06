@@ -224,6 +224,7 @@ test("mountReaderToolbarButton click uses the current reader item id", async () 
   await handle.refresh();
   doc.button.dispatch("click");
 
+  await Promise.resolve();
   assert.equal(clickedItemID, 2048);
 });
 
@@ -289,6 +290,7 @@ test("mountReaderToolbarButton runs the copy command only once for a single tool
   doc.button.dispatch("command");
   doc.button.dispatch("click");
 
+  await Promise.resolve();
   assert.equal(calls, 1);
 });
 

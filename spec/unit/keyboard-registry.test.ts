@@ -65,7 +65,7 @@ test("keyboard registry skips reader handler when library handler returns true",
       registeredCallback = callback;
     },
     unregister: () => {},
-    onLibraryShortcut: async () => {
+    onLibraryShortcut: () => {
       calls.push("library");
       return true;
     },

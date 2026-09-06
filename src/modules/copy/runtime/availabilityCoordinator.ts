@@ -105,6 +105,8 @@ async function runRefresh(
 ): Promise<void> {
   state.activeKey = key;
   state.forceNextRefresh = false;
+  let failure: unknown;
+  let failed = false;
   let pending: PendingRefresh | null | undefined;
 
   try {
@@ -113,7 +115,8 @@ async function runRefresh(
     completion?.resolve();
   } catch (error) {
     completion?.reject(error);
-    throw error;
+    failed = true;
+    failure = error;
   } finally {
     state.activeKey = undefined;
     state.inFlight = null;
@@ -122,16 +125,20 @@ async function runRefresh(
   }
 
   if (!pending) {
+    if (failed) throw failure;
     return;
   }
 
   if (!state.forceNextRefresh && state.lastCompletedKey === pending.key) {
     pending.resolve();
+    if (failed) throw failure;
     return;
   }
 
   const nextRefresh = runRefresh(state, pending.key, pending.refresh, pending);
   state.inFlight = nextRefresh;
+  void nextRefresh.catch(() => {});
+  if (failed) throw failure;
 }
 
 function buildPendingRefresh(
