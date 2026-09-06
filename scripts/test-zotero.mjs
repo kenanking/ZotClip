@@ -1,5 +1,12 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { setTimeout, clearTimeout } from "node:timers";
+import { spawn, spawnSync } from "node:child_process";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 import console from "node:console";
@@ -42,13 +49,42 @@ console.log(
   `Testing Zotero ${version}; scaffold creates a fresh isolated profile and database.`,
 );
 if (!process.argv.includes("--download-only")) {
-  run("npm", ["run", "test"], {
-    timeout: 300_000,
+  const diagnostics = resolve(".scaffold/validation");
+  mkdirSync(diagnostics, { recursive: true });
+  run("npm", ["run", "build"]);
+  const xpi = resolve(diagnostics, `zotclip-${version}.xpi`);
+  copyFileSync(resolve(".scaffold/build/zot-clip.xpi"), xpi);
+  const child = spawn("npm", ["run", "test"], {
+    detached: true,
     env: {
       ...process.env,
       ZOTERO_PLUGIN_ZOTERO_BIN_PATH: binary,
       ZOTCLIP_TEST_HEADLESS: "1",
       ZOTCLIP_TEST_VERSION: version,
+      ZOTCLIP_TEST_XPI: xpi,
     },
+    stdio: ["ignore", "pipe", "pipe"],
   });
+  let output = "";
+  for (const stream of [child.stdout, child.stderr])
+    stream.on("data", (chunk) => {
+      output += String(chunk);
+      process.stdout.write(chunk);
+    });
+  const timer = setTimeout(() => {
+    output += "\nIntegration test timed out\n";
+    process.kill(-child.pid, "SIGKILL");
+  }, 300_000);
+  const code = await new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", resolve);
+  }).finally(() => clearTimeout(timer));
+  writeFileSync(resolve(diagnostics, `zotero-${version}.log`), output);
+  if (
+    code !== 0 ||
+    !/Test run completed - [1-9]\d* passed/.test(output) ||
+    /\d+ failed/.test(output)
+  ) {
+    throw new Error(`Zotero ${version} did not complete a passing test run`);
+  }
 }

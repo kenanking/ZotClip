@@ -33,7 +33,7 @@ export default defineConfig({
           __env__: `"${process.env.NODE_ENV}"`,
         },
         bundle: true,
-        target: "firefox115",
+        target: "firefox140",
         minify: true,
         treeShaking: true,
         outfile: `.scaffold/build/addon/content/scripts/${pkg.config.addonRef}.js`,
@@ -46,6 +46,9 @@ export default defineConfig({
     prefs: {
       "app.update.auto": false,
       "app.update.enabled": false,
+      "extensions.zotero.zotclip.testXpi": process.env.ZOTCLIP_TEST_XPI || "",
+      "extensions.zotero.zotclip.testVersion":
+        process.env.ZOTCLIP_TEST_VERSION || "",
     },
     waitForPlugin: `() => Boolean(Zotero.${pkg.config.addonInstance})`,
   },

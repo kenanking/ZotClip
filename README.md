@@ -4,18 +4,19 @@
 
 # ZotClip
 
-[![zotero target version](https://img.shields.io/badge/Zotero-8%20%7C%209-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
+[![zotero target version](https://img.shields.io/badge/Zotero-8%20%7C%209%20%7C%2010-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
 [![Latest release](https://img.shields.io/github/v/release/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/releases)
 [![License](https://img.shields.io/github/license/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/blob/main/LICENSE)
 
-ZotClip is a plugin for Zotero 8 and 9 with two parallel feature areas:
+ZotClip is a plugin for Zotero 8, 9, and 10 with two parallel feature areas:
 
 - **Attachment clipboard copy** — from the library or reader, copy attachment
   files to the system clipboard. Target apps that accept file pastes receive
-  files; otherwise ZotClip falls back to absolute paths as plain text.
+  files. If no file clipboard backend succeeds, ZotClip copies absolute paths
+  as plain text. ZotClip cannot detect whether the eventual paste target accepts files.
 - **AI tagging** — generate tags for selected library items using an
   OpenAI-compatible chat API. Built-in providers include DeepSeek, OpenRouter,
-  and Ollama, plus a custom URL for other endpoints. Keys and prompts are
+  Ollama, and LM Studio, plus a custom URL for other endpoints. Keys and prompts are
   configured in preferences.
 
 ## Installation
@@ -47,7 +48,14 @@ network access to your chosen API (or a local Ollama instance).
 ### Attachment clipboard copy
 
 In the library view, select an attachment or a parent item and press `Ctrl+C`,
-or use `Copy Attachment File(s)` from the item context menu.
+or use `Copy Attachment File(s)` from the item context menu. The shortcut is
+claimed only in the item list with a selection; unavailable attachments produce
+a notification. Search fields, editable text, and the collections tree keep their
+normal copy behavior.
+
+Copies with duplicate filenames use private temporary files retained for the
+current Zotero session, including plugin reloads. Old session files are removed
+at the next Zotero startup. Paste while Zotero is still running.
 
 In the reader, ZotClip keeps the default `Ctrl+C` behavior for text selection.
 Use the reader toolbar button to copy the current attachment. If you want a
@@ -58,7 +66,11 @@ reader-specific shortcut, configure one in `Edit -> Preferences -> ZotClip`.
 In the library, select one or more regular items and choose **Generate AI Tags**
 from the item context menu (when AI tagging is enabled in preferences). You can
 also opt into automatic tagging for newly added items and optional stripping of
-Connector-import tags; see preferences for details.
+Connector-import tags; see preferences for details. A running manual batch has
+a cancel button. Turning off AI tagging also cancels queued and active tasks.
+Completed changes are kept; cancelled requests cannot add tags. In Zotero 10,
+manual tag changes support the normal Undo/Redo commands (one item per step).
+Background tagging does not add undo steps. Read-only and deleted items are skipped.
 
 ## Settings (`Edit -> Preferences -> ZotClip`)
 
@@ -70,6 +82,13 @@ diagnostics.
 (where applicable), optional connection test, and a prompt template with
 `{title}`, `{abstract}`, and `{language}` placeholders.
 
+API keys are saved explicitly in Zotero's login manager, separated by provider
+and endpoint origin. The input is never prefilled with a saved key. Use **Save**
+or **Delete** and check the status. Existing preference keys are migrated only
+after successful storage verification; failed migrations retain the old value
+for retry. Changing an endpoint to a different origin requires a key for that
+origin. Prompts and other non-secret settings remain in preferences.
+
 ## Development
 
 Install dependencies with `npm install`, then run `npm run start` for the local
@@ -80,5 +99,18 @@ Before opening a PR, run:
 - `npm run test:unit`
 - `npm run build`
 - `npm run lint:check`
+
+Pinned Linux integration runs (fresh isolated profiles, production XPI installation):
+
+```sh
+node scripts/test-zotero.mjs 8.0.4
+node scripts/test-zotero.mjs 9.0.6
+node scripts/test-zotero.mjs 10.0.1
+node --import tsx scripts/test-clipboard-x11.ts
+```
+
+The X11 test creates a separate Xvfb display and takes about a minute. Integration
+logs are written to `.scaffold/validation/`. TypeScript remains pinned to 6.0.3.
+See [`docs/validation.md`](docs/validation.md) for coverage and platform limits.
 
 Manual verification notes live in [`docs/manual-testing.md`](docs/manual-testing.md).

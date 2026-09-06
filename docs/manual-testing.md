@@ -2,7 +2,7 @@
 
 ## Test Environment
 
-- Zotero 8 or 9 is installed.
+- Zotero 8, 9, or 10 is installed; test all supported major versions before release.
 - At least one parent item contains multiple allowed attachments.
 - At least one reader-openable attachment is available.
 - Platform packages are installed before testing:
@@ -30,8 +30,6 @@
 - [ ] Confirm the default text copy behavior is unchanged.
 - [ ] Click the ZotClip toolbar button and confirm the current attachment is
       copied.
-- [ ] Open `Tools` and trigger `Copy Current Reader Path`.
-- [ ] Confirm the current attachment path is copied as plain text and the notification does not describe it as a fallback.
 - [ ] Open a reader state where the current attachment cannot be copied and confirm the button stays visible but disabled with an explanatory tooltip.
 - [ ] Set a reader shortcut such as `Ctrl+Shift+C` in `Edit -> Preferences -> ZotClip`.
 - [ ] Press the configured shortcut and confirm the current attachment is copied.
@@ -78,10 +76,10 @@
 
 ## Fallback Behavior
 
-- [ ] Trigger copy in a target that does not accept file clipboard data.
+- [ ] Make the native file backend unavailable (for example, use an isolated Linux environment without GTK4 and wl-copy).
 - [ ] Confirm ZotClip falls back to copying attachment paths as plain text.
 - [ ] Confirm the notification explains that a path-text fallback was used.
-- [ ] Trigger explicit `Copy Current Reader Path` and confirm the notification wording differs from the fallback-path message.
+- [ ] Do not expect automatic fallback based on the destination application: ZotClip cannot observe whether a later paste is accepted.
 
 ## Platform Smoke Tests
 
@@ -91,3 +89,37 @@
 - [ ] macOS: paste a single copied attachment into Finder and one file-aware chat or browser target.
 - [ ] macOS: paste multiple copied attachments into Finder and confirm every file is preserved.
 - [ ] macOS: force native file copy failure if possible and confirm ZotClip falls back to plain-text paths with the fallback notification.
+
+## Shortcut and Toolbar Races
+
+- [ ] Copy from the item list and immediately change selection; confirm the original selection is copied.
+- [ ] Repeat while changing attachment settings; the original operation keeps its settings.
+- [ ] Select an item with no allowed local attachment and copy: show a failure notification without also running Zotero's native item copy.
+- [ ] Copy text in quick search, item metadata, notes, and the collections tree; native behavior stays intact.
+- [ ] Test configured reader shortcuts in both reader tabs and standalone windows.
+- [ ] Hold a shortcut down and use an IME: repeats and composing events must not trigger multiple copies.
+- [ ] Reload/disable/re-enable the plugin with main and reader windows open; buttons appear once and commands run once.
+- [ ] Open and close readers rapidly during attachment lookup; no stale button or error appears after closing.
+
+## Clipboard Lifetime
+
+- [ ] Copy duplicate names including `paper.pdf`, `Paper.pdf`, and `paper_1.pdf`; every pasted file has a distinct name and correct contents.
+- [ ] Paste after 60 seconds and again after several minutes while Zotero stays open.
+- [ ] Reload the plugin and confirm temporary duplicate files are still present; on X11, copy again to create a new clipboard owner.
+- [ ] Quit and restart Zotero; previous-session temporary directories are removed.
+- [ ] On X11, replace the clipboard in another application; the ZotClip helper exits.
+- [ ] On X11, disable the plugin while it owns the clipboard; its helper exits.
+
+## AI Reliability and Credentials
+
+- [ ] Start manual tagging, cancel while a request is pending, and confirm no new tags appear from that response.
+- [ ] Turn off AI tagging during a batch; active requests and queued tasks stop.
+- [ ] Run manual and automatic tagging for the same item; only one concurrent request is sent.
+- [ ] Delete an item or lose group write permission during a request; its response must not change tags.
+- [ ] Fail one item in a multi-item batch; later items still run.
+- [ ] Zotero 10: undo/redo a manual tag update; automatic tagging does not add undo steps.
+- [ ] Save, replace, and delete a synthetic key. Reopen preferences: the input is empty and saved status is correct.
+- [ ] Switch providers and endpoint origins; one origin's saved key is not used for another.
+- [ ] Migrate a synthetic old key preference; clear it only after login-manager verification. Simulate unavailable storage and confirm the preference remains for retry.
+- [ ] Start a connection/model-list request, then switch provider, edit endpoint, close preferences, or disable the plugin. No stale response updates the UI.
+- [ ] Inspect failures using synthetic data: no API key, request body, abstract, or full endpoint URL appears in plugin diagnostics.

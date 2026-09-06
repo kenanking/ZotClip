@@ -68,12 +68,17 @@ jobs:
         uses: zotero-plugin-dev/workflows/setup-js@main
       - run: npm run test:unit
       - run: node scripts/test-zotero.mjs ${{ matrix.zotero }}
+      - name: Install X11 clipboard test dependencies
+        if: matrix.zotero == '10.0.1'
+        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-gtk-4.0 xvfb xauth
+      - name: Check delayed X11 clipboard ownership
+        if: matrix.zotero == '10.0.1'
+        run: node --import tsx scripts/test-clipboard-x11.ts 2>&1 | tee .scaffold/validation/clipboard-x11.log
       - name: Upload test diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: zotero-${{ matrix.zotero }}-logs
           path: |
-            .scaffold/test/logs
-            .scaffold/test/profile/prefs.js
+            .scaffold/validation/*.log
           if-no-files-found: ignore
