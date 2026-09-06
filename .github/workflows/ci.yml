@@ -50,6 +50,10 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zotero: ["8.0.4", "9.0.6", "10.0.1"]
     needs:
       - build
     steps:
@@ -63,4 +67,13 @@ jobs:
       - name: Setup JS
         uses: zotero-plugin-dev/workflows/setup-js@main
       - run: npm run test:unit
-      - run: npm run test
+      - run: node scripts/test-zotero.mjs ${{ matrix.zotero }}
+      - name: Upload test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zotero-${{ matrix.zotero }}-logs
+          path: |
+            .scaffold/test/logs
+            .scaffold/test/profile/prefs.js
+          if-no-files-found: ignore

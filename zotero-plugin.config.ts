@@ -42,6 +42,11 @@ export default defineConfig({
   },
 
   test: {
+    headless: process.env.ZOTCLIP_TEST_HEADLESS === "1",
+    prefs: {
+      "app.update.auto": false,
+      "app.update.enabled": false,
+    },
     waitForPlugin: `() => Boolean(Zotero.${pkg.config.addonInstance})`,
   },
 
