@@ -1,8 +1,9 @@
 # Zotero 8–10 validation
 
 Validated on 2026-09-06 on Linux x64, Node 22.23.1, TypeScript 6.0.3.
-Plugin version remains 0.5.0; no release tag or release was created. The existing
-`v0.5.0` tag is unchanged and does not include these unreleased changes.
+This validation covers the changes prepared for v0.6.0. The initial runs used
+the development version 0.5.0; release packages take their version from
+`package.json`. The existing `v0.5.0` tag remains unchanged.
 
 ## Automated checks
 
