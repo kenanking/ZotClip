@@ -72,7 +72,7 @@ export async function executeAutoTagSelection(): Promise<void> {
       });
 
       try {
-        const deps = createZoteroAutoTagDeps(() => {}, {
+        const deps = await createZoteroAutoTagDeps(() => {}, {
           signal: group.signal,
           itemID: item.id,
           manual: true,

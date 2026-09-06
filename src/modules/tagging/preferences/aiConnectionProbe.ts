@@ -9,8 +9,6 @@ export const PROBE_SENTINEL = {
   NEEDS_MODEL: "__needs_model__",
 } as const;
 
-const RESPONSE_SNIPPET_MAX = 200;
-
 export function buildProbeRequestBody(
   model: string,
   options: { includeJsonObjectResponseFormat: boolean },
@@ -29,10 +27,9 @@ export function interpretProbeResponse(
 ): { ok: true } | { ok: false; message: string } {
   const httpOk = status >= 200 && status < 300;
   if (!httpOk) {
-    const snippet = responseText.slice(0, RESPONSE_SNIPPET_MAX).trim();
     return {
       ok: false,
-      message: snippet || `HTTP ${status}`,
+      message: `HTTP ${status}`,
     };
   }
 
@@ -106,8 +103,7 @@ export async function runAiConnectionProbe(args: {
       timeout: PROBE_TIMEOUT_MS,
     });
     return interpretProbeResponse(response, status);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, message };
+  } catch {
+    return { ok: false, message: "AI connection failed" };
   }
 }

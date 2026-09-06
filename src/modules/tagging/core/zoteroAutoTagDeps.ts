@@ -1,10 +1,10 @@
+import { getAiApiKeyForProvider } from "../credentials/zoteroCredentials";
 import type { AutoTagProgress, AutoTagServiceDeps } from "./types";
 import {
   fillAiPromptTemplate,
   getAiPromptLanguageLabel,
 } from "./promptTemplate";
 import {
-  getAiApiKeyForProvider,
   getAiPrompt,
   getAiProvider,
   getEffectiveAiModel,
@@ -47,16 +47,17 @@ export async function zoteroAutoTagHttpRequest(
   }
 }
 
-export function createZoteroAutoTagDeps(
+export async function createZoteroAutoTagDeps(
   onProgress: (update: AutoTagProgress) => void,
   options: { signal?: AbortSignal; itemID?: number; manual?: boolean } = {},
-): AutoTagServiceDeps {
+): Promise<AutoTagServiceDeps> {
   const providerId = getAiProvider();
   const policy = resolveProviderRuntimePolicy({ providerId });
-  const apiKey = getAiApiKeyForProvider(providerId);
   const model = getEffectiveAiModel();
   const template = getAiPrompt();
   const language = getAiPromptLanguageLabel();
+  const apiKey = await getAiApiKeyForProvider(providerId, policy.endpoint);
+  options.signal?.throwIfAborted();
   return {
     signal: options.signal,
     canWrite:

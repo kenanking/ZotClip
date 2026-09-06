@@ -1,3 +1,4 @@
+import { zoteroAutoTagHttpRequest } from "../core/zoteroAutoTagDeps";
 import {
   getAiProvider,
   getLmStudioModelForUi,
@@ -30,6 +31,8 @@ export function createDynamicModelPopupDisposer(
   if (!popup) return () => {};
 
   let inFlight = false;
+  let disposed = false;
+  let controller: AbortController | undefined;
   const handler = async () => {
     const providerId = getAiProvider();
     if ((providerId !== "ollama" && providerId !== "lmstudio") || inFlight)
@@ -38,17 +41,30 @@ export function createDynamicModelPopupDisposer(
     if (!baseUrl) return;
 
     inFlight = true;
+    controller = new AbortController();
+    const signal = controller.signal;
     try {
       const httpFetcher = (url: string) =>
-        Zotero.HTTP.request("GET", url, { timeout: 5000 }).then((r: any) => ({
-          response: r.responseText ?? "",
-        }));
+        zoteroAutoTagHttpRequest(url, {
+          method: "GET",
+          headers: {},
+          body: "",
+          timeout: 5000,
+          signal,
+        });
 
       const models =
         providerId === "lmstudio"
           ? await fetchLmStudioModels(baseUrl, httpFetcher)
           : await fetchOllamaModels(baseUrl, httpFetcher);
 
+      if (
+        disposed ||
+        signal.aborted ||
+        getAiProvider() !== providerId ||
+        endpointInput.value.trim() !== baseUrl
+      )
+        return;
       while (popup.firstChild) popup.removeChild(popup.firstChild);
       const doc = modelMenulist.ownerDocument!;
       for (const model of models) {
@@ -75,6 +91,7 @@ export function createDynamicModelPopupDisposer(
         setPref(lastModelPref, target);
       }
     } catch {
+      if (disposed || signal.aborted) return;
       while (popup.firstChild) popup.removeChild(popup.firstChild);
       showUnavailableToast(providerId);
     } finally {
@@ -82,8 +99,18 @@ export function createDynamicModelPopupDisposer(
     }
   };
 
+  const cancel = () => {
+    controller?.abort();
+  };
+  const doc = modelMenulist.ownerDocument!;
+  doc.addEventListener("command", cancel, true);
+  endpointInput.addEventListener("change", cancel);
   popup.addEventListener("popupshowing", handler as any);
   return () => {
+    disposed = true;
+    cancel();
+    doc.removeEventListener("command", cancel, true);
+    endpointInput.removeEventListener("change", cancel);
     popup.removeEventListener("popupshowing", handler as any);
   };
 }

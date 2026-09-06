@@ -1,3 +1,4 @@
+import { migrateAiCredentials } from "./modules/tagging/credentials/zoteroCredentials";
 import { cancelAllAiTasks } from "./modules/tagging/core/taskManager";
 import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
 import { copyItems } from "./modules/copy/copyCommands";
@@ -134,6 +135,15 @@ async function onStartup() {
       }),
   }).start();
   initLocale();
+  try {
+    await migrateAiCredentials();
+  } catch {
+    Zotero.logError(
+      new Error(
+        "ZotClip credential migration failed; retained original preferences",
+      ),
+    );
+  }
   await initializeClipboardSession();
   try {
     await initToolbarIcon();
@@ -183,6 +193,7 @@ async function onStartup() {
   );
   syncMainToolbarButtons();
   syncReaderToolbarButton();
+  addon.data.initialized = true;
 }
 
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
@@ -194,6 +205,7 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  addon.data.initialized = false;
   cancelAllAiTasks();
   if (aiEnabledObserver) Zotero.Prefs.unregisterObserver(aiEnabledObserver);
   autoTagItemAddHandle?.dispose();

@@ -18,11 +18,6 @@ declare namespace _ZoteroTypes {
       "autoTaggingEnabled": boolean;
       "aiProvider": string;
       "aiApiEndpoint": string;
-      "aiApiKeyDeepseek": string;
-      "aiApiKeyOpenrouter": string;
-      "aiApiKeyOllama": string;
-      "aiApiKeyLmstudio": string;
-      "aiApiKeyCustom": string;
       "aiEndpointOllama": string;
       "aiEndpointLmstudio": string;
       "aiModel": string;

@@ -30,7 +30,7 @@ async function autoTagNewLibraryItem(
   group: ReturnType<typeof createAiTaskGroup>,
 ): Promise<void> {
   const title = (item.getField("title") as string) || "";
-  const deps = createZoteroAutoTagDeps(() => {}, {
+  const deps = await createZoteroAutoTagDeps(() => {}, {
     signal: group.signal,
     itemID: item.id,
   });

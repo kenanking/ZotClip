@@ -224,37 +224,6 @@ export function setProviderEndpointFromUi(
   }
 }
 
-const PROVIDER_API_KEY_PREFS: Record<
-  string,
-  | "aiApiKeyDeepseek"
-  | "aiApiKeyOpenrouter"
-  | "aiApiKeyOllama"
-  | "aiApiKeyLmstudio"
-  | "aiApiKeyCustom"
-> = {
-  deepseek: "aiApiKeyDeepseek",
-  openrouter: "aiApiKeyOpenrouter",
-  ollama: "aiApiKeyOllama",
-  lmstudio: "aiApiKeyLmstudio",
-  custom: "aiApiKeyCustom",
-};
-
-export function getAiApiKeyForProvider(providerId: string): string {
-  const key = PROVIDER_API_KEY_PREFS[providerId];
-  if (!key) return "";
-  return (getPref(key) || "").trim();
-}
-
-export function setAiApiKeyForProvider(
-  providerId: string,
-  value: string,
-): void {
-  const key = PROVIDER_API_KEY_PREFS[providerId];
-  if (key) {
-    setPref(key, value);
-  }
-}
-
 export function getAiModel(): string {
   return (getPref("aiModel") || "").trim();
 }
