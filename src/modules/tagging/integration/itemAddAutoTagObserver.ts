@@ -1,3 +1,4 @@
+import { refreshItemTags } from "./refreshItemTags";
 import {
   getAutoTaggingEnabled,
   getAutoTagOnAdd,
@@ -12,7 +13,7 @@ import { isItemEligibleForAutoTagOnAdd } from "./itemAddAutoTagEligibility";
 
 const ITEM_ADD_DELAY_MS = 500;
 
-async function stripConnectorTags(item: Zotero.Item): Promise<void> {
+async function stripConnectorTags(item: Zotero.Item): Promise<boolean> {
   const tags = item.getTags();
   let changed = false;
   for (const tag of tags) {
@@ -23,7 +24,9 @@ async function stripConnectorTags(item: Zotero.Item): Promise<void> {
   }
   if (changed) {
     await item.saveTx();
+    await refreshItemTags(item.id);
   }
+  return changed;
 }
 
 async function autoTagNewLibraryItem(
@@ -65,6 +68,7 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
           if (disposed) {
             return;
           }
+          let tagsRemoved = false;
           try {
             const item = await Zotero.Items.getAsync(id);
             if (
@@ -78,7 +82,7 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
             }
 
             if (getStripConnectorTags()) {
-              await stripConnectorTags(item);
+              tagsRemoved = await stripConnectorTags(item);
             }
 
             if (getAutoTagOnAdd() && getAutoTaggingEnabled()) {
@@ -91,6 +95,9 @@ export function registerAutoTagItemAddObserver(): { dispose(): void } {
             }
           } catch {
             if (!disposed && !group.signal.aborted) failureCount++;
+          } finally {
+            // Reconcile again after AI saves/queued Connector notifications have settled.
+            if (tagsRemoved && !disposed) await refreshItemTags(id);
           }
         }
       }

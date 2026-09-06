@@ -150,3 +150,8 @@
 
 - [ ] Reopen settings with a saved key: the placeholder indicates it is saved and can be replaced; the actual input value remains empty.
 - [ ] Delete the saved key or switch provider: the placeholder reflects the new state. Storage errors appear below the input, without displaying raw localization IDs or credentials.
+
+### Connector tag panel refresh
+
+- [ ] Import an article with automatic keywords while tag stripping is enabled. Without changing the selected item, verify the tag count and visible rows agree after cleanup and AI completion; removed automatic tags must not remain as stale rows.
+- [ ] Repeat with AI tagging disabled or a request failure: automatic tag cleanup still refreshes the selected item's tag panel. Other items and manual tags remain unchanged.
