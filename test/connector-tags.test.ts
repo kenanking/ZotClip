@@ -86,11 +86,24 @@ describe("Connector tag feedback", function () {
         false,
         "Original automatic keyword removed",
       );
-      await Zotero.Promise.delay(100);
-      const afterAI = item.getTags();
-      const rows = [...box.querySelectorAll(".row")].map((row: any) =>
-        row.getAttribute("tagName"),
-      );
+      let afterAI = item.getTags();
+      let rows: string[] = [];
+      for (let i = 0; i < 300; i++) {
+        afterAI = item.getTags();
+        rows = [...box.querySelectorAll(".row")].map((row: any) =>
+          row.getAttribute("tagName"),
+        );
+        if (
+          rows.length === afterAI.length &&
+          [...rows].sort().join("\0") ===
+            afterAI
+              .map((tag) => tag.tag)
+              .sort()
+              .join("\0")
+        )
+          break;
+        await Zotero.Promise.delay(20);
+      }
       const uiAudit = { count: box.count, rows, tags: afterAI };
       const auditDir = PathUtils.join(
         PathUtils.parent(PathUtils.parent(PathUtils.profileDir)),
