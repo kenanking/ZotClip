@@ -57,13 +57,17 @@ describe("Shared notification cards", function () {
     assert.ok(notification);
     assert.equal(task.running, true);
     assert.equal(cancelled, 0);
-    await Zotero.Promise.delay(150);
     const taskElement = doc.getElementById("zotclip-ai-progress")!;
     assert.equal(taskElement.className, notification.className);
-    assert.isAtMost(
-      taskElement.getBoundingClientRect().bottom,
-      notification.getBoundingClientRect().top,
-    );
+    let stackGap = Number.POSITIVE_INFINITY;
+    for (let n = 0; n < 100; n++) {
+      stackGap =
+        notification.getBoundingClientRect().top -
+        taskElement.getBoundingClientRect().bottom;
+      if (Math.abs(stackGap - 10) <= 0.5) break;
+      await Zotero.Promise.delay(20);
+    }
+    assert.closeTo(stackGap, 10, 0.5);
     assert.equal(
       win.getComputedStyle(taskElement).borderRadius,
       win.getComputedStyle(notification).borderRadius,
