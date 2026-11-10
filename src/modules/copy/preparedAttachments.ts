@@ -1,5 +1,6 @@
 import { mapWithConcurrencyLimit } from "../../utils/concurrency";
 import type { ResolvedAttachment } from "./types";
+import { protectWindowsClipboardDirectory } from "./windowsTempPermissions";
 
 const DUPLICATE_COPY_CONCURRENCY = 4;
 let sessionDirectory: Promise<string> | undefined;
@@ -13,6 +14,7 @@ export function initializeClipboardSession(): Promise<string> {
     ).process.getTime();
     const name = `session-${started}`;
     await IOUtils.makeDirectory(root, { permissions: 0o700 });
+    if (Zotero.isWin) await protectWindowsClipboardDirectory(root);
     for (const child of await IOUtils.getChildren(root)) {
       if (
         /^session-\d+$/.test(PathUtils.filename(child)) &&
@@ -48,8 +50,10 @@ const DEFAULT_DEPS: PreparedAttachmentDeps = {
       0o700,
     ),
   removeTempDir: async (path) => IOUtils.remove(path, { recursive: true }),
-  copyFile: async (sourcePath, destinationPath) =>
-    IOUtils.copy(sourcePath, destinationPath),
+  copyFile: async (sourcePath, destinationPath) => {
+    await IOUtils.copy(sourcePath, destinationPath);
+    if (!Zotero.isWin) await IOUtils.setPermissions(destinationPath, 0o600);
+  },
   getBaseName: (path) => PathUtils.filename(path),
   joinPath: (...parts) => PathUtils.join(...parts),
 };

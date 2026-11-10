@@ -59,6 +59,9 @@ normal copy behavior.
 Copies with duplicate filenames use private temporary files retained for the
 current Zotero session, including plugin reloads. Old session files are removed
 at the next Zotero startup. Paste while Zotero is still running.
+On Windows, ZotClip restricts its cache directory to the current user, SYSTEM
+and administrators using the bundled Windows PowerShell at session initialization.
+Preparation stops if the cache cannot be secured.
 
 In the reader, ZotClip keeps the default `Ctrl+C` behavior for text selection.
 Use the reader toolbar button to copy the current attachment. If you want a

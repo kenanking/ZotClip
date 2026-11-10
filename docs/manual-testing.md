@@ -104,6 +104,8 @@
 ## Clipboard Lifetime
 
 - [ ] Copy duplicate names including `paper.pdf`, `Paper.pdf`, and `paper_1.pdf`; every pasted file has a distinct name and correct contents.
+- [ ] Windows: inspect actual ACLs on the ZotClip cache and a duplicate file. Only the current user, SYSTEM and administrators have access, even when the profile's parent grants access to other users. The parent ACL stays unchanged.
+- [ ] Linux/macOS: cache directories deny group/other access, and copied duplicate files use mode `0600`.
 - [ ] Paste after 60 seconds and again after several minutes while Zotero stays open.
 - [ ] Reload the plugin and confirm temporary duplicate files are still present; on X11, copy again to create a new clipboard owner.
 - [ ] Quit and restart Zotero; previous-session temporary directories are removed.
