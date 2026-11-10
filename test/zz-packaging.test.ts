@@ -50,7 +50,11 @@ describe("packaged installation", function () {
       const errors = Zotero.getErrors(true).filter((line) =>
         /zotclip|zot-clip/i.test(line),
       );
-      assert.equal(errors.length, 0, "Production startup has no plugin errors");
+      assert.equal(
+        errors.length,
+        0,
+        `Production startup has no plugin errors:\n${errors.join("\n")}`,
+      );
       assert.equal(
         Zotero[config.addonInstance]?.data.initialized,
         true,

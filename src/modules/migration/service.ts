@@ -73,7 +73,16 @@ async function assertSafeDestination(entry: FileEntry): Promise<string> {
   for (const part of [entry.category, ...entry.path.split("/")]) {
     path = PathUtils.join(path, part);
     const file = Zotero.File.pathToFile(path);
-    if (file.isSymlink()) throw new Error("migration-unsafe-path");
+    try {
+      if (file.isSymlink()) throw new Error("migration-unsafe-path");
+    } catch (error) {
+      // On Unix, isSymlink() throws for paths the import has yet to create.
+      if (
+        (error as { result?: number }).result !==
+        Components.results.NS_ERROR_FILE_NOT_FOUND
+      )
+        throw error;
+    }
   }
   if (
     (await IOUtils.exists(path)) &&

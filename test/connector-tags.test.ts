@@ -1,4 +1,5 @@
 import { config } from "../package.json";
+import { resolveProviderRuntimePolicy } from "../src/modules/tagging/core/providerAdapter";
 
 describe("Connector tag feedback", function () {
   it("refreshes saved tag rows when incremental removal leaves stale UI", async function () {
@@ -20,7 +21,12 @@ describe("Connector tag feedback", function () {
         Zotero.Prefs.set(prefNames[i], value, true),
       );
       Zotero.Prefs.set("automaticTags", true);
-      Zotero.HTTP.request = (async () => {
+      const endpoint = resolveProviderRuntimePolicy({
+        providerId: "ollama",
+      }).endpoint;
+      Zotero.HTTP.request = (async (method, url, options) => {
+        if (url !== endpoint)
+          return savedRequest.call(Zotero.HTTP, method, url, options);
         calls++;
         return {
           status: 200,
