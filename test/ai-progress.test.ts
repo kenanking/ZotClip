@@ -6,6 +6,7 @@ import {
   getTaskCard,
 } from "../src/ui/taskCard";
 import { executeAutoTagSelection } from "../src/modules/tagging/integration/manualAutoTagSelection";
+import { resolveProviderRuntimePolicy } from "../src/modules/tagging/core/providerAdapter";
 
 const labels = {
   title: "ZotClip · AI tags",
@@ -78,13 +79,27 @@ describe("AI task feedback", function () {
     assert.equal(getTaskCard(doc), undefined);
   });
 
-  it("dismisses successful results after six seconds", async function () {
-    this.timeout(10000);
+  it("schedules successful results to close after six seconds and removes them when due", function () {
     const doc = Zotero.getMainWindow().document;
+    const win = doc.defaultView!;
+    const setTimeout = win.setTimeout;
+    let dismiss: (() => void) | undefined;
     const panel = createTaskCard(doc, labels, () => {});
-    panel.finish("Done: 1 tagged");
-    await Zotero.Promise.delay(6200);
-    assert.equal(getTaskCard(doc), undefined);
+    try {
+      win.setTimeout = ((callback: () => void, delay: number) => {
+        assert.equal(delay, 6000);
+        dismiss = callback;
+        return setTimeout.call(win, callback, delay);
+      }) as typeof win.setTimeout;
+      panel.finish("Done: 1 tagged");
+      assert.equal(getTaskCard(doc), panel);
+      assert.isFunction(dismiss);
+      dismiss!();
+      assert.equal(getTaskCard(doc), undefined);
+    } finally {
+      win.setTimeout = setTimeout;
+      panel.dispose();
+    }
   });
 
   it("cancels and removes active feedback when disposed", function () {
@@ -129,8 +144,13 @@ describe("AI task feedback", function () {
     try {
       Zotero.Prefs.set(pref, "ollama", true);
       Zotero.Prefs.set(enabledPref, true, true);
+      const endpoint = resolveProviderRuntimePolicy({
+        providerId: "ollama",
+      }).endpoint;
       pane.getSelectedItems = () => [item];
-      Zotero.HTTP.request = (() => {
+      Zotero.HTTP.request = ((method, url, options) => {
+        if (url !== endpoint)
+          return savedHttp.call(Zotero.HTTP, method, url, options);
         calls++;
         return new Promise((resolve) => {
           release = resolve;
@@ -192,7 +212,9 @@ describe("AI task feedback", function () {
       await secondItem.saveTx({ skipSelect: true });
       pane.getSelectedItems = () => [item, secondItem!];
       calls = 0;
-      Zotero.HTTP.request = (async () => {
+      Zotero.HTTP.request = (async (method, url, options) => {
+        if (url !== endpoint)
+          return savedHttp.call(Zotero.HTTP, method, url, options);
         calls++;
         return {
           status: 200,
@@ -271,7 +293,12 @@ describe("AI task feedback", function () {
       Zotero.Prefs.set(prefs[0], "ollama", true);
       Zotero.Prefs.set(prefs[1], true, true);
       Zotero.Prefs.set(prefs[2], true, true);
-      Zotero.HTTP.request = (async () => {
+      const endpoint = resolveProviderRuntimePolicy({
+        providerId: "ollama",
+      }).endpoint;
+      Zotero.HTTP.request = (async (method, url, options) => {
+        if (url !== endpoint)
+          return savedRequest.call(Zotero.HTTP, method, url, options);
         calls++;
         if (calls <= 2) throw new Error("Synthetic request failure");
         return {

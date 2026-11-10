@@ -600,8 +600,20 @@ describe("configuration migration", function () {
       assert.equal(el("status").dataset.error, "true");
       assert.isTrue(el("preview").hidden);
       el<HTMLInputElement>("import-password").value = password;
-      el<HTMLButtonElement>("unlock-preview").click();
-      await idle();
+      let renderedPreviews = 0;
+      const observer = new preferences.MutationObserver((records) => {
+        renderedPreviews += records.filter(
+          (record) => record.addedNodes.length,
+        ).length;
+      });
+      observer.observe(el("rows"), { childList: true });
+      try {
+        el<HTMLButtonElement>("unlock-preview").click();
+        await idle();
+        assert.equal(renderedPreviews, 1, "Build the preview once per import");
+      } finally {
+        observer.disconnect();
+      }
       assert.isTrue(el("unlock").hidden);
       assert.equal(el<HTMLInputElement>("import-password").value, "");
       assert.equal(

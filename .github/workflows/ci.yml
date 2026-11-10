@@ -42,6 +42,8 @@ jobs:
         uses: zotero-plugin-dev/workflows/setup-js@main
       - name: Run Build
         run: npm run build
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
       - name: Upload build result
         uses: actions/upload-artifact@v7
         with:
@@ -66,8 +68,14 @@ jobs:
           key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
       - name: Setup JS
         uses: zotero-plugin-dev/workflows/setup-js@main
-      - run: npm run test:unit
+      - name: Download production build
+        uses: actions/download-artifact@v8
+        with:
+          name: build-result
+          path: .scaffold/production
       - run: node scripts/test-zotero.mjs ${{ matrix.zotero }}
+        env:
+          ZOTCLIP_TEST_XPI: .scaffold/production/zot-clip.xpi
       - name: Install X11 clipboard test dependencies
         if: matrix.zotero == '10.0.1'
         run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-gtk-4.0 xvfb xauth

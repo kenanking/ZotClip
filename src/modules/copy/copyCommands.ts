@@ -3,7 +3,7 @@ import {
   resolveAttachmentsFromItems,
 } from "./attachmentResolver";
 import { writeClipboard } from "./clipboardWriter";
-import { createCopyService, type CopyServiceDeps } from "./copyService";
+import { buildUnavailableResult } from "./copyAvailability";
 import { getActiveReaderItemID } from "./zoteroReaderAccess";
 import type { ClipboardSource } from "./clipboard/types";
 import type {
@@ -35,12 +35,10 @@ const DEFAULT_DEPS: CopyCommandDeps = {
     const pane = Zotero.getActiveZoteroPane();
     return (pane?.getSelectedItems?.() || []) as Zotero.Item[];
   },
-  getCurrentReaderItemID: () => getActiveReaderItemID(),
-  resolveFromItems: (items, mode, allowedTypes) =>
-    resolveAttachmentsFromItems(items, mode, allowedTypes),
-  resolveFromReader: (itemID, allowedTypes) =>
-    resolveAttachmentFromReader(itemID, allowedTypes),
-  writeClipboard: (files, source) => writeClipboard(files, source),
+  getCurrentReaderItemID: getActiveReaderItemID,
+  resolveFromItems: resolveAttachmentsFromItems,
+  resolveFromReader: resolveAttachmentFromReader,
+  writeClipboard,
 };
 
 export async function copyFromSelection(
@@ -48,14 +46,19 @@ export async function copyFromSelection(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  return createServiceFromCommandDeps(mode, allowedTypes, deps).copySelection();
+  const files = await deps.resolveFromItems(
+    deps.getSelectedItems(),
+    mode,
+    allowedTypes,
+  );
+  return deps.writeClipboard(files, "library");
 }
 
 export async function copyFromReader(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  return createServiceFromCommandDeps("all", allowedTypes, deps).copyReader();
+  return copyFromReaderItem(undefined, allowedTypes, deps);
 }
 
 export async function copyFromReaderItem(
@@ -63,38 +66,12 @@ export async function copyFromReaderItem(
   allowedTypes: string[],
   deps: CopyCommandDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
-  return createServiceFromCommandDeps("all", allowedTypes, deps).copyReader(
-    itemID,
-  );
-}
-
-function createServiceFromCommandDeps(
-  mode: MultiAttachmentMode,
-  allowedTypes: string[],
-  deps: CopyCommandDeps,
-) {
-  const serviceDeps: CopyServiceDeps = {
-    getSettings: () => ({
-      allowedTypes,
-      multiAttachmentMode: mode,
-    }),
-    getSelectedItems: () => deps.getSelectedItems(),
-    getCurrentReaderItemID: () => deps.getCurrentReaderItemID(),
-    resolveFromItems: (items, nextMode, nextAllowedTypes) =>
-      deps.resolveFromItems(items, nextMode, nextAllowedTypes),
-    resolveFromReader: (itemID, nextAllowedTypes) =>
-      deps.resolveFromReader(itemID, nextAllowedTypes),
-    writeClipboard: (files, source) => deps.writeClipboard(files, source),
-    getClipboardDiagnostics: async () => ({
-      platform: "linux",
-      linuxSession: "unknown",
-      commands: {},
-      activeBackend: "unknown",
-      lines: [],
-    }),
-  };
-
-  return createCopyService(serviceDeps);
+  const activeItemID = itemID ?? deps.getCurrentReaderItemID();
+  if (!activeItemID) {
+    return buildUnavailableResult("copy-reader-no-active");
+  }
+  const files = await deps.resolveFromReader(activeItemID, allowedTypes);
+  return deps.writeClipboard(files, "reader");
 }
 
 export async function copyItems(

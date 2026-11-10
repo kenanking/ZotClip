@@ -1,4 +1,4 @@
-import type { CopyAvailability } from "../../copyService";
+import type { CopyAvailability } from "../../copyAvailability";
 import type { ClipboardResult } from "../../types";
 import { buildLibraryRefreshKey } from "../context/libraryContext";
 import { buildReaderRefreshKey } from "../readerContext";

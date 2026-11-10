@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { afterEach, beforeEach } from "node:test";
+import { setImmediate } from "node:timers/promises";
 
 import { runWithAiTagGap } from "../../src/modules/tagging/core/autoTagQueue";
 
 const GAP_MS = 1000;
-const TOLERANCE_MS = 150;
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+beforeEach((t) => t.mock.timers.enable({ apis: ["setTimeout"] }));
+afterEach(async (t) => {
+  t.mock.timers.tick(GAP_MS);
+  await setImmediate();
+});
 
 test("runWithAiTagGap executes a single task and returns its result", async () => {
   const result = await runWithAiTagGap(async () => "hello");
@@ -24,33 +26,39 @@ test("runWithAiTagGap propagates errors", async () => {
   );
 });
 
-test("runWithAiTagGap runs up to 3 tasks concurrently", async () => {
+test("runWithAiTagGap runs 3 tasks concurrently and waits a full second between batches", async (t) => {
   let running = 0;
   let maxRunning = 0;
+  let started = 0;
+  const release: (() => void)[] = [];
 
   const tasks = Array.from({ length: 6 }, () =>
     runWithAiTagGap(async () => {
+      started++;
       running++;
       if (running > maxRunning) {
         maxRunning = running;
       }
-      await wait(50);
+      await new Promise<void>((resolve) => release.push(resolve));
       running--;
     }),
   );
 
+  assert.equal(started, 3);
+  release.splice(0).forEach((resolve) => resolve());
+  await setImmediate();
+  t.mock.timers.tick(GAP_MS - 1);
+  await setImmediate();
+  assert.equal(started, 3, "Workers must observe the request gap");
+  t.mock.timers.tick(1);
+  await setImmediate();
+  assert.equal(started, 6);
+  release.splice(0).forEach((resolve) => resolve());
   await Promise.all(tasks);
-  assert.ok(
-    maxRunning <= 3,
-    `expected max concurrency <= 3, got ${maxRunning}`,
-  );
-  assert.ok(
-    maxRunning >= 2,
-    `expected at least some concurrency, got ${maxRunning}`,
-  );
+  assert.equal(maxRunning, 3);
 });
 
-test("runWithAiTagGap enqueues tasks after workers drain and still processes them", async () => {
+test("runWithAiTagGap enqueues tasks after workers drain and still processes them", async (t) => {
   const results: number[] = [];
 
   const first = await runWithAiTagGap(async () => {
@@ -59,7 +67,8 @@ test("runWithAiTagGap enqueues tasks after workers drain and still processes the
   });
   assert.equal(first, 1);
 
-  await wait(GAP_MS + TOLERANCE_MS);
+  t.mock.timers.tick(GAP_MS);
+  await setImmediate();
 
   const second = await runWithAiTagGap(async () => {
     results.push(2);

@@ -1,14 +1,6 @@
 import { showNotification } from "../../ui/notification";
-import type { CopyMessageRenderDeps } from "./copyMessages";
-import { formatActionExecutionMessage } from "./interaction/presentation/copyActionMessages";
+import { formatCopyResultMessage } from "./copyMessages";
 import type { ClipboardResult } from "./types";
-
-export function formatCopyMessage(
-  result: ClipboardResult,
-  deps: CopyMessageRenderDeps = {},
-): string {
-  return formatActionExecutionMessage(result, deps);
-}
 
 export function getCopyNotificationOptions(result: ClipboardResult): {
   closeTime: number;
@@ -20,7 +12,7 @@ export function getCopyNotificationOptions(result: ClipboardResult): {
 
 export function notifyCopyResult(result: ClipboardResult): void {
   showNotification(
-    formatCopyMessage(result),
+    formatCopyResultMessage(result),
     getCopyNotificationOptions(result).closeTime,
   );
 }

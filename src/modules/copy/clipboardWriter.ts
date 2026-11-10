@@ -35,7 +35,7 @@ export interface ClipboardWriterDeps {
   detectPlatformContext?(): PlatformContext;
   prepareResolvedAttachments?(
     files: ResolvedAttachment[],
-  ): Promise<PreparedAttachmentResult | ResolvedAttachment[]>;
+  ): Promise<PreparedAttachmentResult>;
   runtimeCache?: ClipboardRuntimeCache;
   probeCommand?(name: string): Promise<boolean>;
   runCommand?(call: CommandCall): Promise<CommandResult>;
@@ -77,8 +77,8 @@ export async function writeClipboard(
   deps: ClipboardWriterDeps = DEFAULT_DEPS,
 ): Promise<ClipboardResult> {
   const runtimeCache = deps.runtimeCache || getClipboardRuntimeCache();
-  const prepareResult = await deps.prepareResolvedAttachments?.(files);
-  const { preparedFiles, tempDir } = extractPrepareResult(prepareResult, files);
+  const { files: preparedFiles, tempDir } =
+    (await deps.prepareResolvedAttachments?.(files)) ?? { files };
   const payload = buildClipboardPayload(preparedFiles, source);
   if (!payload.paths.length) {
     return {
@@ -105,9 +105,7 @@ export async function writeClipboard(
   });
 
   invalidateRuntimeCacheOnBackendFailure(runtimeCache, platformContext, result);
-  if (tempDir) {
-    if (!result.ok) await IOUtils.remove(tempDir, { recursive: true });
-  }
+  if (tempDir && !result.ok) await IOUtils.remove(tempDir, { recursive: true });
   return result;
 }
 
@@ -119,12 +117,6 @@ function buildWindowsBackends(deps: ClipboardWriterDeps): ClipboardBackend[] {
     }),
     buildPathTextBackend(deps),
   ];
-}
-
-function buildLinuxFallbackBackends(
-  deps: ClipboardWriterDeps,
-): ClipboardBackend[] {
-  return [buildPathTextBackend(deps)];
 }
 
 function buildLinuxBackends(
@@ -139,17 +131,12 @@ function buildLinuxBackends(
           createLinuxWaylandBackend(commandDeps),
           createLinuxGtkBackend(commandDeps),
         ]
-      : platformContext.linuxSession === "x11"
-        ? [
-            createLinuxGtkBackend(commandDeps),
-            createLinuxWaylandBackend(commandDeps),
-          ]
-        : [
-            createLinuxGtkBackend(commandDeps),
-            createLinuxWaylandBackend(commandDeps),
-          ];
+      : [
+          createLinuxGtkBackend(commandDeps),
+          createLinuxWaylandBackend(commandDeps),
+        ];
 
-  return [...linuxBackends, ...buildLinuxFallbackBackends(deps)];
+  return [...linuxBackends, buildPathTextBackend(deps)];
 }
 
 function buildMacosBackends(
@@ -210,19 +197,6 @@ function buildPathTextBackend(deps: ClipboardWriterDeps): ClipboardBackend {
   return createPathTextBackend({
     writePathText: (value) => deps.writePathText(value),
   });
-}
-
-function extractPrepareResult(
-  result: PreparedAttachmentResult | ResolvedAttachment[] | undefined,
-  fallback: ResolvedAttachment[],
-): { preparedFiles: ResolvedAttachment[]; tempDir?: string } {
-  if (!result) {
-    return { preparedFiles: fallback };
-  }
-  if (Array.isArray(result)) {
-    return { preparedFiles: result };
-  }
-  return { preparedFiles: result.files, tempDir: result.tempDir };
 }
 
 function buildUnavailableCommandResult(): CommandResult {

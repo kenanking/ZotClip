@@ -1,9 +1,7 @@
 import {
-  formatCopyResultMessage,
   renderCopyMessage,
   type CopyMessageRenderDeps,
 } from "../../copyMessages";
-import type { ClipboardResult } from "../../types";
 import type { CopyActionState } from "../actions/copyActionTypes";
 
 export function buildActionTooltip(
@@ -20,22 +18,4 @@ export function buildActionTooltip(
     undefined,
     deps,
   );
-}
-
-export function formatActionExecutionMessage(
-  result: ClipboardResult,
-  deps: CopyMessageRenderDeps = {},
-): string {
-  if (result.outcome === "copied-path-text-explicit") {
-    return renderCopyMessage(
-      result.messageKey || "copy-path-text-explicit",
-      {
-        count: result.count,
-        ...(result.messageArgs || {}),
-      },
-      deps,
-    );
-  }
-
-  return formatCopyResultMessage(result, deps);
 }

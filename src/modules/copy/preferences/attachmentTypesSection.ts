@@ -11,7 +11,7 @@ import {
   composeDisposables,
   createListenerDisposer,
   createNoopHandle,
-} from "../ui/disposables";
+} from "../../../utils/disposables";
 
 interface AttachmentTypeControls {
   panel: HTMLElement;

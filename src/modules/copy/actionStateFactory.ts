@@ -3,7 +3,7 @@ import {
   buildUnavailableResult,
   checkReaderAvailability,
   checkSelectionAvailability,
-} from "./copyService";
+} from "./copyAvailability";
 import {
   resolveAttachmentFromReader,
   resolveAttachmentsFromItems,

@@ -28,7 +28,8 @@
     "release": "zotero-plugin release",
     "test": "zotero-plugin test --no-watch",
     "update-deps": "npm update --save",
-    "test:unit": "tsx --test --experimental-test-coverage spec/unit/**/*.test.ts"
+    "test:unit": "tsx --test spec/unit/**/*.test.ts",
+    "test:coverage": "tsx --test --experimental-test-coverage spec/unit/**/*.test.ts"
   },
   "dependencies": {
     "zotero-plugin-toolkit": "5.2.0"

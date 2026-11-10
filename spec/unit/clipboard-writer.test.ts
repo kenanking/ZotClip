@@ -65,26 +65,28 @@ test("ClipboardWriter writes prepared clipboard paths when duplicate filenames e
     {
       detectPlatformContext: () => ({ platform: "windows" }),
       runtimeCache: createClipboardRuntimeCache(),
-      prepareResolvedAttachments: async () => [
-        {
-          attachmentID: 1,
-          itemID: 1,
-          path: "/src/a/paper.pdf",
-          clipboardPath: "/src/a/paper.pdf",
-        },
-        {
-          attachmentID: 2,
-          itemID: 1,
-          path: "/src/b/paper.pdf",
-          clipboardPath: "/tmp/zotclip-copy/paper_1.pdf",
-        },
-      ],
+      prepareResolvedAttachments: async () => ({
+        files: [
+          {
+            attachmentID: 1,
+            itemID: 1,
+            path: "/src/a/paper.pdf",
+            clipboardPath: "/src/a/paper.pdf",
+          },
+          {
+            attachmentID: 2,
+            itemID: 1,
+            path: "/src/b/paper.pdf",
+            clipboardPath: "/tmp/zotclip-copy/paper_1.pdf",
+          },
+        ],
+      }),
       writeWindowsFileDrop: async (paths) => {
         writtenPaths = paths;
         return true;
       },
       writePathText: () => false,
-    } as any,
+    },
   );
 
   assert.deepEqual(writtenPaths, [

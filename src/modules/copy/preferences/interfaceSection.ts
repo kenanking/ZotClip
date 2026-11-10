@@ -8,7 +8,7 @@ import {
   composeDisposables,
   createListenerDisposer,
   createNoopHandle,
-} from "../ui/disposables";
+} from "../../../utils/disposables";
 
 export function registerInterfaceSection(doc: Document): { dispose(): void } {
   const contextMenuCheckbox = doc.querySelector<HTMLInputElement>(

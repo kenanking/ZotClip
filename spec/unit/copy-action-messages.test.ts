@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  buildActionTooltip,
-  formatActionExecutionMessage,
-} from "../../src/modules/copy/interaction/presentation/copyActionMessages";
+import { buildActionTooltip } from "../../src/modules/copy/interaction/presentation/copyActionMessages";
+import { formatCopyResultMessage } from "../../src/modules/copy/copyMessages";
 
 test("buildActionTooltip prefers the disabled reason over the default label", () => {
   assert.equal(
@@ -31,9 +29,9 @@ test("buildActionTooltip prefers the disabled reason over the default label", ()
   );
 });
 
-test("formatActionExecutionMessage renders explicit path copy without fallback wording", () => {
+test("formatCopyResultMessage renders explicit path copy without fallback wording", () => {
   assert.equal(
-    formatActionExecutionMessage(
+    formatCopyResultMessage(
       {
         ok: true,
         format: "path-text",

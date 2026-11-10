@@ -142,6 +142,10 @@ Before opening a PR, run:
 - `npm run build`
 - `npm run lint:check`
 
+`test:unit` runs without coverage instrumentation for fast iteration. Use
+`npm run test:coverage` to run the same tests with coverage reporting. CI runs
+coverage once and reuses one production build across the Zotero version matrix.
+
 Pinned Linux integration runs (fresh isolated profiles, production XPI installation):
 
 ```sh
@@ -150,6 +154,10 @@ node scripts/test-zotero.mjs 9.0.6
 node scripts/test-zotero.mjs 10.0.1
 node --import tsx scripts/test-clipboard-x11.ts
 ```
+
+The integration runner builds a production XPI by default. To reuse an existing
+build, set `ZOTCLIP_TEST_XPI` to its path outside `.scaffold/build`, which the test
+scaffold overwrites.
 
 The X11 test creates a separate Xvfb display and takes about a minute. Integration
 logs are written to `.scaffold/validation/`. TypeScript remains pinned to 6.0.3.

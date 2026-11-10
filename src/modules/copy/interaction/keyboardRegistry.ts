@@ -1,5 +1,5 @@
 import { reportCopyError } from "../selectionHook";
-import type { DisposableHandle } from "../ui/disposables";
+import type { DisposableHandle } from "../../../utils/disposables";
 
 interface KeyboardEventOptionsLike {
   type: "keydown" | "keyup";

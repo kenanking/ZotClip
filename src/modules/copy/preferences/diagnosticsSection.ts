@@ -1,6 +1,6 @@
 import { renderCopyDiagnosticsLine } from "../copyMessages";
 import { getClipboardDiagnostics } from "../runtimeDiagnostics";
-import { createNoopHandle } from "../ui/disposables";
+import { createNoopHandle } from "../../../utils/disposables";
 
 export interface DiagnosticsSectionDeps {
   getClipboardDiagnostics?(): ReturnType<typeof getClipboardDiagnostics>;

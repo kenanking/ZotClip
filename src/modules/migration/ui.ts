@@ -125,7 +125,6 @@ export function registerMigrationSection(
   }
   function renderRows() {
     const parent = el("rows");
-    parent.replaceChildren();
     const filtered = visibleRows();
     const fragment = doc.createDocumentFragment();
     for (const row of filtered.slice(0, visibleLimit)) {
@@ -186,7 +185,7 @@ export function registerMigrationSection(
       container.append(check, content, badge);
       fragment.append(container);
     }
-    parent.append(fragment);
+    parent.replaceChildren(fragment);
     el("more").hidden = filtered.length <= visibleLimit;
     updateSelection();
   }
@@ -199,9 +198,10 @@ export function registerMigrationSection(
     el<HTMLButtonElement>("cancel").disabled = !value || applying;
     el("cancel").hidden = !value;
     progress.hidden = !value;
-    if (value) progress.removeAttribute("value");
-    else renderRows();
-    updateSelection();
+    if (value) {
+      progress.removeAttribute("value");
+      updateSelection();
+    } else renderRows();
   }
   const onProgress = (completed: number, total: number) => {
     if (disposed) return;
@@ -351,7 +351,6 @@ export function registerMigrationSection(
     );
     el("preview").hidden = false;
     visibleLimit = 100;
-    renderRows();
     status.textContent = text("migration-preview-ready");
     if (source.manifest.omitted.length)
       result.textContent = `${text("migration-omitted")}\n${source.manifest.omitted.join("\n")}`;

@@ -51,9 +51,15 @@ console.log(
 if (!process.argv.includes("--download-only")) {
   const diagnostics = resolve(".scaffold/validation");
   mkdirSync(diagnostics, { recursive: true });
-  run("npm", ["run", "build"]);
-  const xpi = resolve(diagnostics, `zotclip-${version}.xpi`);
-  copyFileSync(resolve(".scaffold/build/zot-clip.xpi"), xpi);
+  let xpi = process.env.ZOTCLIP_TEST_XPI;
+  if (xpi) {
+    xpi = resolve(xpi);
+    if (!existsSync(xpi)) throw new Error(`Production XPI not found: ${xpi}`);
+  } else {
+    run("npm", ["run", "build"]);
+    xpi = resolve(diagnostics, `zotclip-${version}.xpi`);
+    copyFileSync(resolve(".scaffold/build/zot-clip.xpi"), xpi);
+  }
   const child = spawn("npm", ["run", "test"], {
     detached: true,
     env: {

@@ -12,7 +12,7 @@ import {
   composeDisposables,
   createListenerDisposer,
   createNoopHandle,
-} from "../ui/disposables";
+} from "../../../utils/disposables";
 
 export interface ShortcutControls {
   libraryInput: HTMLInputElement;
