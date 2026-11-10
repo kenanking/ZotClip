@@ -86,5 +86,5 @@ record swapping, size limits, path traversal and recovery-only deletion entries.
 `test/migration.test.ts` exercises real preferences, login-manager storage,
 resource recovery, XPI installation, the inline preferences section, localized
 light/dark UI, confirmation and key masking in an isolated Zotero profile.
-The local integration run uses Zotero 11.0-beta.4; Zotero 8–10 retain the existing
-API compatibility paths and need separate version-matrix testing before release.
+Integration tests pass on Zotero 8.0.4, 9.0.6, and 10.0.1 in Linux CI, and on
+Zotero 10.0.1 and 11.0-beta.4 on Windows. See [validation.md](validation.md).

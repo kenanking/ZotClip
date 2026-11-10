@@ -4,11 +4,12 @@
 
 # ZotClip
 
-[![zotero target version](https://img.shields.io/badge/Zotero-8%20%7C%209%20%7C%2010-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
+[![zotero target version](https://img.shields.io/badge/Zotero-8%20%7C%209%20%7C%2010%20%7C%2011-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
 [![Latest release](https://img.shields.io/github/v/release/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/releases)
 [![License](https://img.shields.io/github/license/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/blob/main/LICENSE)
 
-ZotClip is a plugin for Zotero 8, 9, and 10 with three feature areas:
+ZotClip is a plugin for Zotero 8–11 with three feature areas. Zotero 11 has been
+tested with 11.0-beta.4; see the [validation report](docs/validation.md).
 
 - **Attachment clipboard copy** — from the library or reader, copy attachment
   files to the system clipboard. Target apps that accept file pastes receive

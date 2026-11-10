@@ -2,7 +2,7 @@
 
 ## Test Environment
 
-- Zotero 8, 9, or 10 is installed; test all supported major versions before release.
+- Zotero 8, 9, 10, or 11 is installed; test all supported major versions before release.
 - At least one parent item contains multiple allowed attachments.
 - At least one reader-openable attachment is available.
 - Platform packages are installed before testing:
