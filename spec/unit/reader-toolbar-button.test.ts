@@ -294,7 +294,19 @@ test("mountReaderToolbarButton runs the copy command only once for a single tool
   assert.equal(calls, 1);
 });
 
-test("registerReaderToolbarButton creates a dedicated fallback section for existing readers", async () => {
+test("registerReaderToolbarButton skips destroyed readers and mounts a fallback section for live readers", async (t) => {
+  const deadWindow = new Proxy({} as Window, {
+    get: () => assert.fail("Must not access a destroyed window"),
+  });
+  const globals = globalThis as any;
+  const savedComponents = globals.Components;
+  globals.Components = {
+    utils: { isDeadWrapper: (value: unknown) => value === deadWindow },
+  };
+  t.after(() => {
+    if (savedComponents) globals.Components = savedComponents;
+    else delete globals.Components;
+  });
   await primeToolbarIcon();
   const doc = new ExistingReaderDocument();
   let registerHandler:
@@ -309,6 +321,17 @@ test("registerReaderToolbarButton creates a dedicated fallback section for exist
       },
       unregisterEventListener: () => {},
       _readers: [
+        { itemID: 998 },
+        { itemID: 999, _iframeWindow: deadWindow },
+        {
+          itemID: 1000,
+          _iframeWindow: {
+            closed: true,
+            get document() {
+              assert.fail("Must not access a closed window's document");
+            },
+          } as unknown as Window,
+        },
         {
           itemID: 1001,
           _iframeWindow: {

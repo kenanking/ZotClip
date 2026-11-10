@@ -177,7 +177,9 @@ export function registerReaderToolbarButton(
   readerAPI.registerEventListener("renderToolbar", render, deps.pluginID);
 
   for (const reader of readerAPI._readers || []) {
-    const doc = reader._iframeWindow?.document;
+    const win = reader._iframeWindow;
+    if (!win || Components.utils.isDeadWrapper(win) || win.closed) continue;
+    const doc = win.document;
     if (!doc) {
       continue;
     }

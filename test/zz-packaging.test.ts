@@ -3,6 +3,12 @@ import { config, version } from "../package.json";
 describe("packaged installation", function () {
   it("accepts and installs the production XPI for this Zotero version", async function () {
     this.timeout(30000);
+    const logError = Zotero.logError;
+    const startupErrors: string[] = [];
+    Zotero.logError = ((error: any) => {
+      startupErrors.push(`${String(error)}\n${error?.stack || ""}`);
+      logError.call(Zotero, error);
+    }) as typeof logError;
     try {
       const expectedVersion = Zotero.Prefs.get(
         `${config.prefsPrefix}.testVersion`,
@@ -53,7 +59,7 @@ describe("packaged installation", function () {
       assert.equal(
         errors.length,
         0,
-        `Production startup has no plugin errors:\n${errors.join("\n")}`,
+        `Production startup has no plugin errors:\n${errors.join("\n")}\n${startupErrors.join("\n")}`,
       );
       assert.equal(
         Zotero[config.addonInstance]?.data.initialized,
@@ -62,6 +68,8 @@ describe("packaged installation", function () {
       );
     } catch (error) {
       throw new Error(String(error), { cause: error });
+    } finally {
+      Zotero.logError = logError;
     }
   });
 });
