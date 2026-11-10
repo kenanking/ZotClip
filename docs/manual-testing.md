@@ -110,6 +110,19 @@
 - [ ] On X11, replace the clipboard in another application; the ZotClip helper exits.
 - [ ] On X11, disable the plugin while it owns the clipboard; its helper exits.
 
+## Configuration Migration
+
+- [ ] Use an isolated profile with synthetic credentials. Open Preferences → ZotClip → Configuration migration; verify Chinese/English labels, keyboard focus, light/dark themes and narrow-window scrolling.
+- [ ] Export all categories. Verify nested/Unicode resource files and installed plug-in disabled states survive a transfer to another isolated profile.
+- [ ] Try a wrong password, a truncated file and a modified file. No destination configuration changes and no usable preview appears.
+- [ ] Review additions, replacements, identical entries and skipped newer plug-ins. Filter/select entries; changing the selection requires confirmation again. A mapped local path must exist.
+- [ ] Cancel export or import verification. Existing package files remain intact; no partial output is left beside them.
+- [ ] Change a destination preference after preview. Apply must stop and request a fresh preview.
+- [ ] Make the recovery destination unwritable. Apply must stop before settings, credentials or resources change.
+- [ ] Import while AI tagging is active. Pending work is cancelled and new tagging cannot start until importing finishes.
+- [ ] Open the generated recovery copy with the same password. Restore old values/files/keys and remove newly introduced resource files. Check the result for plug-ins requiring manual cleanup.
+- [ ] Restart Zotero and verify styles/translators/locate engines reload. Test on Zotero 8, 9, 10 and the current 11 build before publishing compatibility claims.
+
 ## AI Reliability and Credentials
 
 - [ ] Start manual tagging, cancel while a request is pending, and confirm no new tags appear from that response.

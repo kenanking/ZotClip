@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ZotClip</title>
+    <link rel="stylesheet" href="chrome://zotclip/content/migration.css" />
+    <script src="chrome://zotclip/content/migration.js"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img
+          src="chrome://zotclip/content/icons/favicon.svg"
+          width="32"
+          height="32"
+          alt=""
+        />
+        <div>
+          <h1 data-text="migration-title"></h1>
+          <p data-text="migration-description"></p>
+        </div>
+      </header>
+      <fieldset id="categories">
+        <legend data-text="migration-contents"></legend>
+      </fieldset>
+      <p class="hint" data-text="migration-scope"></p>
+      <div class="passwords">
+        <label
+          ><span class="icon lock" aria-hidden="true"></span
+          ><span data-text="migration-password"></span
+          ><input id="password" type="password" autocomplete="off"
+        /></label>
+        <label
+          ><span data-text="migration-confirm-password"></span
+          ><input id="confirm-password" type="password" autocomplete="off"
+        /></label>
+      </div>
+      <p class="hint" data-text="migration-password-help"></p>
+      <div class="actions">
+        <button id="export" type="button">
+          <span class="icon export" aria-hidden="true"></span
+          ><span data-text="migration-export"></span>
+        </button>
+        <button id="import" type="button">
+          <span class="icon import" aria-hidden="true"></span
+          ><span data-text="migration-import"></span>
+        </button>
+        <button
+          id="cancel"
+          type="button"
+          hidden="hidden"
+          data-text="migration-cancel"
+        ></button>
+      </div>
+      <progress id="progress" hidden="hidden"></progress>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="preview" hidden="hidden" aria-labelledby="preview-title">
+        <h2 id="preview-title" data-text="migration-preview"></h2>
+        <p id="source"></p>
+        <p class="hint" data-text="migration-preview-help"></p>
+        <div class="filters">
+          <label
+            ><span data-text="migration-filter"></span
+            ><input id="filter" type="search" /></label
+          ><button
+            id="select-visible"
+            type="button"
+            data-text="migration-select-visible"
+          ></button
+          ><button
+            id="clear-visible"
+            type="button"
+            data-text="migration-clear-visible"
+          ></button>
+        </div>
+        <div id="rows"></div>
+        <button
+          id="more"
+          type="button"
+          hidden="hidden"
+          data-text="migration-more"
+        ></button>
+        <p id="selection" role="status"></p>
+        <label class="consent"
+          ><input id="consent" type="checkbox" /><span
+            data-text="migration-consent"
+          ></span
+        ></label>
+        <button
+          id="apply"
+          type="button"
+          disabled="disabled"
+          data-text="migration-apply"
+        ></button>
+      </section>
+      <pre id="result" role="status"></pre>
+      <footer>
+        <button id="close" type="button" data-text="migration-close"></button>
+      </footer>
+    </main>
+  </body>
+</html>

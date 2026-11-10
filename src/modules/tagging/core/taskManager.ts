@@ -3,6 +3,12 @@ import type { AutoTagResult } from "./types";
 
 const groups = new Set<AbortController>();
 const busyItems = new Set<number>();
+let paused = false;
+
+export function setAiTasksPaused(value: boolean): void {
+  paused = value;
+  if (value) cancelAllAiTasks();
+}
 
 export function cancelAllAiTasks(): void {
   for (const controller of groups) controller.abort();
@@ -10,6 +16,7 @@ export function cancelAllAiTasks(): void {
 
 export function createAiTaskGroup() {
   const controller = new AbortController();
+  if (paused) controller.abort();
   groups.add(controller);
   return {
     signal: controller.signal,

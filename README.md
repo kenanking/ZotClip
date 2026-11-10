@@ -8,7 +8,7 @@
 [![Latest release](https://img.shields.io/github/v/release/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/releases)
 [![License](https://img.shields.io/github/license/kenanking/ZotClip?style=flat-square)](https://github.com/kenanking/ZotClip/blob/main/LICENSE)
 
-ZotClip is a plugin for Zotero 8, 9, and 10 with two parallel feature areas:
+ZotClip is a plugin for Zotero 8, 9, and 10 with three feature areas:
 
 - **Attachment clipboard copy** — from the library or reader, copy attachment
   files to the system clipboard. Target apps that accept file pastes receive
@@ -18,6 +18,9 @@ ZotClip is a plugin for Zotero 8, 9, and 10 with two parallel feature areas:
   OpenAI-compatible chat API. Built-in providers include DeepSeek, OpenRouter,
   Ollama, and LM Studio, plus a custom URL for other endpoints. Keys and prompts are
   configured in preferences.
+- **Configuration migration** — transfer portable settings, installed plug-ins,
+  citation styles, translators, locate engines, and ZotClip AI keys between
+  computers in one password-encrypted file.
 
 ## Installation
 
@@ -75,6 +78,27 @@ also cancels queued and active tasks.
 Completed changes are kept; cancelled requests cannot add tags. In Zotero 10,
 manual tag changes support the normal Undo/Redo commands (one item per step).
 Background tagging does not add undo steps. Read-only and deleted items are skipped.
+
+### Configuration migration
+
+Open **Preferences → ZotClip → Configuration migration**. Select the content to
+export, enter and confirm a password of at least 10 characters, then save a new
+`.zotclip` file. Keep the password separately; ZotClip cannot recover it.
+
+On the destination computer, install ZotClip first, open the migration window,
+enter the password, and choose **Open and preview**. Review the differences and
+map any selected local paths to existing paths on that computer. Confirm the
+selected changes and choose where to save the encrypted recovery copy. It uses
+the same password and must be saved before any changes are applied. Restart
+Zotero after importing. Open a recovery copy in the same window to restore
+previous settings and files; newly installed plug-ins may need manual removal.
+
+This transfers portable configuration, not the literature library or attachments.
+Zotero sign-in/sync credentials, other plug-ins' login-manager credentials and
+private databases are excluded. ZotClip itself and Zotero's bundled integration
+plug-ins are not replaced. Existing newer plug-ins are skipped during normal
+imports; compatibility checking cannot fix a third-party plug-in's runtime bugs.
+Tara packages are not supported. See [migration format and scope](docs/configuration-migration.md).
 
 ### Notifications
 

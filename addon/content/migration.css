@@ -1,0 +1,204 @@
+:root {
+  color-scheme: light dark;
+}
+body {
+  margin: 0;
+  background: Canvas;
+  color: CanvasText;
+  font: message-box;
+}
+main {
+  max-width: 900px;
+  margin: auto;
+  padding: 24px;
+}
+header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+header img {
+  flex: 0 0 auto;
+}
+h1 {
+  font-size: 1.5em;
+  margin: 0 0 6px;
+}
+h2 {
+  font-size: 1.15em;
+}
+p {
+  line-height: 1.5;
+  margin: 8px 0;
+}
+fieldset {
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+fieldset label,
+.consent {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.hint {
+  color: color-mix(in srgb, CanvasText 72%, Canvas);
+}
+.passwords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+.passwords label {
+  flex: 1;
+  min-width: 220px;
+}
+.passwords input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+input,
+button {
+  font: inherit;
+}
+input[type="password"],
+input[type="text"],
+input[type="search"] {
+  box-sizing: border-box;
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, CanvasText 35%, Canvas);
+  border-radius: 5px;
+  background: Field;
+  color: FieldText;
+}
+button {
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, Canvas);
+  border-radius: 6px;
+  background: ButtonFace;
+  color: ButtonText;
+  cursor: pointer;
+}
+button:hover:enabled {
+  background: color-mix(in srgb, AccentColor 10%, ButtonFace);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: 2px;
+}
+.actions,
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.actions button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  background: currentColor;
+  mask: url("icons/migration.svg") center / contain no-repeat;
+}
+.icon.export {
+  mask-image: url("icons/export.svg");
+}
+.icon.import {
+  mask-image: url("icons/import.svg");
+}
+.icon.lock {
+  mask-image: url("icons/lock.svg");
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 4px;
+}
+progress {
+  width: 100%;
+  height: 8px;
+  accent-color: AccentColor;
+}
+#status[data-error="true"] {
+  color: light-dark(#a02020, #ffaaaa);
+}
+#preview {
+  border-top: 1px solid color-mix(in srgb, CanvasText 25%, Canvas);
+  margin-top: 20px;
+  padding-top: 12px;
+}
+#rows {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid color-mix(in srgb, CanvasText 20%, Canvas);
+  border-radius: 6px;
+}
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 9px;
+  padding: 9px;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 10%, Canvas);
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.row strong {
+  display: block;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.row small {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.row input[type="text"] {
+  width: 100%;
+  margin-top: 6px;
+}
+.badge {
+  font-size: 0.9em;
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: color-mix(in srgb, CanvasText 7%, Canvas);
+}
+.consent {
+  margin: 12px 0;
+}
+#apply {
+  background: AccentColor;
+  color: AccentColorText;
+}
+#result {
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+[hidden] {
+  display: none !important;
+}

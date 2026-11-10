@@ -1,6 +1,10 @@
 import { disposeTaskCards } from "./ui/taskCard";
 import { migrateAiCredentials } from "./modules/tagging/credentials/zoteroCredentials";
-import { cancelAllAiTasks } from "./modules/tagging/core/taskManager";
+import {
+  cancelAllAiTasks,
+  setAiTasksPaused,
+} from "./modules/tagging/core/taskManager";
+import { disposeMigrationUI } from "./modules/migration/ui";
 import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
 import { getReaderItemIDForWindow } from "./modules/copy/zoteroReaderAccess";
 import { copyItems } from "./modules/copy/copyCommands";
@@ -60,6 +64,7 @@ let runtimeSettingsPrefObservers: symbol[] = [];
 let keyboardRegistryHandle: { dispose(): void } | undefined;
 let aiEnabledObserver: symbol | undefined;
 let autoTagItemAddHandle: { dispose(): void } | undefined;
+let migrationInProgress = false;
 const runtimeSettings = getRuntimeSettingsStore();
 
 const DEFAULT_MAIN_TOOLBAR_COPY_BUTTON_DEPS: MainToolbarCopyButtonDeps = {
@@ -187,7 +192,8 @@ async function onStartup() {
       if (!getAutoTaggingEnabled()) {
         cancelAllAiTasks();
         autoTagItemAddHandle?.dispose();
-        autoTagItemAddHandle = registerAutoTagItemAddObserver();
+        if (!migrationInProgress)
+          autoTagItemAddHandle = registerAutoTagItemAddObserver();
       }
     },
     true,
@@ -215,11 +221,13 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onAppShutdown(): void {
+  disposeMigrationUI();
   cancelAllAiTasks();
   stopClipboardProcesses();
 }
 
 function onShutdown(): void {
+  disposeMigrationUI();
   addon.data.initialized = false;
   disposePrefsUI();
   disposeTaskCards();
@@ -261,6 +269,21 @@ function syncReaderToolbarButton(): void {
   readerToolbarController.sync();
 }
 
+function onMigrationStart(): void {
+  migrationInProgress = true;
+  setAiTasksPaused(true);
+  autoTagItemAddHandle?.dispose();
+  autoTagItemAddHandle = undefined;
+}
+
+function onMigrationEnd(): void {
+  migrationInProgress = false;
+  if (!addon.data.alive) return;
+  setAiTasksPaused(false);
+  autoTagItemAddHandle?.dispose();
+  autoTagItemAddHandle = registerAutoTagItemAddObserver();
+}
+
 export default {
   onStartup,
   onShutdown,
@@ -268,4 +291,6 @@ export default {
   onMainWindowLoad,
   onMainWindowUnload,
   onPrefsEvent,
+  onMigrationStart,
+  onMigrationEnd,
 };

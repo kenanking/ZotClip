@@ -2,6 +2,27 @@
   padding: 8px 0 0;
 }
 
+.zotclip-migration-button {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  color: ButtonText;
+  background: ButtonFace;
+  border: 1px solid color-mix(in srgb, CanvasText 25%, Canvas);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.zotclip-migration-icon {
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  mask: url("icons/migration.svg") center / contain no-repeat;
+}
+
 .zotclip-pref-group > label > h2 {
   font-size: 1.35em;
   font-weight: 400;

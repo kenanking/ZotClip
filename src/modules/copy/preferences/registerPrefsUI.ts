@@ -4,6 +4,7 @@ import { registerDiagnosticsSection } from "./diagnosticsSection";
 import { registerInterfaceSection } from "./interfaceSection";
 import { registerShortcutsSection } from "./shortcutsSection";
 import { registerAutoTagAIPanel } from "../../tagging/preferences/autoTagAIPanel";
+import { registerMigrationSection } from "../../migration/preferences";
 import {
   composeDisposables,
   createNoopHandle,
@@ -42,6 +43,7 @@ export interface RegisterPrefsUIDeps {
   registerDiagnosticsSection?(
     doc: Document,
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
+  registerMigrationSection?(doc: Document): PrefsUIHandle;
 }
 
 const windowHandles = new Map<Window, PrefsUIHandle>();
@@ -53,6 +55,7 @@ const DEFAULT_DEPS: RegisterPrefsUIDeps = {
   registerShortcutsSection: (doc) => registerShortcutsSection(doc),
   registerAutoTagSection: (doc) => registerAutoTagAIPanel(doc),
   registerDiagnosticsSection: (doc) => registerDiagnosticsSection(doc),
+  registerMigrationSection,
 };
 
 export async function registerPrefsUI(
@@ -80,6 +83,7 @@ export async function registerPrefsUI(
         deps.registerShortcutsSection,
         deps.registerAutoTagSection,
         deps.registerDiagnosticsSection,
+        deps.registerMigrationSection,
       ].map(async (register) => {
         const section =
           (await register?.(window.document)) || createNoopHandle();

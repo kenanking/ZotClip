@@ -90,3 +90,24 @@ export function setAiApiKeyForProvider(
 ): Promise<void> {
   return store.write(credentialIdentity(provider, endpoint), value.trim());
 }
+
+export async function listAiCredentials(): Promise<
+  { provider: string; origin: string; value: string }[]
+> {
+  await Services.logins.initializationPromise;
+  const logins: nsILoginInfo[] = await Services.logins.searchLoginsAsync({
+    origin: ORIGIN,
+  });
+  const identities = new Set(logins.map((login) => login.httpRealm));
+  const result = [];
+  for (const identity of identities) {
+    const separator = identity.indexOf("|");
+    if (separator < 1) continue;
+    result.push({
+      provider: identity.slice(0, separator),
+      origin: identity.slice(separator + 1),
+      value: await store.read(identity),
+    });
+  }
+  return result;
+}
