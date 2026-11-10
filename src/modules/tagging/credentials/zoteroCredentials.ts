@@ -12,7 +12,10 @@ const legacyPrefs: Record<string, string> = {
 };
 async function find(identity: string): Promise<nsILoginInfo[]> {
   await Services.logins.initializationPromise;
-  return Services.logins.findLogins(ORIGIN, "", identity);
+  return Services.logins.searchLoginsAsync({
+    origin: ORIGIN,
+    httpRealm: identity,
+  });
 }
 const store = createCredentialStore({
   async read(identity) {
@@ -37,12 +40,18 @@ const store = createCredentialStore({
       "",
       "",
     );
-    if (previous[0]) Services.logins.modifyLogin(previous[0], login);
-    else await Services.logins.addLoginAsync(login);
+    if (previous[0]) {
+      if (Services.logins.modifyLoginAsync)
+        await Services.logins.modifyLoginAsync(previous[0], login);
+      else Services.logins.modifyLogin(previous[0], login);
+    } else await Services.logins.addLoginAsync(login);
   },
   async remove(identity) {
-    for (const login of await find(identity))
-      Services.logins.removeLogin(login);
+    for (const login of await find(identity)) {
+      if (Services.logins.removeLoginAsync)
+        await Services.logins.removeLoginAsync(login);
+      else Services.logins.removeLogin(login);
+    }
   },
 });
 

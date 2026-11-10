@@ -16,3 +16,12 @@ declare const rootURI: string;
 declare const addon: import("../src/addon").default;
 
 declare const __env__: "production" | "development";
+
+// Firefox 153 adds async mutations; Zotero 8–10 use the synchronous methods.
+interface nsILoginManager {
+  modifyLoginAsync?(
+    oldLogin: nsILoginInfo,
+    newLogin: nsILoginInfo,
+  ): Promise<void>;
+  removeLoginAsync?(login: nsILoginInfo): Promise<void>;
+}
