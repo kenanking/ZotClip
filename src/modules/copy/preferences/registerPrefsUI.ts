@@ -4,7 +4,7 @@ import { registerDiagnosticsSection } from "./diagnosticsSection";
 import { registerInterfaceSection } from "./interfaceSection";
 import { registerShortcutsSection } from "./shortcutsSection";
 import { registerAutoTagAIPanel } from "../../tagging/preferences/autoTagAIPanel";
-import { registerMigrationSection } from "../../migration/preferences";
+import { registerMigrationSection } from "../../migration/ui";
 import {
   composeDisposables,
   createNoopHandle,
@@ -43,7 +43,10 @@ export interface RegisterPrefsUIDeps {
   registerDiagnosticsSection?(
     doc: Document,
   ): Promise<PrefsUIHandle> | PrefsUIHandle;
-  registerMigrationSection?(doc: Document): PrefsUIHandle;
+  registerMigrationSection?(
+    doc: Document,
+    onApplied: () => Promise<void>,
+  ): PrefsUIHandle;
 }
 
 const windowHandles = new Map<Window, PrefsUIHandle>();
@@ -65,16 +68,20 @@ export async function registerPrefsUI(
   windowHandles.get(window)?.dispose();
   let disposed = false;
   const sectionHandles: PrefsUIHandle[] = [];
+  let migrationHandle: PrefsUIHandle | undefined;
   const unload = () => handle.dispose();
   const handle = composeDisposables(() => {
     disposed = true;
     window.removeEventListener("unload", unload);
     for (const section of sectionHandles) section.dispose();
+    migrationHandle?.dispose();
     if (windowHandles.get(window) === handle) windowHandles.delete(window);
   });
   windowHandles.set(window, handle);
   window.addEventListener("unload", unload, { once: true });
-  try {
+  async function refreshSettings() {
+    for (const section of sectionHandles) section.dispose();
+    sectionHandles.length = 0;
     deps.syncPreferenceMenulists?.(window.document);
     const results = await Promise.allSettled(
       [
@@ -83,7 +90,6 @@ export async function registerPrefsUI(
         deps.registerShortcutsSection,
         deps.registerAutoTagSection,
         deps.registerDiagnosticsSection,
-        deps.registerMigrationSection,
       ].map(async (register) => {
         const section =
           (await register?.(window.document)) || createNoopHandle();
@@ -93,6 +99,14 @@ export async function registerPrefsUI(
     );
     const failure = results.find((result) => result.status === "rejected");
     if (failure?.status === "rejected") throw failure.reason;
+  }
+  try {
+    await refreshSettings();
+    if (!disposed)
+      migrationHandle = deps.registerMigrationSection?.(
+        window.document,
+        refreshSettings,
+      );
     return handle;
   } catch (error) {
     handle.dispose();

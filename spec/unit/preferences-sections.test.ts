@@ -191,6 +191,36 @@ test("registerPrefsUI dispose is idempotent for the same registration handle", a
   assert.equal(disposals, 5);
 });
 
+test("an inline import refreshes settings without remounting its migration result", async () => {
+  const window = new EventTarget() as EventTarget & { document: Document };
+  window.document = {} as Document;
+  let refresh!: () => Promise<void>;
+  let settingsMounted = 0;
+  let settingsDisposed = 0;
+  let migrationMounted = 0;
+  let migrationDisposed = 0;
+  const handle = await registerPrefsUI(window as unknown as Window, {
+    registerInterfaceSection: () => {
+      settingsMounted++;
+      return { dispose: () => settingsDisposed++ };
+    },
+    registerMigrationSection: (_doc, onApplied) => {
+      migrationMounted++;
+      refresh = onApplied;
+      return { dispose: () => migrationDisposed++ };
+    },
+  });
+  await refresh();
+  assert.equal(settingsMounted, 2);
+  assert.equal(settingsDisposed, 1);
+  assert.equal(migrationMounted, 1);
+  assert.equal(migrationDisposed, 0);
+  window.dispatchEvent(new Event("unload"));
+  handle.dispose();
+  assert.equal(settingsDisposed, 2);
+  assert.equal(migrationDisposed, 1);
+});
+
 class FakeDiagnosticsElement {
   className = "";
   textContent = "";

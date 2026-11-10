@@ -1,11 +1,12 @@
 import { FilePickerHelper } from "zotero-plugin-toolkit";
-import { config } from "../../../package.json";
 import type { FluentMessageId } from "../../../typings/i10n";
 import { getString } from "../../utils/locale";
+import { composeDisposables, createNoopHandle } from "../../utils/disposables";
 import {
   applyImport,
   collectConfiguration,
   exportConfiguration,
+  inspectPackageEncryption,
   openPackage,
   planImport,
   type OpenPackage,
@@ -13,46 +14,51 @@ import {
 } from "./service";
 import { categories, entryCategory, entryLabel, type Category } from "./types";
 
-let migrationWindow: Window | undefined;
-let closeMigration: (() => void) | undefined;
 const text = (key: string, args?: Record<string, unknown>) =>
   getString(key as FluentMessageId, { args });
 
-export function openMigrationWindow(): void {
-  if (migrationWindow && !migrationWindow.closed) {
-    migrationWindow.focus();
-    return;
-  }
-  migrationWindow =
-    Zotero.getMainWindow().openDialog(
-      `chrome://${config.addonRef}/content/migration.xhtml`,
-      "zotclip-migration",
-      "chrome,centerscreen,resizable,width=860,height=760",
-      { mount: mountMigrationWindow },
-    ) || undefined;
-}
-export function disposeMigrationUI(): void {
-  closeMigration?.();
-}
-
-export function mountMigrationWindow(win: Window): void {
-  const doc = win.document;
-  const el = <T extends HTMLElement>(id: string) => doc.getElementById(id) as T;
-  doc.title = text("migration-title");
-  for (const node of doc.querySelectorAll<HTMLElement>("[data-text]"))
+export function registerMigrationSection(
+  doc: Document,
+  onApplied: () => Promise<void>,
+): { dispose(): void } {
+  const root = doc.getElementById("zotclip-migration");
+  if (!root) return createNoopHandle();
+  const win = doc.defaultView!;
+  const el = <T extends HTMLElement>(id: string) =>
+    root.querySelector(`#zotclip-migration-${id}`) as T;
+  const create = <K extends keyof HTMLElementTagNameMap>(tag: K) =>
+    doc.createElementNS(
+      "http://www.w3.org/1999/xhtml",
+      tag,
+    ) as HTMLElementTagNameMap[K];
+  const listeners = new AbortController();
+  const listen = (target: EventTarget, type: string, listener: EventListener) =>
+    target.addEventListener(type, listener, { signal: listeners.signal });
+  for (const node of root.querySelectorAll<HTMLElement>("[data-text]"))
     node.textContent = text(node.dataset.text!);
   const password = el<HTMLInputElement>("password");
   const confirm = el<HTMLInputElement>("confirm-password");
-  const status = el<HTMLParagraphElement>("status");
+  const encrypt = el<HTMLInputElement>("encrypt");
+  const importPassword = el<HTMLInputElement>("import-password");
+  const status = el("status");
   const progress = el<HTMLProgressElement>("progress");
   progress.setAttribute("aria-label", text("migration-progress"));
-  const result = el<HTMLPreElement>("result");
+  const result = el("result");
   const consent = el<HTMLInputElement>("consent");
   const filter = el<HTMLInputElement>("filter");
   const choices = new Map<Category, HTMLInputElement>();
+  el("categories").replaceChildren();
+  el("preview").hidden = true;
+  status.textContent = result.textContent = "";
+  password.value = confirm.value = filter.value = "";
+  encrypt.checked = false;
+  importPassword.value = "";
+  el("unlock").hidden = true;
+  consent.checked = false;
   for (const category of categories) {
-    const label = doc.createElement("label");
-    const checkbox = doc.createElement("input");
+    const label = create("label");
+    label.className = "zotclip-pref-type-option";
+    const checkbox = create("input");
     checkbox.type = "checkbox";
     checkbox.checked = true;
     checkbox.dataset.category = category;
@@ -62,17 +68,19 @@ export function mountMigrationWindow(win: Window): void {
     );
     el("categories").append(label);
     choices.set(category, checkbox);
-    checkbox.addEventListener("change", () => {
+    listen(checkbox, "change", () => {
       for (const row of rows)
         if (entryCategory(row.entry) === category)
           row.selected =
             checkbox.checked && !["same", "skip", "path"].includes(row.status);
       consent.checked = false;
+      syncEncryption();
       renderRows();
     });
   }
   let source: OpenPackage | undefined;
-  let sourcePassword = "";
+  let sourcePassword: string | undefined;
+  let pendingPath: string | undefined;
   let rows: PlanRow[] = [];
   let busy = false;
   let applying = false;
@@ -80,6 +88,18 @@ export function mountMigrationWindow(win: Window): void {
   let controller: AbortController | undefined;
   let operation: Promise<void> | undefined;
   let visibleLimit = 100;
+  function syncEncryption() {
+    el("password-fields").hidden = !encrypt.checked;
+    el("plaintext-note").hidden =
+      encrypt.checked || !choices.get("credentials")!.checked;
+    if (!encrypt.checked) password.value = confirm.value = "";
+  }
+  function clearPending() {
+    pendingPath = undefined;
+    importPassword.value = "";
+    el("unlock").hidden = true;
+    el("import-file").textContent = "";
+  }
   function selectedCategories() {
     return new Set(
       [...choices]
@@ -110,9 +130,9 @@ export function mountMigrationWindow(win: Window): void {
     const fragment = doc.createDocumentFragment();
     for (const row of filtered.slice(0, visibleLimit)) {
       const entry = row.entry;
-      const container = doc.createElement("div");
-      container.className = "row";
-      const check = doc.createElement("input");
+      const container = create("div");
+      container.className = "zotclip-migration-row";
+      const check = create("input");
       check.type = "checkbox";
       check.checked = row.selected;
       check.disabled = busy || row.status === "same" || row.status === "skip";
@@ -122,11 +142,13 @@ export function mountMigrationWindow(win: Window): void {
         consent.checked = false;
         updateSelection();
       });
-      const content = doc.createElement("div");
-      const name = doc.createElement("strong");
+      const content = create("div");
+      const name = create("span");
+      name.className = "zotclip-migration-name";
       name.textContent = entryLabel(entry);
       content.append(name);
-      const detail = doc.createElement("small");
+      const detail = create("div");
+      detail.className = "zotclip-pref-help";
       if (entry.kind === "credential")
         detail.textContent = text("migration-key-masked");
       else if (entry.kind === "preference")
@@ -140,7 +162,8 @@ export function mountMigrationWindow(win: Window): void {
       if (row.reason) detail.textContent = text(row.reason);
       content.append(detail);
       if (entry.kind === "path" && !source?.manifest.recovery) {
-        const mapping = doc.createElement("input");
+        const mapping = create("input");
+        mapping.className = "zotclip-pref-textinput";
         mapping.type = "text";
         mapping.value = row.mapping;
         mapping.placeholder = text("migration-path-placeholder");
@@ -157,8 +180,8 @@ export function mountMigrationWindow(win: Window): void {
         });
         content.append(mapping);
       }
-      const badge = doc.createElement("span");
-      badge.className = "badge";
+      const badge = create("span");
+      badge.className = "zotclip-pref-help";
       badge.textContent = text(`migration-status-${row.status}`);
       container.append(check, content, badge);
       fragment.append(container);
@@ -169,7 +192,7 @@ export function mountMigrationWindow(win: Window): void {
   }
   function setBusy(value: boolean) {
     busy = value;
-    for (const input of doc.querySelectorAll<
+    for (const input of root!.querySelectorAll<
       HTMLInputElement | HTMLButtonElement
     >("input, button"))
       input.disabled = value;
@@ -188,8 +211,9 @@ export function mountMigrationWindow(win: Window): void {
   async function discardSource() {
     await source?.dispose();
     source = undefined;
-    sourcePassword = "";
+    sourcePassword = undefined;
     rows = [];
+    el("rows").replaceChildren();
     el("preview").hidden = true;
     consent.checked = false;
   }
@@ -211,9 +235,11 @@ export function mountMigrationWindow(win: Window): void {
               : "migration-failed";
         status.textContent = text(code);
       })
-      .finally(async () => {
-        if (disposed) await source?.dispose();
-        else setBusy(false);
+      .finally(() => {
+        if (!disposed) {
+          setBusy(false);
+          if (pendingPath) importPassword.focus();
+        }
         applying = false;
       });
   }
@@ -231,11 +257,11 @@ export function mountMigrationWindow(win: Window): void {
     ).open();
     return typeof path === "string" ? path : undefined;
   }
-  el("export").addEventListener("click", () =>
+  listen(el("export"), "click", () =>
     run(async () => {
-      if (password.value.length < 10)
+      if (encrypt.checked && password.value.length < 10)
         throw new Error("migration-password-short");
-      if (password.value !== confirm.value)
+      if (encrypt.checked && password.value !== confirm.value)
         throw new Error("migration-password-mismatch");
       if (!selectedCategories().size)
         throw new Error("migration-select-content");
@@ -245,17 +271,20 @@ export function mountMigrationWindow(win: Window): void {
         `ZotClip-${new Date().toISOString().replace(/[:.]/g, "-")}.zotclip`,
       );
       if (!destination) return;
+      clearPending();
       await discardSource();
       status.textContent = text("migration-collecting");
       const collection = await collectConfiguration(
         selectedCategories(),
         controller!.signal,
       );
-      status.textContent = text("migration-encrypting");
+      status.textContent = text(
+        encrypt.checked ? "migration-encrypting" : "migration-exporting",
+      );
       await exportConfiguration(
         win.crypto,
         collection,
-        password.value,
+        encrypt.checked ? password.value : undefined,
         destination,
         controller!.signal,
         onProgress,
@@ -265,39 +294,69 @@ export function mountMigrationWindow(win: Window): void {
       password.value = confirm.value = "";
     }),
   );
-  el("import").addEventListener("click", () =>
+  listen(el("import"), "click", () =>
     run(async () => {
-      if (!password.value) throw new Error("migration-password-required");
       const path = await choose("open", "migration-import");
       if (!path) return;
+      clearPending();
       await discardSource();
-      status.textContent = text("migration-decrypting");
-      source = await openPackage(
-        win.crypto,
-        path,
-        password.value,
-        controller!.signal,
-        onProgress,
-      );
-      sourcePassword = password.value;
-      password.value = confirm.value = "";
-      status.textContent = text("migration-planning");
-      rows = await planImport(source, controller!.signal);
-      for (const row of rows)
-        row.selected &&= choices.get(entryCategory(row.entry))!.checked;
-      el("source").textContent =
-        `Zotero ${source.manifest.source.zotero} · ${source.manifest.source.platform} · ${new Date(source.manifest.createdAt).toLocaleString()}`;
-      if (source.manifest.recovery)
-        el("source").textContent += ` · ${text("migration-recovery")}`;
-      el("preview").hidden = false;
-      visibleLimit = 100;
-      renderRows();
-      status.textContent = text("migration-preview-ready");
-      if (source.manifest.omitted.length)
-        result.textContent = `${text("migration-omitted")}\n${source.manifest.omitted.join("\n")}`;
+      if (await inspectPackageEncryption(path)) {
+        pendingPath = path;
+        el("import-file").textContent = PathUtils.filename(path);
+        el("unlock").hidden = false;
+        status.textContent = text("migration-password-required");
+      } else {
+        await previewPackage(path, undefined);
+      }
     }),
   );
-  el("apply").addEventListener("click", () =>
+  listen(el("unlock-preview"), "click", () =>
+    run(async () => {
+      if (!importPassword.value) throw new Error("migration-password-required");
+      await previewPackage(pendingPath!, importPassword.value);
+    }),
+  );
+  listen(el("unlock-cancel"), "click", () => {
+    clearPending();
+    status.textContent = "";
+  });
+  async function previewPackage(path: string, key: string | undefined) {
+    await discardSource();
+    status.textContent = text(
+      key === undefined ? "migration-checking" : "migration-decrypting",
+    );
+    source = await openPackage(
+      win.crypto,
+      path,
+      key,
+      controller!.signal,
+      onProgress,
+    );
+    sourcePassword = source.encrypted ? key : undefined;
+    clearPending();
+    status.textContent = text("migration-planning");
+    rows = await planImport(source, controller!.signal);
+    for (const row of rows)
+      row.selected &&= choices.get(entryCategory(row.entry))!.checked;
+    el("source").textContent =
+      `Zotero ${source.manifest.source.zotero} · ${source.manifest.source.platform} · ${new Date(source.manifest.createdAt).toLocaleString()}`;
+    if (source.manifest.recovery)
+      el("source").textContent += ` · ${text("migration-recovery")}`;
+    el("source").textContent +=
+      ` · ${text(source.encrypted ? "migration-encrypted" : "migration-unencrypted")}`;
+    el("recovery-mode").textContent = text(
+      source.encrypted
+        ? "migration-recovery-encrypted"
+        : "migration-recovery-unencrypted",
+    );
+    el("preview").hidden = false;
+    visibleLimit = 100;
+    renderRows();
+    status.textContent = text("migration-preview-ready");
+    if (source.manifest.omitted.length)
+      result.textContent = `${text("migration-omitted")}\n${source.manifest.omitted.join("\n")}`;
+  }
+  listen(el("apply"), "click", () =>
     run(async () => {
       if (!source || !consent.checked) return;
       const recoveryPath = await choose(
@@ -336,15 +395,16 @@ export function mountMigrationWindow(win: Window): void {
         await discardSource();
       } finally {
         plugin.hooks.onMigrationEnd();
+        if (!disposed) await onApplied();
       }
     }),
   );
-  consent.addEventListener("change", updateSelection);
-  filter.addEventListener("input", () => {
+  listen(consent, "change", updateSelection);
+  listen(filter, "input", () => {
     visibleLimit = 100;
     renderRows();
   });
-  el("more").addEventListener("click", () => {
+  listen(el("more"), "click", () => {
     visibleLimit += 100;
     renderRows();
   });
@@ -352,7 +412,7 @@ export function mountMigrationWindow(win: Window): void {
     ["select-visible", true],
     ["clear-visible", false],
   ] as const) {
-    el(id).addEventListener("click", () => {
+    listen(el(id), "click", () => {
       for (const row of visibleRows())
         if (!["same", "skip", "path"].includes(row.status))
           row.selected = selected;
@@ -360,26 +420,20 @@ export function mountMigrationWindow(win: Window): void {
       renderRows();
     });
   }
-  el("cancel").addEventListener("click", () => controller?.abort());
-  el("close").addEventListener("click", () => win.close());
-  win.addEventListener("beforeunload", (event) => {
+  listen(el("cancel"), "click", () => controller?.abort());
+  listen(encrypt, "change", syncEncryption);
+  listen(win, "beforeunload", (event) => {
     if (applying) event.preventDefault();
   });
-  win.addEventListener(
-    "unload",
-    () => {
-      disposed = true;
-      controller?.abort();
-      password.value = confirm.value = sourcePassword = "";
-      void (operation ?? Promise.resolve()).finally(() => source?.dispose());
-      migrationWindow = undefined;
-      closeMigration = undefined;
-    },
-    { once: true },
-  );
-  closeMigration = () => {
+  syncEncryption();
+  setBusy(false);
+  return composeDisposables(() => {
+    disposed = true;
+    listeners.abort();
     controller?.abort();
-    applying = false;
-    win.close();
-  };
+    password.value = confirm.value = "";
+    sourcePassword = undefined;
+    clearPending();
+    void (operation ?? Promise.resolve()).finally(discardSource);
+  });
 }

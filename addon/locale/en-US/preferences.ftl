@@ -44,5 +44,5 @@ pref-ai-prompt-help = In the prompt field you can use {"{"}title{"}"}, {"{"}abst
 pref-help = { $name } Build { $version } { $time }
 pref-key-save = Save / replace
 pref-key-delete = Delete
-pref-migration-open = Configuration migration…
-pref-migration-help = Export or import settings, plug-ins and encrypted ZotClip AI keys.
+pref-section-migration = Configuration migration
+pref-migration-help = Export or import settings, plug-ins and ZotClip AI keys. Password encryption is optional.

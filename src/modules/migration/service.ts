@@ -4,12 +4,18 @@ import {
   listAiCredentials,
   setAiApiKeyForProvider,
 } from "../tagging/credentials/zoteroCredentials";
-import { readPackage, writePackage } from "./package";
+import {
+  HEADER_BYTES,
+  packageIsEncrypted,
+  readPackage,
+  writePackage,
+} from "./package";
 import {
   isMachinePath,
   isOwnPreference,
   MAX_ENTRIES,
   MAX_FILE_BYTES,
+  MAX_PACKAGE_BYTES,
   portablePreference,
   validCredential,
   validPreferenceValue,
@@ -198,7 +204,7 @@ export async function collectConfiguration(
 export async function exportConfiguration(
   crypto: Crypto,
   collection: Collection,
-  password: string,
+  password: string | undefined,
   destination: string,
   signal?: AbortSignal,
   progress?: Progress,
@@ -228,15 +234,29 @@ export async function exportConfiguration(
 }
 
 export interface OpenPackage extends Collection {
+  encrypted: boolean;
   dispose(): Promise<void>;
+}
+export async function inspectPackageEncryption(path: string): Promise<boolean> {
+  const file = Zotero.File.pathToFile(path);
+  if (file.isSymlink() || !file.isFile())
+    throw new Error("migration-invalid-package");
+  const { size } = await IOUtils.stat(path);
+  if (!size || size > MAX_PACKAGE_BYTES || size < HEADER_BYTES + 20)
+    throw new Error("migration-invalid-package");
+  return packageIsEncrypted(
+    new Uint8Array(await IOUtils.read(path, { maxBytes: HEADER_BYTES })),
+  );
 }
 export async function openPackage(
   crypto: Crypto,
   path: string,
-  password: string,
+  password: string | undefined,
   signal?: AbortSignal,
   progress?: Progress,
 ): Promise<OpenPackage> {
+  const encrypted = await inspectPackageEncryption(path);
+  if (encrypted && !password) throw new Error("migration-password-required");
   const directory = PathUtils.join(
     Zotero.getTempDirectory().path,
     `zotclip-migration-${Zotero.randomString(16)}`,
@@ -246,9 +266,6 @@ export async function openPackage(
   const dispose = () =>
     IOUtils.remove(directory, { recursive: true, ignoreAbsent: true });
   try {
-    const source = Zotero.File.pathToFile(path);
-    if (source.isSymlink() || !source.isFile())
-      throw new Error("migration-invalid-package");
     const stat = await IOUtils.stat(path);
     const metadata = await readPackage(
       crypto,
@@ -267,7 +284,7 @@ export async function openPackage(
       signal,
       progress,
     );
-    return { manifest: metadata, files, dispose };
+    return { manifest: metadata, files, encrypted, dispose };
   } catch (error) {
     await dispose();
     throw error;
@@ -395,7 +412,7 @@ export async function applyImport(
   crypto: Crypto,
   source: Collection,
   rows: PlanRow[],
-  password: string,
+  password: string | undefined,
   recoveryPath: string,
   progress: Progress = () => {},
   signal?: AbortSignal,

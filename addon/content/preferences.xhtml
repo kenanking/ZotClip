@@ -11,18 +11,6 @@
 >
   <label><html:h2 data-l10n-id="pref-title"></html:h2></label>
 
-  <vbox class="zotclip-pref-section">
-    <html:button
-      id="zotclip-open-migration"
-      type="button"
-      class="zotclip-migration-button"
-    >
-      <html:span class="zotclip-migration-icon" aria-hidden="true"></html:span>
-      <html:span data-l10n-id="pref-migration-open"></html:span>
-    </html:button>
-    <description class="zotclip-pref-help" data-l10n-id="pref-migration-help" />
-  </vbox>
-
   <label class="zotclip-pref-section"
     ><html:h3 data-l10n-id="pref-section-copy"></html:h3
   ></label>
@@ -344,6 +332,217 @@
     <description class="zotclip-pref-help">
       <html:span data-l10n-id="pref-ai-prompt-help"></html:span>
     </description>
+  </vbox>
+  <separator class="thin" />
+
+  <vbox id="zotclip-migration" class="zotclip-pref-section">
+    <label class="zotclip-pref-section-heading">
+      <html:h3 data-l10n-id="pref-section-migration"></html:h3>
+    </label>
+    <description class="zotclip-pref-help" data-l10n-id="pref-migration-help" />
+
+    <vbox class="zotclip-pref-field">
+      <html:div
+        id="zotclip-migration-contents"
+        class="zotclip-pref-field-label"
+        data-text="migration-contents"
+      ></html:div>
+      <html:div
+        id="zotclip-migration-categories"
+        class="zotclip-pref-toggle-row"
+        role="group"
+        aria-labelledby="zotclip-migration-contents"
+      ></html:div>
+      <description class="zotclip-pref-help"
+        ><html:span data-text="migration-scope"></html:span
+      ></description>
+    </vbox>
+
+    <html:div class="zotclip-pref-field">
+      <html:label class="zotclip-pref-type-option">
+        <html:input
+          id="zotclip-migration-encrypt"
+          type="checkbox"
+          aria-controls="zotclip-migration-password-fields"
+        />
+        <html:span data-text="migration-encrypt-option"></html:span>
+      </html:label>
+      <html:div
+        id="zotclip-migration-plaintext-note"
+        class="zotclip-pref-help"
+        data-text="migration-plaintext-note"
+      ></html:div>
+    </html:div>
+    <html:div id="zotclip-migration-password-fields" hidden="hidden">
+      <vbox class="zotclip-pref-field">
+        <html:div class="zotclip-pref-inline-field">
+          <html:label
+            class="zotclip-pref-field-label"
+            for="zotclip-migration-password"
+            data-text="migration-password"
+          ></html:label>
+          <html:input
+            id="zotclip-migration-password"
+            class="zotclip-pref-textinput"
+            type="password"
+            autocomplete="off"
+            aria-describedby="zotclip-migration-password-help"
+          />
+        </html:div>
+      </vbox>
+      <vbox class="zotclip-pref-field">
+        <html:div class="zotclip-pref-inline-field">
+          <html:label
+            class="zotclip-pref-field-label"
+            for="zotclip-migration-confirm-password"
+            data-text="migration-confirm-password"
+          ></html:label>
+          <html:input
+            id="zotclip-migration-confirm-password"
+            class="zotclip-pref-textinput"
+            type="password"
+            autocomplete="off"
+          />
+        </html:div>
+        <description
+          id="zotclip-migration-password-help"
+          class="zotclip-pref-help"
+          ><html:span data-text="migration-password-help"></html:span
+        ></description>
+      </vbox>
+    </html:div>
+
+    <html:div class="zotclip-pref-inline-field zotclip-pref-field">
+      <html:button
+        id="zotclip-migration-export"
+        type="button"
+        data-text="migration-export"
+      ></html:button>
+      <html:button
+        id="zotclip-migration-import"
+        type="button"
+        data-text="migration-import"
+      ></html:button>
+      <html:button
+        id="zotclip-migration-cancel"
+        type="button"
+        hidden="hidden"
+        data-text="migration-cancel"
+      ></html:button>
+    </html:div>
+    <html:div
+      id="zotclip-migration-unlock"
+      class="zotclip-pref-field"
+      hidden="hidden"
+    >
+      <html:div
+        id="zotclip-migration-import-file"
+        class="zotclip-pref-help"
+      ></html:div>
+      <html:div class="zotclip-pref-inline-field zotclip-pref-field">
+        <html:label
+          for="zotclip-migration-import-password"
+          class="zotclip-pref-field-label"
+          data-text="migration-import-password"
+        ></html:label>
+        <html:input
+          id="zotclip-migration-import-password"
+          class="zotclip-pref-textinput"
+          type="password"
+          autocomplete="off"
+        />
+      </html:div>
+      <html:div class="zotclip-pref-inline-field zotclip-pref-field">
+        <html:button
+          id="zotclip-migration-unlock-preview"
+          type="button"
+          data-text="migration-unlock-preview"
+        ></html:button>
+        <html:button
+          id="zotclip-migration-unlock-cancel"
+          type="button"
+          data-text="migration-cancel"
+        ></html:button>
+      </html:div>
+    </html:div>
+    <html:progress
+      id="zotclip-migration-progress"
+      hidden="hidden"
+    ></html:progress>
+    <html:div
+      id="zotclip-migration-status"
+      class="zotclip-pref-help"
+      role="status"
+      aria-live="polite"
+    ></html:div>
+
+    <html:section
+      id="zotclip-migration-preview"
+      hidden="hidden"
+      aria-labelledby="zotclip-migration-preview-title"
+    >
+      <html:h3
+        id="zotclip-migration-preview-title"
+        data-text="migration-preview"
+      ></html:h3>
+      <html:div
+        id="zotclip-migration-source"
+        class="zotclip-pref-help"
+      ></html:div>
+      <html:p
+        class="zotclip-pref-help"
+        data-text="migration-preview-help"
+      ></html:p>
+      <html:div class="zotclip-pref-inline-field zotclip-pref-field">
+        <html:label
+          for="zotclip-migration-filter"
+          class="zotclip-pref-field-label"
+          data-text="migration-filter"
+        ></html:label>
+        <html:input
+          id="zotclip-migration-filter"
+          class="zotclip-pref-textinput"
+          type="search"
+        />
+      </html:div>
+      <html:div class="zotclip-pref-inline-field zotclip-pref-field">
+        <html:button
+          id="zotclip-migration-select-visible"
+          type="button"
+          data-text="migration-select-visible"
+        ></html:button>
+        <html:button
+          id="zotclip-migration-clear-visible"
+          type="button"
+          data-text="migration-clear-visible"
+        ></html:button>
+      </html:div>
+      <html:div id="zotclip-migration-rows"></html:div>
+      <html:button
+        id="zotclip-migration-more"
+        type="button"
+        hidden="hidden"
+        data-text="migration-more"
+      ></html:button>
+      <html:p
+        id="zotclip-migration-recovery-mode"
+        class="zotclip-pref-help"
+      ></html:p>
+      <html:p id="zotclip-migration-selection" role="status"></html:p>
+      <html:label class="zotclip-pref-type-option">
+        <html:input id="zotclip-migration-consent" type="checkbox" />
+        <html:span data-text="migration-consent"></html:span>
+      </html:label>
+      <html:div class="zotclip-pref-field">
+        <html:button
+          id="zotclip-migration-apply"
+          type="button"
+          disabled="disabled"
+          data-text="migration-apply"
+        ></html:button>
+      </html:div>
+    </html:section>
+    <html:div id="zotclip-migration-result" role="status"></html:div>
   </vbox>
 </groupbox>
 <vbox class="zotclip-pref-build">

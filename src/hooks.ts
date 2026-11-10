@@ -4,7 +4,6 @@ import {
   cancelAllAiTasks,
   setAiTasksPaused,
 } from "./modules/tagging/core/taskManager";
-import { disposeMigrationUI } from "./modules/migration/ui";
 import { stopClipboardProcesses } from "./modules/copy/clipboard/commandRunner";
 import { getReaderItemIDForWindow } from "./modules/copy/zoteroReaderAccess";
 import { copyItems } from "./modules/copy/copyCommands";
@@ -221,13 +220,12 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onAppShutdown(): void {
-  disposeMigrationUI();
+  disposePrefsUI();
   cancelAllAiTasks();
   stopClipboardProcesses();
 }
 
 function onShutdown(): void {
-  disposeMigrationUI();
   addon.data.initialized = false;
   disposePrefsUI();
   disposeTaskCards();

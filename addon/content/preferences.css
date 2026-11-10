@@ -2,27 +2,6 @@
   padding: 8px 0 0;
 }
 
-.zotclip-migration-button {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 8px;
-  padding: 6px 10px;
-  font: inherit;
-  color: ButtonText;
-  background: ButtonFace;
-  border: 1px solid color-mix(in srgb, CanvasText 25%, Canvas);
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.zotclip-migration-icon {
-  width: 20px;
-  height: 20px;
-  background: currentColor;
-  mask: url("icons/migration.svg") center / contain no-repeat;
-}
-
 .zotclip-pref-group > label > h2 {
   font-size: 1.35em;
   font-weight: 400;
@@ -175,4 +154,60 @@
 .zotclip-pref-prompt-area {
   min-height: 120px;
   resize: vertical;
+}
+
+#zotclip-migration .zotclip-pref-textinput {
+  min-width: 0;
+}
+
+#zotclip-migration-progress {
+  width: 100%;
+  margin-top: 10px;
+}
+
+#zotclip-migration-status[data-error="true"] {
+  color: light-dark(#b00020, #ffaaaa);
+}
+
+#zotclip-migration-preview {
+  margin-top: 12px;
+}
+
+#zotclip-migration-rows {
+  max-height: 340px;
+  overflow: auto;
+  margin-top: 10px;
+  border: var(--material-border, 1px solid ThreeDShadow);
+}
+
+.zotclip-migration-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: var(--material-border, 1px solid ThreeDShadow);
+  overflow-wrap: anywhere;
+}
+
+.zotclip-migration-row:last-child {
+  border-bottom: 0;
+}
+
+.zotclip-migration-name {
+  font-weight: 600;
+}
+
+.zotclip-migration-row .zotclip-pref-textinput {
+  margin-top: 6px;
+}
+
+#zotclip-migration-result {
+  margin-top: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#zotclip-migration [hidden] {
+  display: none !important;
 }

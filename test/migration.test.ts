@@ -1,10 +1,11 @@
 import { config } from "../package.json";
 import { FilePickerHelper } from "zotero-plugin-toolkit";
-import { mountMigrationWindow } from "../src/modules/migration/ui";
+import { registerMigrationSection } from "../src/modules/migration/ui";
 import {
   applyImport,
   collectConfiguration,
   exportConfiguration,
+  inspectPackageEncryption,
   openPackage,
   planImport,
   type Collection,
@@ -125,85 +126,101 @@ describe("configuration migration", function () {
     });
   });
 
-  it("previews without writes, restores preferences, files and keys from an encrypted recovery package", async function () {
-    const input = PathUtils.join(directory, "payload.txt");
-    await IOUtils.writeUTF8(input, "incoming file");
-    const data = collection(
-      [
-        { kind: "preference", name: pref, value: false },
-        {
-          kind: "credential",
-          provider: "custom",
-          origin: endpoint,
-          value: "incoming-key",
-        },
-        {
-          kind: "file",
-          category: "locate",
-          path: resourceName,
-          size: (await IOUtils.stat(input)).size!,
-        },
-      ],
-      new Map([[`locate/${resourceName}`, input]]),
+  for (const key of [password, undefined]) {
+    it(
+      "previews and recovers preferences, files and keys: " +
+        (key ? "encrypted" : "unencrypted"),
+      async function () {
+        const input = PathUtils.join(directory, "payload.txt");
+        await IOUtils.writeUTF8(input, "incoming file");
+        const data = collection(
+          [
+            { kind: "preference", name: pref, value: false },
+            {
+              kind: "credential",
+              provider: "custom",
+              origin: endpoint,
+              value: "incoming-key",
+            },
+            {
+              kind: "file",
+              category: "locate",
+              path: resourceName,
+              size: (await IOUtils.stat(input)).size!,
+            },
+          ],
+          new Map([[`locate/${resourceName}`, input]]),
+        );
+        Zotero.Prefs.set(pref, true, true);
+        await setAiApiKeyForProvider("custom", "previous-key", endpoint);
+        const destination = PathUtils.join(
+          directory,
+          "roundtrip-" + (key ? "encrypted" : "plain") + ".zotclip",
+        );
+        await exportConfiguration(window.crypto, data, key, destination);
+        const opened = await openPackage(window.crypto, destination, key);
+        assert.equal(opened.encrypted, key !== undefined);
+        let staged: string | undefined;
+        try {
+          staged = [...opened.files.values()][0];
+          const rows = await planImport(opened);
+          assert.equal(Zotero.Prefs.get(pref, true), true);
+          assert.equal(await IOUtils.exists(resource), false);
+          assert.deepEqual(
+            rows.map((row) => row.status),
+            ["replace", "replace", "add"],
+          );
+          const recoveryPath = PathUtils.join(
+            directory,
+            "recovery-" + (key ? "encrypted" : "plain") + ".zotclip",
+          );
+          const result = await applyImport(
+            window.crypto,
+            opened,
+            rows,
+            key,
+            recoveryPath,
+          );
+          assert.deepEqual(result.failed, []);
+          assert.equal(result.completed.length, 3);
+          assert.equal(Zotero.Prefs.get(pref, true), false);
+          assert.equal(await IOUtils.readUTF8(resource), "incoming file");
+          const resources = await collectConfiguration(new Set(["locate"]));
+          assert.ok(resources.files.has(`locate/${resourceName}`));
+          assert.equal(
+            await getAiApiKeyForProvider("custom", endpoint),
+            "incoming-key",
+          );
+          const recovery = await openPackage(window.crypto, recoveryPath, key);
+          try {
+            assert.equal(recovery.manifest.recovery, true);
+            const restored = await applyImport(
+              window.crypto,
+              recovery,
+              await planImport(recovery),
+              key,
+              PathUtils.join(
+                directory,
+                "undo-recovery-" + (key ? "encrypted" : "plain") + ".zotclip",
+              ),
+            );
+            assert.deepEqual(restored.failed, []);
+            assert.equal(Zotero.Prefs.get(pref, true), true);
+            assert.equal(
+              await getAiApiKeyForProvider("custom", endpoint),
+              "previous-key",
+            );
+            assert.equal(await IOUtils.exists(resource), false);
+          } finally {
+            await recovery.dispose();
+          }
+        } finally {
+          await opened.dispose();
+        }
+        assert.equal(await IOUtils.exists(staged!), false);
+      },
     );
-    Zotero.Prefs.set(pref, true, true);
-    await setAiApiKeyForProvider("custom", "previous-key", endpoint);
-    const destination = PathUtils.join(directory, "roundtrip.zotclip");
-    await exportConfiguration(window.crypto, data, password, destination);
-    const opened = await openPackage(window.crypto, destination, password);
-    let staged: string | undefined;
-    try {
-      staged = [...opened.files.values()][0];
-      const rows = await planImport(opened);
-      assert.equal(Zotero.Prefs.get(pref, true), true);
-      assert.equal(await IOUtils.exists(resource), false);
-      assert.deepEqual(
-        rows.map((row) => row.status),
-        ["replace", "replace", "add"],
-      );
-      const recoveryPath = PathUtils.join(directory, "recovery.zotclip");
-      const result = await applyImport(
-        window.crypto,
-        opened,
-        rows,
-        password,
-        recoveryPath,
-      );
-      assert.deepEqual(result.failed, []);
-      assert.equal(result.completed.length, 3);
-      assert.equal(Zotero.Prefs.get(pref, true), false);
-      assert.equal(await IOUtils.readUTF8(resource), "incoming file");
-      const resources = await collectConfiguration(new Set(["locate"]));
-      assert.ok(resources.files.has(`locate/${resourceName}`));
-      assert.equal(
-        await getAiApiKeyForProvider("custom", endpoint),
-        "incoming-key",
-      );
-      const recovery = await openPackage(window.crypto, recoveryPath, password);
-      try {
-        assert.equal(recovery.manifest.recovery, true);
-        const restored = await applyImport(
-          window.crypto,
-          recovery,
-          await planImport(recovery),
-          password,
-          PathUtils.join(directory, "undo-recovery.zotclip"),
-        );
-        assert.deepEqual(restored.failed, []);
-        assert.equal(Zotero.Prefs.get(pref, true), true);
-        assert.equal(
-          await getAiApiKeyForProvider("custom", endpoint),
-          "previous-key",
-        );
-        assert.equal(await IOUtils.exists(resource), false);
-      } finally {
-        await recovery.dispose();
-      }
-    } finally {
-      await opened.dispose();
-    }
-    assert.equal(await IOUtils.exists(staged!), false);
-  });
+  }
 
   it("recovery restores overwritten files and removes newly introduced preferences and credentials", async function () {
     await IOUtils.makeDirectory(PathUtils.parent(resource)!, {
@@ -411,7 +428,30 @@ describe("configuration migration", function () {
     );
   });
 
-  it("renders localized themed controls, verifies a package before preview and masks keys", async function () {
+  async function openMigrationPreferences() {
+    const pane = (Zotero.PreferencePanes as any).pluginPanes.find(
+      (pane: any) => pane.pluginID === config.addonID,
+    );
+    const preferences = Zotero.Utilities.Internal.openPreferences(pane.id)!;
+    for (
+      let i = 0;
+      i < 100 &&
+      preferences.document.querySelectorAll(
+        "#zotclip-migration-categories input",
+      ).length !== 6;
+      i++
+    )
+      await Zotero.Promise.delay(50);
+    assert.equal(
+      preferences.document.querySelectorAll(
+        "#zotclip-migration-categories input",
+      ).length,
+      6,
+    );
+    return preferences;
+  }
+
+  it("exports and previews inline with native settings controls, masked keys and cleanup", async function () {
     const originalAddon = (window as any).addon;
     (window as any).addon = Zotero[config.addonInstance];
     const originalPicker = FilePickerHelper.prototype.open;
@@ -432,160 +472,333 @@ describe("configuration migration", function () {
     );
     let chosenPath = path;
     FilePickerHelper.prototype.open = async () => chosenPath;
-    let mounted!: Window;
-    const win = Zotero.getMainWindow().openDialog(
-      `chrome://${config.addonRef}/content/migration.xhtml`,
-      "",
-      "chrome,width=860,height=760",
-      {
-        mount: (target: Window) => {
-          mounted = target;
-          mountMigrationWindow(target);
-        },
-      },
-    )!;
-    try {
-      for (let i = 0; i < 50 && !mounted; i++) await Zotero.Promise.delay(50);
-      assert.ok(mounted);
-      const migration = mounted!;
-      const doc = migration.document;
-      assert.equal(doc.querySelectorAll("#categories input").length, 6);
-      assert.isFalse(doc.body.textContent!.includes("zotclip-migration-"));
-      assert.equal(
-        (doc.getElementById("apply") as HTMLButtonElement).disabled,
-        true,
-      );
-      (doc.getElementById("password") as HTMLInputElement).value = password;
-      (doc.getElementById("import") as HTMLButtonElement).click();
-      for (let i = 0; i < 100 && !doc.querySelector(".row"); i++)
+    const preferences = await openMigrationPreferences();
+    const doc = preferences.document;
+    const original = doc.getElementById("zotclip-migration")!;
+    // Keep the real preferences layout; bind the test module to a fresh section
+    // so its file-picker stub does not depend on the separately bundled add-on.
+    const root = original.cloneNode(true) as HTMLElement;
+    original.replaceWith(root);
+    let refreshed = 0;
+    const handle = registerMigrationSection(doc, async () => {
+      refreshed++;
+    });
+    const el = <T extends HTMLElement>(id: string) =>
+      doc.getElementById("zotclip-migration-" + id) as T;
+    const idle = async () => {
+      for (let i = 0; i < 150 && el<HTMLButtonElement>("import").disabled; i++)
         await Zotero.Promise.delay(50);
-      assert.equal(
-        doc.querySelectorAll(".row").length,
-        2,
-        doc.getElementById("status")!.textContent!,
+      assert.isFalse(
+        el<HTMLButtonElement>("import").disabled,
+        el("status").textContent!,
       );
-      assert.isFalse(doc.body.textContent!.includes("invisible-fixture-key"));
-      assert.equal(
-        (doc.getElementById("password") as HTMLInputElement).value,
-        "",
-      );
-      assert.equal(
-        (doc.getElementById("apply") as HTMLButtonElement).disabled,
-        true,
-      );
-      (doc.getElementById("consent") as HTMLInputElement).click();
-      assert.equal(
-        (doc.getElementById("apply") as HTMLButtonElement).disabled,
-        false,
-      );
-      const draw = async (theme: string) => {
-        doc.documentElement.style.colorScheme = theme;
+    };
+    const draw = async (theme: "light" | "dark", state: string) => {
+      preferences.browsingContext.prefersColorSchemeOverride = theme;
+      for (let i = 0; i < 3; i++) {
         await Zotero.Promise.delay(100);
-        const canvas = window.document.createElementNS(
-          "http://www.w3.org/1999/xhtml",
-          "canvas",
-        ) as HTMLCanvasElement;
-        canvas.width = migration.innerWidth;
-        canvas.height = doc.documentElement.scrollHeight;
-        const context = canvas.getContext("2d")!;
-        (context as any).drawWindow(
-          migration,
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-          "white",
-        );
-        const data = Uint8Array.from(
-          atob(canvas.toDataURL().split(",")[1]),
-          (c) => c.charCodeAt(0),
-        );
-        await IOUtils.write(
-          PathUtils.join(PathUtils.profileDir, `migration-${theme}.png`),
-          data,
-        );
-      };
-      await draw("light");
-      await draw("dark");
-      chosenPath = PathUtils.join(directory, "ui-recovery.zotclip");
-      (doc.getElementById("apply") as HTMLButtonElement).click();
-      for (
-        let i = 0;
-        i < 100 && !(doc.getElementById("preview") as HTMLElement).hidden;
-        i++
-      )
-        await Zotero.Promise.delay(50);
+        root.scrollIntoView({ block: "start" });
+      }
       assert.equal(
-        Zotero.Prefs.get(pref, true),
-        0,
-        doc.getElementById("status")!.textContent!,
+        preferences.matchMedia("(prefers-color-scheme: dark)").matches,
+        theme === "dark",
       );
+      assert.isAtMost(
+        root.scrollWidth,
+        root.clientWidth,
+        "Migration fits the settings pane",
+      );
+      const canvas = doc.createElementNS(
+        "http://www.w3.org/1999/xhtml",
+        "canvas",
+      );
+      canvas.width = preferences.innerWidth;
+      canvas.height = preferences.innerHeight;
+      (canvas.getContext("2d") as any).drawWindow(
+        preferences,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+        "white",
+      );
+      const bytes = Uint8Array.from(
+        atob(canvas.toDataURL().split(",")[1]),
+        (c) => c.charCodeAt(0),
+      );
+      await IOUtils.write(
+        PathUtils.join(
+          PathUtils.profileDir,
+          "migration-inline-" + state + "-" + theme + ".png",
+        ),
+        bytes,
+      );
+    };
+    try {
+      preferences.resizeTo(1000, 900);
+      const title = doc.title;
+      assert.equal(
+        el<HTMLInputElement>("password").namespaceURI,
+        "http://www.w3.org/1999/xhtml",
+      );
+      assert.isFalse(root.textContent!.includes("zotclip-migration-"));
+      assert.isTrue(el<HTMLButtonElement>("apply").disabled);
+      const encryption = el<HTMLInputElement>("encrypt");
+      const credentials = root.querySelector<HTMLInputElement>(
+        '[data-category="credentials"]',
+      )!;
+      assert.isFalse(encryption.checked);
+      assert.isTrue(credentials.checked);
+      assert.isTrue(el("password-fields").hidden);
+      assert.isFalse(el("plaintext-note").hidden);
+      encryption.click();
+      assert.isFalse(el("password-fields").hidden);
+      assert.isTrue(el("plaintext-note").hidden);
+      el<HTMLInputElement>("password").value = password;
+      encryption.click();
+      assert.isTrue(
+        credentials.checked,
+        "Disabling encryption keeps AI keys selected",
+      );
+      assert.equal(el<HTMLInputElement>("password").value, "");
+      const outside = doc.querySelector<HTMLInputElement>(
+        "[data-zotclip-custom-types]",
+      )!;
+      assert.isFalse(outside.disabled);
+      await draw("light", "settings");
+      await draw("dark", "settings");
+      preferences.resizeTo(760, 900);
+      await draw("light", "narrow");
+      preferences.resizeTo(1000, 900);
+      const nativeButton = doc.querySelector<HTMLButtonElement>(
+        "[data-zotclip-key-save]",
+      )!;
+      assert.equal(
+        preferences.getComputedStyle(el("export")).backgroundColor,
+        preferences.getComputedStyle(nativeButton).backgroundColor,
+      );
+      assert.equal(
+        preferences.getComputedStyle(el("export")).borderRadius,
+        preferences.getComputedStyle(nativeButton).borderRadius,
+      );
+      el<HTMLButtonElement>("import").click();
+      assert.isTrue(el<HTMLButtonElement>("import").disabled);
+      assert.isFalse(
+        outside.disabled,
+        "Migration does not disable unrelated settings",
+      );
+      await idle();
+      assert.isFalse(el("unlock").hidden);
+      assert.isFalse(
+        encryption.checked,
+        "Encrypted imports do not change the export choice",
+      );
+      assert.equal(root.querySelectorAll(".zotclip-migration-row").length, 0);
+      el<HTMLInputElement>("import-password").value = "wrong-password";
+      el<HTMLButtonElement>("unlock-preview").click();
+      await idle();
+      assert.equal(el("status").dataset.error, "true");
+      assert.isTrue(el("preview").hidden);
+      el<HTMLInputElement>("import-password").value = password;
+      el<HTMLButtonElement>("unlock-preview").click();
+      await idle();
+      assert.isTrue(el("unlock").hidden);
+      assert.equal(el<HTMLInputElement>("import-password").value, "");
+      assert.equal(
+        root.querySelectorAll(".zotclip-migration-row").length,
+        2,
+        el("status").textContent!,
+      );
+      assert.isFalse(root.textContent!.includes("invisible-fixture-key"));
+      assert.equal(el<HTMLInputElement>("password").value, "");
+      assert.isTrue(el<HTMLButtonElement>("apply").disabled);
+      el<HTMLInputElement>("consent").click();
+      assert.isFalse(el<HTMLButtonElement>("apply").disabled);
+      await draw("light", "preview");
+      await draw("dark", "preview");
+      chosenPath = PathUtils.join(directory, "ui-recovery.zotclip");
+      el<HTMLButtonElement>("apply").click();
+      await idle();
+      assert.equal(Zotero.Prefs.get(pref, true), 0, el("status").textContent!);
       assert.equal(
         await getAiApiKeyForProvider("custom", endpoint),
         "invisible-fixture-key",
       );
       assert.equal(await IOUtils.exists(chosenPath), true);
+      assert.isTrue(await inspectPackageEncryption(chosenPath));
+      assert.equal(refreshed, 1);
+      assert.ok(el("result").textContent!.includes(chosenPath));
+      assert.equal(
+        doc.title,
+        title,
+        "Migration keeps the preferences window title",
+      );
+
+      for (const input of root.querySelectorAll<HTMLInputElement>(
+        "[data-category]",
+      ))
+        input.checked = ["preferences", "credentials"].includes(
+          input.dataset.category!,
+        );
+      chosenPath = PathUtils.join(directory, "ui-export.zotclip");
+      el<HTMLButtonElement>("export").click();
+      await idle();
+      assert.equal(
+        await IOUtils.exists(chosenPath),
+        true,
+        el("status").textContent!,
+      );
+      assert.equal(el<HTMLInputElement>("confirm-password").value, "");
+      assert.isFalse(await inspectPackageEncryption(chosenPath));
+      const plainPath = chosenPath;
+      const exported = await openPackage(window.crypto, plainPath, undefined);
+      try {
+        assert.ok(
+          exported.manifest.entries.some(
+            (entry) => entry.kind === "preference" && entry.name === pref,
+          ),
+        );
+        assert.ok(
+          exported.manifest.entries.some(
+            (entry) =>
+              entry.kind === "credential" &&
+              entry.value === "invisible-fixture-key",
+          ),
+        );
+      } finally {
+        await exported.dispose();
+      }
+
+      Zotero.Prefs.set(pref, 9, true);
+      await setAiApiKeyForProvider("custom", "before-plain-key", endpoint);
+      el<HTMLButtonElement>("import").click();
+      await idle();
+      assert.isTrue(el("unlock").hidden, "Plain imports need no password");
+      assert.isFalse(root.textContent!.includes("invisible-fixture-key"));
+      el<HTMLInputElement>("consent").click();
+      chosenPath = PathUtils.join(directory, "ui-plain-recovery.zotclip");
+      el<HTMLButtonElement>("apply").click();
+      await idle();
+      assert.equal(Zotero.Prefs.get(pref, true), 0);
+      assert.equal(
+        await getAiApiKeyForProvider("custom", endpoint),
+        "invisible-fixture-key",
+      );
+      const plainRecovery = await openPackage(
+        window.crypto,
+        chosenPath,
+        undefined,
+      );
+      try {
+        assert.isFalse(plainRecovery.encrypted);
+        assert.ok(
+          plainRecovery.manifest.entries.some(
+            (entry) =>
+              entry.kind === "credential" && entry.value === "before-plain-key",
+          ),
+        );
+        await applyImport(
+          window.crypto,
+          plainRecovery,
+          await planImport(plainRecovery),
+          undefined,
+          PathUtils.join(directory, "ui-plain-undo.zotclip"),
+        );
+        assert.equal(Zotero.Prefs.get(pref, true), 9);
+        assert.equal(
+          await getAiApiKeyForProvider("custom", endpoint),
+          "before-plain-key",
+        );
+      } finally {
+        await plainRecovery.dispose();
+      }
+
+      encryption.click();
+      chosenPath = PathUtils.join(directory, "ui-encrypted-export.zotclip");
+      el<HTMLInputElement>("password").value = password;
+      el<HTMLInputElement>("confirm-password").value = password;
+      await draw("light", "encrypted");
+      el<HTMLButtonElement>("export").click();
+      await idle();
+      assert.isTrue(await inspectPackageEncryption(chosenPath));
+
+      chosenPath = plainPath;
+      const temp = Zotero.getTempDirectory().path;
+      const before = new Set(await IOUtils.getChildren(temp));
+      el<HTMLButtonElement>("import").click();
+      await idle();
+      const staged = (await IOUtils.getChildren(temp)).filter(
+        (p) =>
+          !before.has(p) &&
+          PathUtils.filename(p).startsWith("zotclip-migration-"),
+      );
+      assert.equal(staged.length, 1);
+      el<HTMLInputElement>("password").value = password;
+      el<HTMLInputElement>("confirm-password").value = password;
+      el<HTMLInputElement>("import-password").value = password;
+      handle.dispose();
+      assert.equal(el<HTMLInputElement>("password").value, "");
+      assert.equal(el<HTMLInputElement>("confirm-password").value, "");
+      assert.equal(el<HTMLInputElement>("import-password").value, "");
+      for (let i = 0; i < 100 && (await IOUtils.exists(staged[0])); i++)
+        await Zotero.Promise.delay(20);
+      assert.isFalse(await IOUtils.exists(staged[0]));
+      assert.equal(root.querySelectorAll(".zotclip-migration-row").length, 0);
     } finally {
-      win.close();
+      handle.dispose();
+      preferences.close();
       FilePickerHelper.prototype.open = originalPicker;
       (window as any).addon = originalAddon;
     }
   });
 
-  it("opens the packaged migration window from the actual preferences pane", async function () {
-    const pane = (Zotero.PreferencePanes as any).pluginPanes.find(
-      (pane: any) => pane.pluginID === config.addonID,
-    );
-    const preferences = Zotero.Utilities.Internal.openPreferences(pane.id)!;
-    let migration: Window | undefined;
+  it("mounts the packaged migration controls directly in Preferences without another window", async function () {
+    const preferences = await openMigrationPreferences();
     try {
-      for (
-        let i = 0;
-        i < 100 &&
-        !preferences.document.getElementById("zotclip-open-migration");
-        i++
-      )
-        await Zotero.Promise.delay(50);
-      const button = preferences.document.getElementById(
-        "zotclip-open-migration",
+      const doc = preferences.document;
+      assert.isNull(doc.getElementById("zotclip-open-migration"));
+      const root = doc.getElementById("zotclip-migration")!;
+      assert.isFalse(root.textContent!.includes("zotclip-migration-"));
+      const button = doc.getElementById(
+        "zotclip-migration-export",
       ) as HTMLButtonElement;
-      assert.ok(button);
+      const encryption = doc.getElementById(
+        "zotclip-migration-encrypt",
+      ) as HTMLInputElement;
+      assert.isFalse(encryption.checked);
+      encryption.click();
       button.click();
-      for (let i = 0; i < 50 && !migration; i++) {
-        const windows = Services.wm.getEnumerator(null);
-        while (windows.hasMoreElements()) {
-          const candidate = windows.getNext() as Window;
-          if (
-            candidate.location.href ===
-            `chrome://${config.addonRef}/content/migration.xhtml`
-          )
-            migration = candidate;
-        }
-        await Zotero.Promise.delay(50);
-      }
-      assert.ok(migration);
+      for (let i = 0; i < 100 && button.disabled; i++)
+        await Zotero.Promise.delay(20);
       assert.equal(
-        migration!.document.querySelectorAll("#categories input").length,
-        6,
+        doc
+          .getElementById("zotclip-migration-status")!
+          .getAttribute("data-error"),
+        "true",
       );
-      assert.isFalse(
-        migration!.document.body.textContent!.includes("zotclip-migration-"),
-      );
-      const scope: Record<string, unknown> = {};
-      const scopeFixture = PathUtils.join(directory, "scope.js");
-      await IOUtils.writeUTF8(
-        scopeFixture,
-        "var encoderType = typeof TextEncoder; var decoderType = typeof TextDecoder;",
-      );
-      Services.scriptloader.loadSubScript(
-        Services.io.newFileURI(Zotero.File.pathToFile(scopeFixture)).spec,
-        scope,
-      );
-      assert.equal(scope.encoderType, "function");
-      assert.equal(scope.decoderType, "function");
-    } finally {
-      migration?.close();
+      assert.ok(doc.getElementById("zotclip-migration-status")!.textContent);
+      const windows = Services.wm.getEnumerator(null);
+      while (windows.hasMoreElements()) {
+        const candidate = windows.getNext() as Window;
+        assert.notEqual(
+          candidate.location.href,
+          "chrome://" + config.addonRef + "/content/migration.xhtml",
+        );
+      }
+      const passwordInput = doc.getElementById(
+        "zotclip-migration-password",
+      ) as HTMLInputElement;
+      passwordInput.value = password;
       preferences.close();
+      for (let i = 0; i < 100 && passwordInput.value; i++)
+        await Zotero.Promise.delay(20);
+      assert.equal(
+        passwordInput.value,
+        "",
+        "Closing Preferences clears the migration password",
+      );
+    } finally {
+      if (!preferences.closed) preferences.close();
     }
   });
 });

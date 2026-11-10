@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { webcrypto } from "node:crypto";
-import { readPackage, writePackage } from "../../src/modules/migration/package";
+import {
+  HEADER_BYTES,
+  packageIsEncrypted,
+  readPackage,
+  writePackage,
+} from "../../src/modules/migration/package";
 import {
   isMachinePath,
   portablePreference,
@@ -38,11 +43,15 @@ function fixture(): Manifest {
     ],
   };
 }
-async function encode(manifest = fixture(), signal?: AbortSignal) {
+async function encode(
+  manifest = fixture(),
+  signal?: AbortSignal,
+  key: string | null = password,
+) {
   const chunks: Uint8Array[] = [];
   await writePackage(
     crypto,
-    password,
+    key ?? undefined,
     manifest,
     async () => new Uint8Array([1, 2, 3, 4]),
     async (bytes) => {
@@ -112,8 +121,8 @@ test("modified ciphertext, reordered records, truncation and trailing data are r
   const changed = encoded.slice();
   changed[changed.length - 1] ^= 1;
   await assert.rejects(decode(changed), /migration-decrypt-failed/);
-  const manifestLength = new DataView(encoded.buffer).getUint32(36);
-  const first = 40 + manifestLength;
+  const manifestLength = new DataView(encoded.buffer).getUint32(HEADER_BYTES);
+  const first = HEADER_BYTES + 4 + manifestLength;
   const recordLength = 4 + 4 + 16;
   const swapped = encoded.slice();
   swapped.set(
@@ -134,16 +143,16 @@ test("modified ciphertext, reordered records, truncation and trailing data are r
 test("new packages use different salts and cannot swap encrypted records", async () => {
   const first = await encode();
   const second = await encode();
-  assert.notDeepEqual(first.slice(8, 32), second.slice(8, 32));
+  assert.notDeepEqual(first.slice(9, 33), second.slice(9, 33));
   first.set(second.slice(-20), first.length - 20);
   await assert.rejects(decode(first), /migration-decrypt-failed/);
 });
 test("invalid headers and excessive declared sizes fail before allocating file buffers", async () => {
   const encoded = await encode();
-  new DataView(encoded.buffer).setUint32(32, 0xffffffff);
+  new DataView(encoded.buffer).setUint32(33, 0xffffffff);
   await assert.rejects(decode(encoded), /migration-invalid-package/);
   const valid = await encode();
-  new DataView(valid.buffer).setUint32(36, 0xffffffff);
+  new DataView(valid.buffer).setUint32(HEADER_BYTES, 0xffffffff);
   await assert.rejects(decode(valid), /migration-invalid-package/);
 });
 test("path traversal, absolute paths and case-insensitive duplicate destinations are rejected", () => {
@@ -229,4 +238,79 @@ test("cancelled exports stop without emitting a package", async () => {
   await assert.rejects(encode(fixture(), controller.signal), {
     name: "AbortError",
   });
+});
+
+test("unencrypted packages preserve credentials and files without a password", async () => {
+  const encoded = await encode(fixture(), undefined, null);
+  assert.equal(packageIsEncrypted(encoded.slice(0, HEADER_BYTES)), false);
+  assert.ok(Buffer.from(encoded).includes(Buffer.from("synthetic-secret")));
+  let staged = 0;
+  const result = await readPackage(
+    crypto,
+    undefined,
+    {
+      size: encoded.length,
+      read: async (offset, size) => encoded.slice(offset, offset + size),
+    },
+    async (_entry, bytes) => {
+      assert.deepEqual([...bytes], [1, 2, 3, 4]);
+      staged++;
+    },
+  );
+  assert.deepEqual(result, fixture());
+  assert.equal(staged, 2);
+  assert.deepEqual(await decode(encoded, "unused-password"), fixture());
+});
+
+test("unencrypted checksums reject corruption, reordered records and invalid lengths", async () => {
+  const encoded = await encode(fixture(), undefined, null);
+  const changed = encoded.slice();
+  changed[HEADER_BYTES + 8] ^= 1;
+  let staged = false;
+  await assert.rejects(
+    decode(changed, "", async () => {
+      staged = true;
+    }),
+    /migration-invalid-package/,
+  );
+  assert.equal(staged, false);
+  const damagedFile = encoded.slice();
+  damagedFile[damagedFile.length - 33] ^= 1;
+  await assert.rejects(decode(damagedFile), /migration-invalid-package/);
+  const first =
+    HEADER_BYTES + 4 + new DataView(encoded.buffer).getUint32(HEADER_BYTES);
+  const size = 4 + 4 + 32;
+  const swapped = encoded.slice();
+  swapped.set(encoded.slice(first + size, first + 2 * size), first);
+  swapped.set(encoded.slice(first, first + size), first + size);
+  await assert.rejects(decode(swapped), /migration-invalid-package/);
+  await assert.rejects(
+    decode(encoded.slice(0, -1)),
+    /migration-invalid-package/,
+  );
+  await assert.rejects(
+    decode(new Uint8Array([...encoded, 0])),
+    /migration-invalid-package/,
+  );
+  const oversized = encoded.slice();
+  new DataView(oversized.buffer).setUint32(HEADER_BYTES, 0xffffffff);
+  await assert.rejects(decode(oversized), /migration-invalid-package/);
+});
+
+test("encryption is explicit and unsupported package headers are rejected", async () => {
+  const encrypted = await encode();
+  assert.equal(packageIsEncrypted(encrypted.slice(0, HEADER_BYTES)), true);
+  await assert.rejects(decode(encrypted, ""), /migration-password-required/);
+  await assert.rejects(
+    encode(fixture(), undefined, ""),
+    /migration-password-short/,
+  );
+  const header = encrypted.slice(0, HEADER_BYTES);
+  header[7] = 1;
+  assert.throws(() => packageIsEncrypted(header), /migration-invalid-package/);
+  header[7] = 2;
+  header[8] = 3;
+  assert.throws(() => packageIsEncrypted(header), /migration-invalid-package/);
+  header[8] = 0;
+  assert.throws(() => packageIsEncrypted(header), /migration-invalid-package/);
 });

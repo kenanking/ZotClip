@@ -1,8 +1,8 @@
 import type { FileEntry, Manifest, PackageIO, Progress } from "./types";
 import { MAX_PACKAGE_BYTES, validateManifest } from "./policy";
 
-const MAGIC = new Uint8Array([90, 79, 84, 67, 76, 73, 80, 1]);
-const HEADER_BYTES = 36;
+const MAGIC = new Uint8Array([90, 79, 84, 67, 76, 73, 80, 2]);
+export const HEADER_BYTES = 37;
 const ITERATIONS = 600000;
 const MAX_MANIFEST = 4 * 1024 * 1024;
 
@@ -37,7 +37,7 @@ async function keyFromPassword(
   return crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: header.slice(8, 24),
+      salt: header.slice(9, 25),
       iterations: ITERATIONS,
       hash: "SHA-256",
     },
@@ -50,15 +50,32 @@ async function keyFromPassword(
 function parameters(header: Uint8Array, index: number) {
   return {
     name: "AES-GCM",
-    iv: join(header.slice(24, 32), integer(index)),
+    iv: join(header.slice(25, 33), integer(index)),
     additionalData: join(header, integer(index)),
     tagLength: 128,
   };
 }
 
+export function packageIsEncrypted(header: Uint8Array): boolean {
+  if (
+    header.length !== HEADER_BYTES ||
+    !MAGIC.every((byte, i) => header[i] === byte) ||
+    ![0, 1].includes(header[8]) ||
+    (header[8] === 1
+      ? new DataView(
+          header.buffer,
+          header.byteOffset,
+          header.byteLength,
+        ).getUint32(33) !== ITERATIONS
+      : header.slice(9).some((byte) => byte !== 0))
+  )
+    throw new Error("migration-invalid-package");
+  return header[8] === 1;
+}
+
 export async function writePackage(
   crypto: Crypto,
-  password: string,
+  password: string | undefined,
   manifest: Manifest,
   readFile: (entry: FileEntry) => Promise<Uint8Array<ArrayBuffer>>,
   append: (bytes: Uint8Array<ArrayBuffer>) => Promise<void>,
@@ -66,15 +83,28 @@ export async function writePackage(
   progress: Progress = () => {},
 ): Promise<void> {
   validateManifest(manifest);
-  if (password.length < 10) throw new Error("migration-password-short");
+  if (password !== undefined && password.length < 10)
+    throw new Error("migration-password-short");
   const metadata = new TextEncoder().encode(JSON.stringify(manifest));
   if (metadata.length > MAX_MANIFEST) throw new Error("migration-too-large");
   const salt = new Uint8Array(16);
   const nonce = new Uint8Array(8);
-  crypto.getRandomValues(salt);
-  crypto.getRandomValues(nonce);
-  const header = join(MAGIC, salt, nonce, integer(ITERATIONS));
-  const key = await keyFromPassword(crypto, password, header);
+  const encrypted = password !== undefined;
+  if (encrypted) {
+    crypto.getRandomValues(salt);
+    crypto.getRandomValues(nonce);
+  }
+  const header = join(
+    MAGIC,
+    new Uint8Array([Number(encrypted)]),
+    salt,
+    nonce,
+    integer(encrypted ? ITERATIONS : 0),
+  );
+  const key =
+    password === undefined
+      ? undefined
+      : await keyFromPassword(crypto, password, header);
   signal?.throwIfAborted();
   await append(header);
   let index = 0;
@@ -84,13 +114,24 @@ export async function writePackage(
   );
   const write = async (plain: Uint8Array<ArrayBuffer>) => {
     signal?.throwIfAborted();
-    const encrypted = new Uint8Array(
-      await crypto.subtle.encrypt(parameters(header, index++), key, plain),
-    );
-    size += encrypted.length + 4;
+    const record = key
+      ? new Uint8Array(
+          await crypto.subtle.encrypt(parameters(header, index), key, plain),
+        )
+      : join(
+          plain,
+          new Uint8Array(
+            await crypto.subtle.digest(
+              "SHA-256",
+              join(header, integer(index), plain),
+            ),
+          ),
+        );
+    index++;
+    size += record.length + 4;
     if (size > MAX_PACKAGE_BYTES) throw new Error("migration-too-large");
-    await append(integer(encrypted.length));
-    await append(encrypted);
+    await append(integer(record.length));
+    await append(record);
     progress(index - 1, files.length);
   };
   await write(metadata);
@@ -103,7 +144,7 @@ export async function writePackage(
 
 export async function readPackage(
   crypto: Crypto,
-  password: string,
+  password: string | undefined,
   input: PackageIO,
   stageFile: (
     entry: FileEntry,
@@ -125,22 +166,34 @@ export async function readPackage(
     return bytes;
   };
   const header = await read(HEADER_BYTES);
-  if (
-    !MAGIC.every((byte, i) => header[i] === byte) ||
-    new DataView(header.buffer).getUint32(32) !== ITERATIONS
-  )
-    throw new Error("migration-invalid-package");
-  const key = await keyFromPassword(crypto, password, header);
+  const encrypted = packageIsEncrypted(header);
+  if (encrypted && !password) throw new Error("migration-password-required");
+  const key = encrypted
+    ? await keyFromPassword(crypto, password!, header)
+    : undefined;
+  const overhead = encrypted ? 16 : 32;
   let index = 0;
-  const decrypt = async (expectedSize: number, exact: boolean) => {
+  const readRecord = async (expectedSize: number, exact: boolean) => {
     const length = new DataView((await read(4)).buffer).getUint32(0);
     if (
-      length < 16 ||
-      length > expectedSize + 16 ||
-      (exact && length !== expectedSize + 16)
+      length < overhead ||
+      length > expectedSize + overhead ||
+      (exact && length !== expectedSize + overhead)
     )
       throw new Error("migration-invalid-package");
     const bytes = await read(length);
+    if (!key) {
+      const plain = bytes.slice(0, -32);
+      const checksum = new Uint8Array(
+        await crypto.subtle.digest(
+          "SHA-256",
+          join(header, integer(index++), plain),
+        ),
+      );
+      if (!checksum.every((byte, i) => byte === bytes[plain.length + i]))
+        throw new Error("migration-invalid-package");
+      return plain;
+    }
     try {
       return new Uint8Array(
         await crypto.subtle.decrypt(parameters(header, index++), key, bytes),
@@ -150,7 +203,7 @@ export async function readPackage(
     }
   };
   let manifest: unknown;
-  const metadata = await decrypt(MAX_MANIFEST, false);
+  const metadata = await readRecord(MAX_MANIFEST, false);
   try {
     manifest = JSON.parse(
       new TextDecoder("utf-8", { fatal: true }).decode(metadata),
@@ -163,7 +216,7 @@ export async function readPackage(
     (e): e is FileEntry => e.kind === "file",
   );
   for (const file of files) {
-    const bytes = await decrypt(file.size, true);
+    const bytes = await readRecord(file.size, true);
     await stageFile(file, bytes);
     progress(index - 1, files.length);
   }

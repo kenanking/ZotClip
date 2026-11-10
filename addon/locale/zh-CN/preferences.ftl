@@ -44,5 +44,5 @@ pref-ai-prompt-help = 提示词中可使用 {"{"}title{"}"}、{"{"}abstract{"}"}
 pref-help = { $name } 构建 { $version } { $time }
 pref-key-save = 保存／替换
 pref-key-delete = 删除
-pref-migration-open = 配置迁移…
-pref-migration-help = 导出或导入设置、插件和加密的 ZotClip AI 密钥。
+pref-section-migration = 配置迁移
+pref-migration-help = 导出或导入设置、插件和 ZotClip AI 密钥，可选择密码加密。

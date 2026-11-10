@@ -20,7 +20,7 @@ ZotClip is a plugin for Zotero 8, 9, and 10 with three feature areas:
   configured in preferences.
 - **Configuration migration** — transfer portable settings, installed plug-ins,
   citation styles, translators, locate engines, and ZotClip AI keys between
-  computers in one password-encrypted file.
+  computers in one file, with optional password encryption.
 
 ## Installation
 
@@ -84,16 +84,20 @@ Background tagging does not add undo steps. Read-only and deleted items are skip
 
 ### Configuration migration
 
-Open **Preferences → ZotClip → Configuration migration**. Select the content to
-export, enter and confirm a password of at least 10 characters, then save a new
-`.zotclip` file. Keep the password separately; ZotClip cannot recover it.
+Open **Preferences → ZotClip** and scroll to **Configuration migration**. Select
+the content to export, then save a new `.zotclip` file. Password encryption is
+off by default and independent of including AI keys. Unencrypted files include
+selected keys in readable form. To encrypt the file, check **Encrypt export with
+a password** and enter and confirm at least 10 characters. Keep the password
+separately; ZotClip cannot recover it.
 
-On the destination computer, install ZotClip first, open the migration window,
-enter the password, and choose **Open and preview**. Review the differences and
-map any selected local paths to existing paths on that computer. Confirm the
-selected changes and choose where to save the encrypted recovery copy. It uses
-the same password and must be saved before any changes are applied. Restart
-Zotero after importing. Open a recovery copy in the same window to restore
+On the destination computer, install ZotClip first, go to the same section,
+and choose **Open and preview**. Only encrypted files ask for a password, directly
+in the settings page. Review the differences and map any selected local paths
+to existing paths on that computer. Confirm the selected changes and choose
+where to save the recovery copy. It follows the imported file's encryption mode
+and password, and must be saved before any changes are applied. Restart
+Zotero after importing. Open a recovery copy in the same section to restore
 previous settings and files; newly installed plug-ins may need manual removal.
 
 This transfers portable configuration, not the literature library or attachments.

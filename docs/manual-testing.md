@@ -114,15 +114,18 @@
 
 ## Configuration Migration
 
-- [ ] Use an isolated profile with synthetic credentials. Open Preferences → ZotClip → Configuration migration; verify Chinese/English labels, keyboard focus, light/dark themes and narrow-window scrolling.
+- [ ] Export/import does not disable other settings. After applying an import, the other ZotClip controls refresh to their imported values while the migration result remains visible. Closing Preferences clears passwords and staged files.
+- [ ] Use an isolated profile with synthetic credentials. Open Preferences → ZotClip and scroll to Configuration migration. Verify controls and previews stay in the settings page, with no separate migration window. Check Chinese/English labels, keyboard focus, light/dark themes and narrow-window scrolling.
 - [ ] Export all categories. Verify nested/Unicode resource files and installed plug-in disabled states survive a transfer to another isolated profile.
+- [ ] Encryption starts unchecked even with AI keys selected. Toggle it both ways: passwords show only when needed, disabling encryption clears them, and AI key selection does not change.
+- [ ] Export/import AI keys without a password. The export has a visible plaintext-key note; preview masks key values. Unencrypted imports go straight to preview; encrypted imports request a password inline without changing the export checkbox.
 - [ ] Try a wrong password, a truncated file and a modified file. No destination configuration changes and no usable preview appears.
 - [ ] Review additions, replacements, identical entries and skipped newer plug-ins. Filter/select entries; changing the selection requires confirmation again. A mapped local path must exist.
 - [ ] Cancel export or import verification. Existing package files remain intact; no partial output is left beside them.
 - [ ] Change a destination preference after preview. Apply must stop and request a fresh preview.
 - [ ] Make the recovery destination unwritable. Apply must stop before settings, credentials or resources change.
 - [ ] Import while AI tagging is active. Pending work is cancelled and new tagging cannot start until importing finishes.
-- [ ] Open the generated recovery copy with the same password. Restore old values/files/keys and remove newly introduced resource files. Check the result for plug-ins requiring manual cleanup.
+- [ ] Recover both unencrypted and encrypted imports. Recovery follows the imported file's mode; encrypted copies use its password. Restore old values/files/keys and remove newly introduced resource files. Check the result for plug-ins requiring manual cleanup.
 - [ ] Restart Zotero and verify styles/translators/locate engines reload. Test on Zotero 8, 9, 10 and the current 11 build before publishing compatibility claims.
 
 ## AI Reliability and Credentials
