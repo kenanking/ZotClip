@@ -13,6 +13,8 @@ describe("toolbar buttons", function () {
   const readerToolbarButtonID = "zotclip-reader-copy-button";
   let attachmentPath = "";
   let attachment: Zotero.Item | undefined;
+  let standaloneAttachment: Zotero.Item | undefined;
+  let mainWindow: _ZoteroTypes.MainWindow;
   let tabReader: _ZoteroTypes.ReaderInstance | undefined;
   let windowReader: _ZoteroTypes.ReaderInstance | undefined;
 
@@ -34,6 +36,7 @@ describe("toolbar buttons", function () {
 
   before(async function () {
     this.timeout(30000);
+    mainWindow = Zotero.getMainWindow();
     attachmentPath = await writeSamplePdf();
     attachment = await Zotero.Attachments.importFromFile({
       file: attachmentPath,
@@ -41,15 +44,23 @@ describe("toolbar buttons", function () {
       title: "ZotClip Toolbar Buttons Test",
       contentType: "application/pdf",
     });
+    standaloneAttachment = await Zotero.Attachments.importFromFile({
+      file: attachmentPath,
+      libraryID: Zotero.Libraries.userLibraryID,
+      title: "ZotClip Standalone Reader Test",
+      contentType: "application/pdf",
+    });
   });
 
   after(async function () {
     this.timeout(30000);
-    windowReader?.close();
+    if (windowReader?._window && windowReader._window !== mainWindow)
+      windowReader._window.close();
     tabReader?.close();
     if (attachment) {
       await attachment.eraseTx();
     }
+    await standaloneAttachment?.eraseTx();
     if (attachmentPath) {
       await IOUtils.remove(attachmentPath, { ignoreAbsent: true });
     }
@@ -58,7 +69,6 @@ describe("toolbar buttons", function () {
   it("shows the main-window toolbar button", async function () {
     this.timeout(30000);
 
-    const mainWindow = Zotero.getMainWindow();
     const button = await waitFor(() =>
       mainWindow.document.getElementById(mainToolbarButtonID),
     );
@@ -76,10 +86,19 @@ describe("toolbar buttons", function () {
       tabReader?._iframeWindow?.document.getElementById(readerToolbarButtonID),
     );
 
-    windowReader = (await Zotero.Reader.open(attachment!.id, undefined, {
-      allowDuplicate: true,
-      openInWindow: true,
-    })) as _ZoteroTypes.ReaderInstance;
+    windowReader = (await Zotero.Reader.open(
+      standaloneAttachment!.id,
+      undefined,
+      {
+        allowDuplicate: true,
+        openInWindow: true,
+      },
+    )) as _ZoteroTypes.ReaderInstance;
+    assert.notEqual(
+      windowReader._window,
+      mainWindow,
+      "Reader has its own top-level window",
+    );
     const windowButton = await waitFor(() =>
       windowReader?._iframeWindow?.document.getElementById(
         readerToolbarButtonID,
@@ -97,11 +116,11 @@ describe("toolbar buttons", function () {
       getReaderItemIDForWindow(tabReader._iframeWindow!),
       attachment!.id,
     );
-    Zotero.getMainWindow().Zotero_Tabs.select("zotero-pane");
-    assert.equal(getReaderItemIDForWindow(Zotero.getMainWindow()), undefined);
+    mainWindow.Zotero_Tabs.select("zotero-pane");
+    assert.equal(getReaderItemIDForWindow(mainWindow), undefined);
     assert.equal(
       getReaderItemIDForWindow(windowReader._iframeWindow!),
-      attachment!.id,
+      standaloneAttachment!.id,
     );
   });
 
@@ -109,16 +128,22 @@ describe("toolbar buttons", function () {
     const savedAddon = (window as any).addon;
     (window as any).addon = Zotero[config.addonInstance];
     this.timeout(30000);
-    const mainDoc = Zotero.getMainWindow().document;
+    const mainDoc = mainWindow.document;
     let stage = "open reader";
     try {
-      windowReader = (await Zotero.Reader.open(attachment!.id, undefined, {
-        allowDuplicate: true,
-        openInWindow: true,
-      })) as _ZoteroTypes.ReaderInstance;
+      windowReader ||= (await Zotero.Reader.open(
+        standaloneAttachment!.id,
+        undefined,
+        {
+          allowDuplicate: true,
+          openInWindow: true,
+        },
+      )) as _ZoteroTypes.ReaderInstance;
       await waitFor(() => windowReader?._iframeWindow);
       const readerWindow = windowReader!._window!;
       const readerDoc = readerWindow.document;
+      assert.notEqual(readerWindow, mainWindow);
+      assert.notEqual(readerDoc, mainDoc);
       showNotification("Main window notification", 5000, mainDoc);
       stage = "focus reader";
       readerWindow.focus();
@@ -140,7 +165,7 @@ describe("toolbar buttons", function () {
         "Reader notification",
       );
       stage = "close reader";
-      windowReader!.close();
+      readerWindow.close();
       windowReader = undefined;
       await waitFor(() => !getTaskCard(readerDoc, "notification"));
       assert.ok(getTaskCard(mainDoc, "notification"));
@@ -158,6 +183,7 @@ describe("toolbar buttons", function () {
 
   it("uses an inline toolbar icon inside the reader iframe", async function () {
     this.timeout(30000);
+    mainWindow.focus();
 
     tabReader = (await Zotero.Reader.open(attachment!.id, undefined, {
       allowDuplicate: true,
