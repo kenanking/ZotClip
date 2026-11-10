@@ -19,9 +19,11 @@ tested with 11.0-beta.4; see the [validation report](docs/validation.md).
   OpenAI-compatible chat API. Built-in providers include DeepSeek, OpenRouter,
   Ollama, and LM Studio, plus a custom URL for other endpoints. Keys and prompts are
   configured in preferences.
-- **Configuration migration** — transfer portable settings, installed plug-ins,
-  citation styles, translators, locate engines, and ZotClip AI keys between
-  computers in one file, with optional password encryption.
+- **Configuration backup, restore, and migration** — save portable settings,
+  installed plug-ins, citation styles, translators, locate engines, and ZotClip
+  AI keys in a `.zotclip` backup. Restore selected settings on the same computer
+  or transfer them to another computer, with optional password encryption and
+  a recovery copy saved before applying changes.
 
 ## Installation
 
@@ -79,29 +81,52 @@ keeps them visible). Failures stay visible with a button to retry only failed
 items; repeated commands focus the existing task. Automatic successes are silent,
 and automatic failures are summarized in the same card. Turning off AI tagging
 also cancels queued and active tasks.
-Completed changes are kept; cancelled requests cannot add tags. In Zotero 10,
+Completed changes are kept; cancelled requests cannot add tags. In Zotero 10+,
 manual tag changes support the normal Undo/Redo commands (one item per step).
 Background tagging does not add undo steps. Read-only and deleted items are skipped.
 
-### Configuration migration
+### Configuration backup, restore, and migration
 
-Open **Preferences → ZotClip** and scroll to **Configuration migration**. Select
-the content to export, then save a new `.zotclip` file. Password encryption is
-off by default and independent of including AI keys. Unencrypted files include
-selected keys in readable form. To encrypt the file, check **Encrypt export with
-a password** and enter and confirm at least 10 characters. Keep the password
-separately; ZotClip cannot recover it.
+Use this feature to back up your Zotero configuration before changing settings,
+restore a saved setup, or move your configuration to another computer. All
+options and the restore preview are part of **Preferences → ZotClip →
+Configuration migration**; no separate configuration dialog is needed.
 
-On the destination computer, install ZotClip first, go to the same section,
-and choose **Open and preview**. Only encrypted files ask for a password, directly
-in the settings page. Review the differences and map any selected local paths
-to existing paths on that computer. Confirm the selected changes and choose
-where to save the recovery copy. It follows the imported file's encryption mode
-and password, and must be saved before any changes are applied. Restart
-Zotero after importing. Open a recovery copy in the same section to restore
-previous settings and files; newly installed plug-ins may need manual removal.
+**Create a backup**
 
-This transfers portable configuration, not the literature library or attachments.
+1. Open **Configuration migration** and select the content to include: portable
+   settings, installed plug-ins, citation styles, translators, locate engines,
+   and ZotClip AI keys.
+2. Optionally check **Encrypt export with a password** and enter and confirm
+   a password of at least 10 characters. Encryption is **off by default** and
+   independent of the AI-key selection: keys can be backed up with or without
+   encryption.
+3. Export to a new `.zotclip` file and keep it for restoration or transfer.
+
+Unencrypted backups contain any selected AI keys in readable form. Keep an
+encrypted backup's password separately; ZotClip cannot recover it.
+
+**Restore a backup or transfer it to another computer**
+
+1. Install ZotClip on the destination computer if needed, then open the same
+   **Configuration migration** section.
+2. Choose **Open and preview** and select your `.zotclip` backup. Enter a
+   password only if the file is encrypted.
+3. Review the differences and select the settings and resources to restore.
+   Map any selected local paths to existing paths on the destination computer.
+4. Confirm the selected changes and choose where to save the recovery copy.
+   ZotClip saves this copy of the previous state **before applying changes**.
+5. Restart Zotero after restoration so the imported resources reload.
+
+**Undo a restore**
+
+Open the recovery copy through **Open and preview** to restore the previous
+settings and resource files. Recovery copies use the imported backup's encryption
+mode and password. Newly installed plug-ins may need manual removal; changes
+made by third-party plug-ins themselves may also need manual cleanup.
+
+The backup contains portable configuration. Library items and attachments are
+not included.
 Zotero sign-in/sync credentials, other plug-ins' login-manager credentials and
 private databases are excluded. ZotClip itself and Zotero's bundled integration
 plug-ins are not replaced. Existing newer plug-ins are skipped during normal
@@ -120,6 +145,11 @@ hovered or focused. Settings feedback appears in the main Zotero window.
 **Copying:** allowed attachment types, multi-attachment strategy, library and
 reader shortcuts, toolbar and context menu visibility, platform clipboard
 diagnostics.
+
+**Configuration backup and restore:** choose backup contents, optionally encrypt
+the export, preview a saved backup, select changes, map local paths, and save a
+recovery copy before restoring. These controls are in **Configuration migration**
+on the same settings page.
 
 **AI tagging:** enable the feature, provider and model, API key and endpoint
 (where applicable), optional connection test, and a prompt template with
