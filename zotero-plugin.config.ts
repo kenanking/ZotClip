@@ -41,6 +41,10 @@ export default defineConfig({
     ],
   },
 
+  server: {
+    devtools: process.env.NODE_ENV !== "test",
+  },
+
   test: {
     headless: process.env.ZOTCLIP_TEST_HEADLESS === "1",
     prefs: {

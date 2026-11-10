@@ -157,21 +157,28 @@ describe("Shared notification cards", function () {
     const doc = Zotero.getMainWindow().document;
     doc.defaultView!.focus();
     await Zotero.Promise.delay(50);
-    showNotification("Clipboard updated", 100, doc);
+    showNotification("Clipboard updated", 300, doc);
     const card = doc.getElementById("zotclip-notification")!;
-    (doc.defaultView as any).windowUtils.sendMouseEvent(
-      "mousemove",
-      1,
-      1,
-      0,
-      0,
-      0,
-    );
     (card.querySelector("button") as HTMLButtonElement).focus();
-    await Zotero.Promise.delay(180);
+    const win = doc.defaultView as any;
+    if (typeof win.synthesizeMouseEvent === "function") {
+      win.synthesizeMouseEvent("mousemove", 1, 1, { button: 0, clickCount: 0 });
+    } else {
+      win.windowUtils.sendMouseEvent("mousemove", 1, 1, 0, 0, 0);
+    }
+    for (let i = 0; i < 50 && card.matches(":hover"); i++)
+      await Zotero.Promise.delay(20);
+    assert.equal(card.matches(":hover"), false, "Pointer left the card");
+    assert.equal(
+      card.contains(doc.activeElement),
+      true,
+      "Keyboard focus reached the card",
+    );
+    await Zotero.Promise.delay(400);
     assert.ok(getTaskCard(doc, "notification"));
     (card.querySelector("button") as HTMLButtonElement).blur();
-    await Zotero.Promise.delay(250);
+    for (let i = 0; i < 100 && getTaskCard(doc, "notification"); i++)
+      await Zotero.Promise.delay(20);
     assert.equal(
       card.contains(doc.activeElement),
       false,
